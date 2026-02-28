@@ -1,0 +1,7 @@
+config:
+  aws:region: us-east-1
+  aws-ecs-fargate:containerPort: "3000"
+  aws-ecs-fargate:cpu: "256"
+  aws-ecs-fargate:memory: "512"
+  aws-ecs-fargate:desiredCount: "2"
+  aws-ecs-fargate:imageName: "my-org/my-app:latest"

@@ -1,0 +1,5 @@
+config:
+  azure-native:location: eastus
+  azure-aks:nodeCount: "3"
+  azure-aks:nodeVmSize: Standard_D2s_v3
+  azure-aks:kubernetesVersion: "1.29"

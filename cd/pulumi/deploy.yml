@@ -1,0 +1,158 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Pulumi Preview / Deploy
+# WHEN TO USE: Automating Pulumi infrastructure deployments with PR review
+# PREREQUISITES: Pulumi project with Pulumi.yaml, cloud credentials via OIDC
+# SECRETS NEEDED: PULUMI_ACCESS_TOKEN, cloud auth (see sections below)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: cd/pulumi/aws/, cd/pulumi/azure/, cd/pulumi/gcp/
+# MATURITY: Stable
+# ============================================================
+
+name: Pulumi Preview / Deploy
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "cd/pulumi/**"                         # <-- CHANGE THIS: path to your Pulumi project
+  push:
+    branches: [main]
+    paths:
+      - "cd/pulumi/**"                         # <-- CHANGE THIS: match above
+
+concurrency:
+  group: pulumi-${{ github.ref }}
+  cancel-in-progress: false                    # Never cancel in-progress deploys
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write                              # For OIDC authentication
+
+env:
+  PULUMI_WORKING_DIR: "cd/pulumi/aws"          # <-- CHANGE THIS: path to Pulumi project
+  PULUMI_STACK: "prod"                         # <-- CHANGE THIS: your stack name
+  NODE_VERSION: "22"                           # <-- CHANGE THIS: your Node.js version
+
+  # --- AWS (uncomment if using AWS) ---
+  # AWS_REGION: us-east-1
+
+  # --- Azure (uncomment if using Azure) ---
+  # ARM_USE_OIDC: true
+
+  # --- GCP (uncomment if using GCP) ---
+  # GOOGLE_PROJECT: my-project-id
+
+jobs:
+  # =============================================
+  # PREVIEW — runs on every Pull Request
+  # =============================================
+  preview:
+    name: Pulumi Preview
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Cloud Authentication (uncomment ONE) ---
+
+      # AWS OIDC
+      # - name: AWS Login (OIDC)
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      #     aws-region: ${{ env.AWS_REGION }}
+
+      # Azure OIDC
+      # - name: Azure Login (OIDC)
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # GCP Workload Identity
+      # - name: GCP Auth (Workload Identity)
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.PULUMI_WORKING_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.PULUMI_WORKING_DIR }}
+        run: npm ci
+
+      - name: Pulumi Preview
+        uses: pulumi/actions@v5
+        with:
+          command: preview
+          stack-name: ${{ env.PULUMI_STACK }}
+          work-dir: ${{ env.PULUMI_WORKING_DIR }}
+          comment-on-pr: true
+          comment-on-summary: true
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+  # =============================================
+  # DEPLOY — runs on push to main (after PR merge)
+  # =============================================
+  deploy:
+    name: Pulumi Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    environment: production                     # <-- CHANGE THIS: requires GitHub environment approval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Cloud Authentication (uncomment ONE — same as preview) ---
+
+      # AWS OIDC
+      # - name: AWS Login (OIDC)
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      #     aws-region: ${{ env.AWS_REGION }}
+
+      # Azure OIDC
+      # - name: Azure Login (OIDC)
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # GCP Workload Identity
+      # - name: GCP Auth (Workload Identity)
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.PULUMI_WORKING_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.PULUMI_WORKING_DIR }}
+        run: npm ci
+
+      - name: Pulumi Deploy
+        uses: pulumi/actions@v5
+        with:
+          command: up
+          stack-name: ${{ env.PULUMI_STACK }}
+          work-dir: ${{ env.PULUMI_WORKING_DIR }}
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
