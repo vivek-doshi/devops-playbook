@@ -1,0 +1,136 @@
+# ============================================================
+# TEMPLATE: GitLab CI — Terraform Plan / Apply
+# WHEN TO USE: Automating Terraform workflows with MR-based plan review
+# PREREQUISITES: Cloud credentials configured as CI/CD variables
+# SECRETS NEEDED: Cloud auth variables (see provider-specific sections)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: terraform/azure-aks/, terraform/aws-eks/, terraform/gcp-gke/
+# MATURITY: Stable
+# ============================================================
+
+variables:
+  TF_VERSION: "1.7.0"                            # <-- CHANGE THIS: pin to your version
+  TF_ROOT: "${CI_PROJECT_DIR}/terraform/azure-aks" # <-- CHANGE THIS: path to root module
+  TF_VAR_FILE: ""                                  # <-- CHANGE THIS: e.g., "environments/prod.tfvars"
+
+  # Terraform settings
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+  # --- Azure (set as CI/CD variables in GitLab) ---
+  # ARM_CLIENT_ID: ""
+  # ARM_CLIENT_SECRET: ""
+  # ARM_SUBSCRIPTION_ID: ""
+  # ARM_TENANT_ID: ""
+
+  # --- AWS (set as CI/CD variables in GitLab) ---
+  # AWS_ACCESS_KEY_ID: ""
+  # AWS_SECRET_ACCESS_KEY: ""
+  # AWS_DEFAULT_REGION: "us-east-1"
+
+  # --- GCP (set as CI/CD variables in GitLab) ---
+  # GOOGLE_CREDENTIALS: ""          # JSON service account key or use Workload Identity
+  # GOOGLE_PROJECT: ""
+
+image:
+  name: hashicorp/terraform:$TF_VERSION
+  entrypoint: [""]
+
+stages:
+  - validate
+  - plan
+  - apply
+
+# Only run on changes to Terraform files
+workflow:
+  rules:
+    - changes:
+        - "terraform/**"        # <-- CHANGE THIS: match your TF_ROOT path
+    - if: $CI_PIPELINE_SOURCE == "web"  # Allow manual triggers
+
+# Cache Terraform plugins across jobs
+cache:
+  key: terraform-plugins
+  paths:
+    - ${TF_ROOT}/.terraform/providers/
+
+# =============================================
+# VALIDATE — format check + validation
+# =============================================
+validate:
+  stage: validate
+  script:
+    - cd ${TF_ROOT}
+    - terraform init -backend=false
+    - terraform fmt -check -diff
+    - terraform validate -no-color
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# =============================================
+# PLAN — runs on every MR
+# =============================================
+plan:
+  stage: plan
+  script:
+    - cd ${TF_ROOT}
+    - terraform init -input=false
+    - |
+      PLAN_ARGS="-input=false -no-color -out=tfplan"
+      if [ -n "${TF_VAR_FILE}" ]; then
+        PLAN_ARGS="${PLAN_ARGS} -var-file=${TF_VAR_FILE}"
+      fi
+      terraform plan ${PLAN_ARGS}
+    - terraform show -no-color tfplan > plan_output.txt
+  artifacts:
+    paths:
+      - ${TF_ROOT}/tfplan
+      - ${TF_ROOT}/plan_output.txt
+    reports:
+      terraform: ${TF_ROOT}/plan_output.txt   # Shows plan in MR widget
+    expire_in: 7 days
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# =============================================
+# APPLY — runs only on default branch (after MR merge)
+# =============================================
+apply:
+  stage: apply
+  script:
+    - cd ${TF_ROOT}
+    - terraform init -input=false
+    - |
+      APPLY_ARGS="-input=false -auto-approve"
+      if [ -n "${TF_VAR_FILE}" ]; then
+        APPLY_ARGS="${APPLY_ARGS} -var-file=${TF_VAR_FILE}"
+      fi
+      terraform apply ${APPLY_ARGS}
+  dependencies:
+    - plan
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual                   # Require manual click to apply
+  environment:
+    name: production                 # <-- CHANGE THIS: your environment name
+  resource_group: terraform-state    # Prevents concurrent applies
+
+# ============================================================
+# OPTIONAL: Destroy job (manual, protected)
+# Uncomment if you need a destroy capability from CI
+# ============================================================
+# destroy:
+#   stage: apply
+#   script:
+#     - cd ${TF_ROOT}
+#     - terraform init -input=false
+#     - terraform destroy -input=false -auto-approve
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#       when: manual
+#       allow_failure: true
+#   environment:
+#     name: production
+#     action: stop

@@ -1,0 +1,157 @@
+# ============================================================
+# TEMPLATE: Azure Pipelines — Terraform Plan / Apply
+# WHEN TO USE: Automating Terraform workflows in Azure DevOps
+# PREREQUISITES: Azure service connection, Terraform extension installed
+# SECRETS NEEDED: Azure service connection (or variable group linked to Key Vault)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: terraform/azure-aks/, terraform/aws-eks/, terraform/gcp-gke/
+# MATURITY: Stable
+# ============================================================
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/**                # <-- CHANGE THIS: path to your Terraform configs
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/**                # <-- CHANGE THIS: match above
+
+variables:
+  TF_VERSION: "1.7.0"                              # <-- CHANGE THIS: pin to your version
+  TF_WORKING_DIR: "$(System.DefaultWorkingDirectory)/terraform/azure-aks"  # <-- CHANGE THIS
+  azureServiceConnection: "my-azure-connection"     # <-- CHANGE THIS: Azure DevOps service connection name
+
+  # Backend config for remote state (Azure Storage)
+  backendResourceGroup: "tfstate-rg"                # <-- CHANGE THIS
+  backendStorageAccount: "tfstatesa"                # <-- CHANGE THIS
+  backendContainer: "tfstate"                       # <-- CHANGE THIS
+  backendKey: "terraform.tfstate"                   # <-- CHANGE THIS
+
+pool:
+  vmImage: "ubuntu-latest"
+
+stages:
+  # =============================================
+  # VALIDATE — format check + validation
+  # =============================================
+  - stage: Validate
+    displayName: "Terraform Validate"
+    jobs:
+      - job: Validate
+        displayName: "Format & Validate"
+        steps:
+          - task: TerraformInstaller@1
+            displayName: "Install Terraform $(TF_VERSION)"
+            inputs:
+              terraformVersion: $(TF_VERSION)
+
+          - script: terraform fmt -check -diff
+            displayName: "Terraform Format Check"
+            workingDirectory: $(TF_WORKING_DIR)
+
+          - script: terraform init -backend=false
+            displayName: "Terraform Init (validation only)"
+            workingDirectory: $(TF_WORKING_DIR)
+
+          - script: terraform validate -no-color
+            displayName: "Terraform Validate"
+            workingDirectory: $(TF_WORKING_DIR)
+
+  # =============================================
+  # PLAN — runs on PR and main branch
+  # =============================================
+  - stage: Plan
+    displayName: "Terraform Plan"
+    dependsOn: Validate
+    jobs:
+      - job: Plan
+        displayName: "Generate Plan"
+        steps:
+          - task: TerraformInstaller@1
+            displayName: "Install Terraform $(TF_VERSION)"
+            inputs:
+              terraformVersion: $(TF_VERSION)
+
+          - task: AzureCLI@2
+            displayName: "Terraform Init + Plan"
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              workingDirectory: $(TF_WORKING_DIR)
+              addSpnToEnvironment: true  # Exposes ARM_CLIENT_ID, ARM_CLIENT_SECRET, etc.
+              inlineScript: |
+                # Export Azure credentials for Terraform
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_CLIENT_SECRET=$servicePrincipalKey
+                export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                export ARM_TENANT_ID=$tenantId
+
+                # Init with backend
+                terraform init -input=false \
+                  -backend-config="resource_group_name=$(backendResourceGroup)" \
+                  -backend-config="storage_account_name=$(backendStorageAccount)" \
+                  -backend-config="container_name=$(backendContainer)" \
+                  -backend-config="key=$(backendKey)"
+
+                # Plan
+                terraform plan -input=false -no-color -out=tfplan
+
+                # Save human-readable plan for review
+                terraform show -no-color tfplan > $(Build.ArtifactStagingDirectory)/plan_output.txt
+
+          - publish: $(Build.ArtifactStagingDirectory)/plan_output.txt
+            artifact: terraform-plan
+            displayName: "Publish Plan Output"
+
+  # =============================================
+  # APPLY — runs only on main branch, with approval
+  # =============================================
+  - stage: Apply
+    displayName: "Terraform Apply"
+    dependsOn: Plan
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: Apply
+        displayName: "Apply Infrastructure Changes"
+        environment: production     # <-- CHANGE THIS: configure approval gates in Azure DevOps
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: TerraformInstaller@1
+                  displayName: "Install Terraform $(TF_VERSION)"
+                  inputs:
+                    terraformVersion: $(TF_VERSION)
+
+                - task: AzureCLI@2
+                  displayName: "Terraform Init + Apply"
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    workingDirectory: $(TF_WORKING_DIR)
+                    addSpnToEnvironment: true
+                    inlineScript: |
+                      export ARM_CLIENT_ID=$servicePrincipalId
+                      export ARM_CLIENT_SECRET=$servicePrincipalKey
+                      export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                      export ARM_TENANT_ID=$tenantId
+
+                      terraform init -input=false \
+                        -backend-config="resource_group_name=$(backendResourceGroup)" \
+                        -backend-config="storage_account_name=$(backendStorageAccount)" \
+                        -backend-config="container_name=$(backendContainer)" \
+                        -backend-config="key=$(backendKey)"
+
+                      terraform apply -input=false -auto-approve
