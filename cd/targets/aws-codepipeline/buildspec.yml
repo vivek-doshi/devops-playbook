@@ -1,0 +1,82 @@
+# ============================================================
+# TEMPLATE: AWS CodePipeline — buildspec.yml for CodeBuild
+# WHEN TO USE: When using the codepipeline.yml CloudFormation template
+# PREREQUISITES: Dockerfile in the project root
+# SECRETS NEEDED: None (injected via CodeBuild environment)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: cd/targets/aws-codepipeline/codepipeline.yml
+# MATURITY: Stable
+# ============================================================
+#
+# Place this file in your project root if you prefer an external
+# buildspec instead of the inline one in codepipeline.yml.
+# Then update the CodeBuild Source in the CloudFormation template:
+#   Source:
+#     Type: CODEPIPELINE
+#     BuildSpec: buildspec.yml
+#
+
+version: 0.2
+
+env:
+  variables:
+    DOCKER_BUILDKIT: "1"          # Enable BuildKit for faster builds
+
+phases:
+  install:
+    runtime-versions:
+      docker: 20                   # <-- CHANGE THIS: match your Docker version needs
+
+  pre_build:
+    commands:
+      - echo "--- Pre-build phase ---"
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY
+      - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - echo "Image URI = $IMAGE_URI:$IMAGE_TAG"
+
+      # Run unit tests before building the image
+      # Uncomment and adapt for your stack:
+      # - dotnet test                          # .NET
+      # - npm ci && npm test                   # Node.js
+      # - pip install -r requirements.txt && pytest  # Python
+      # - ./gradlew test                       # Java/Gradle
+
+  build:
+    commands:
+      - echo "--- Build phase ---"
+      - echo "Building Docker image..."
+      - docker build -t $IMAGE_URI:$IMAGE_TAG -f Dockerfile .   # <-- CHANGE THIS: Dockerfile path
+      - docker tag $IMAGE_URI:$IMAGE_TAG $IMAGE_URI:latest
+
+  post_build:
+    commands:
+      - echo "--- Post-build phase ---"
+      - echo "Pushing Docker image to ECR..."
+      - docker push $IMAGE_URI:$IMAGE_TAG
+      - docker push $IMAGE_URI:latest
+      - echo "Generating imagedefinitions.json for ECS deploy..."
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$IMAGE_URI:$IMAGE_TAG" > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    # - appspec.yml                  # Uncomment if using CodeDeploy (blue/green)
+    # - taskdef.json                 # Uncomment if using CodeDeploy (blue/green)
+
+reports:
+  # Uncomment to publish test results to CodeBuild Reports
+  # test-results:
+  #   files:
+  #     - "**/*.xml"                 # JUnit, NUnit, pytest XML reports
+  #   file-format: JUNITXML
+  #   base-directory: test-results   # <-- CHANGE THIS: path to test output
+
+cache:
+  paths:
+    - "/root/.docker/**/*"           # Docker layer cache
+    # - "node_modules/**/*"          # Uncomment for Node.js
+    # - "/root/.cache/pip/**/*"      # Uncomment for Python
+    # - "/root/.nuget/**/*"          # Uncomment for .NET

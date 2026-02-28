@@ -1,0 +1,102 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Go Build & Test
+# WHEN TO USE: Any Go project with go.mod
+# PREREQUISITES: go.mod and go.sum in project root
+# SECRETS NEEDED: None / CODECOV_TOKEN for coverage upload
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/go/Dockerfile
+# MATURITY: Stable
+# ============================================================
+
+name: Go Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ["1.21", "1.22"]            # <-- CHANGE THIS: your supported Go versions
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true                            # Caches ~/go/pkg/mod and ~/.cache/go-build
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Lint with golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          args: --timeout=5m
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test with coverage
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${COVERAGE}%"
+          THRESHOLD=70                           # <-- CHANGE THIS: your minimum coverage
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "::error::Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Upload coverage
+        if: matrix.go-version == '1.22'          # Upload once, not per matrix entry
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.out
+
+      - name: Build
+        run: go build -v ./...
+
+  # Build Docker image on main branch
+  docker:
+    name: Docker Build
+    needs: build-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/go/Dockerfile             # <-- CHANGE THIS: path to your Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest

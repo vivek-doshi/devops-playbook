@@ -1,0 +1,5 @@
+config:
+  gcp:project: my-project-id
+  gcp:region: us-central1
+  gcp-gke:machineType: e2-medium
+  gcp-gke:nodeCount: "3"

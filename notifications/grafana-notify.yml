@@ -1,0 +1,135 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Grafana Deployment Notification (Reusable)
+# WHEN TO USE: Annotating deployments on Grafana dashboards for visual correlation
+# PREREQUISITES: Grafana instance with API access (Cloud or self-hosted)
+# SECRETS NEEDED: grafana-api-token (Grafana Service Account Token or API Key)
+# WHAT TO CHANGE: Grafana URL, dashboard IDs, annotation tags
+# RELATED FILES: notifications/datadog-notify.yml, notifications/slack-notify.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Grafana Deployment Notification Template
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: "Service name (used in annotation tags)"
+        required: true
+        type: string
+      environment:
+        description: "Deployment environment (dev, staging, prod)"
+        required: true
+        type: string
+      version:
+        description: "Version being deployed (semver, commit SHA, etc.)"
+        required: false
+        type: string
+        default: ""
+      grafana-url:
+        description: "Grafana base URL (e.g., https://my-org.grafana.net or https://grafana.internal)"
+        required: true
+        type: string     # <-- CHANGE THIS: your Grafana instance URL
+      dashboard-uid:
+        description: "Optional: UID of a specific dashboard to annotate (leave empty for global annotation)"
+        required: false
+        type: string
+        default: ""
+    secrets:
+      grafana-api-token:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      # -----------------------------------------------
+      # Grafana Annotation — appears as vertical lines on dashboards
+      # Correlate deployments with metric changes visually
+      # -----------------------------------------------
+      - name: Create Grafana Annotation
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ github.sha }}"
+          fi
+
+          TIMESTAMP_MS=$(date +%s%3N)
+
+          # Build annotation payload
+          TAGS="[\"deployment\", \"service:${{ inputs.service }}\", \"env:${{ inputs.environment }}\", \"version:${VERSION}\"]"
+
+          TEXT="**Deployment:** ${{ inputs.service }} → ${{ inputs.environment }}\n"
+          TEXT+="**Version:** ${VERSION}\n"
+          TEXT+="**Branch:** ${{ github.ref_name }}\n"
+          TEXT+="**Commit:** ${{ github.sha }}\n"
+          TEXT+="**By:** ${{ github.actor }}\n"
+          TEXT+="**[View Pipeline Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**"
+
+          # Global annotation (visible on all dashboards with matching tags)
+          PAYLOAD="{
+            \"time\": ${TIMESTAMP_MS},
+            \"tags\": ${TAGS},
+            \"text\": \"${TEXT}\"
+          }"
+
+          # If a specific dashboard UID is provided, add dashboardUID to the payload
+          if [ -n "${{ inputs.dashboard-uid }}" ]; then
+            PAYLOAD="{
+              \"dashboardUID\": \"${{ inputs.dashboard-uid }}\",
+              \"time\": ${TIMESTAMP_MS},
+              \"tags\": ${TAGS},
+              \"text\": \"${TEXT}\"
+            }"
+          fi
+
+          HTTP_STATUS=$(curl -s -o /tmp/grafana_response.json -w "%{http_code}" \
+            -X POST "${{ inputs.grafana-url }}/api/annotations" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.grafana-api-token }}" \
+            -d "${PAYLOAD}")
+
+          echo "Grafana API response (HTTP ${HTTP_STATUS}):"
+          cat /tmp/grafana_response.json
+
+          if [ "$HTTP_STATUS" -ge 400 ]; then
+            echo "::warning::Grafana annotation failed with HTTP ${HTTP_STATUS}. Deployment continues."
+          else
+            echo "✅ Grafana annotation created successfully."
+          fi
+
+      # -----------------------------------------------
+      # Grafana OnCall / Incident — optional, for prod failures
+      # Uncomment this step if you use Grafana OnCall
+      # -----------------------------------------------
+      # - name: Trigger Grafana OnCall Alert
+      #   if: inputs.environment == 'prod'
+      #   run: |
+      #     curl -s -X POST "${{ inputs.grafana-url }}/api/v1/integrations/<integration-id>/resolve" \   # <-- CHANGE THIS
+      #       -H "Content-Type: application/json" \
+      #       -H "Authorization: Bearer ${{ secrets.grafana-api-token }}" \
+      #       -d "{
+      #         \"title\": \"Deployment completed: ${{ inputs.service }} → prod\",
+      #         \"message\": \"Version ${VERSION} deployed to production.\",
+      #         \"state\": \"resolved\"
+      #       }"
+
+# ============================================================
+# USAGE EXAMPLE (add to your deployment workflow):
+#
+# jobs:
+#   deploy:
+#     # ... your deploy steps ...
+#
+#   notify-grafana:
+#     needs: deploy
+#     uses: ./.github/workflows/grafana-notify.yml
+#     with:
+#       service: my-api                      # <-- CHANGE THIS
+#       environment: production
+#       version: ${{ needs.deploy.outputs.version }}
+#       grafana-url: https://my-org.grafana.net  # <-- CHANGE THIS
+#       # dashboard-uid: "abc123"            # Optional: annotate specific dashboard
+#     secrets:
+#       grafana-api-token: ${{ secrets.GRAFANA_API_TOKEN }}
+# ============================================================

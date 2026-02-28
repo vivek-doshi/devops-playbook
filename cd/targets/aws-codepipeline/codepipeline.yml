@@ -1,0 +1,371 @@
+# ============================================================
+# TEMPLATE: AWS CodePipeline — Build, Test, Deploy (CloudFormation)
+# WHEN TO USE: Teams using AWS-native CI/CD instead of GitHub/GitLab
+# PREREQUISITES: CodeStar Connection to repo, ECR repository, ECS/EKS target
+# SECRETS NEEDED: None (uses IAM roles)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: cd/targets/aws-ecs/, cd/targets/aws-eks/, terraform/aws-ecs/
+# MATURITY: Stable
+# ============================================================
+#
+# This CloudFormation template creates a full CodePipeline with:
+#   Source (GitHub/CodeCommit) → Build (CodeBuild) → Deploy (ECS or EKS)
+#
+# Deploy this template:
+#   aws cloudformation deploy \
+#     --template-file codepipeline.yml \
+#     --stack-name my-app-pipeline \
+#     --capabilities CAPABILITY_IAM \
+#     --parameter-overrides \
+#         ProjectName=my-app \
+#         RepositoryId=my-org/my-repo \
+#         BranchName=main \
+#         EcsClusterName=my-cluster \
+#         EcsServiceName=my-service
+#
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "CI/CD Pipeline — CodePipeline + CodeBuild → ECS Fargate"
+
+# ============================================================
+# PARAMETERS
+# ============================================================
+Parameters:
+  ProjectName:
+    Type: String
+    Description: "Project name — used for naming all resources"
+    Default: my-app                # <-- CHANGE THIS
+
+  RepositoryId:
+    Type: String
+    Description: "GitHub repository (org/repo format) or CodeCommit repo name"
+    Default: my-org/my-repo        # <-- CHANGE THIS
+
+  BranchName:
+    Type: String
+    Description: "Branch to trigger the pipeline"
+    Default: main
+
+  ConnectionArn:
+    Type: String
+    Description: "ARN of the CodeStar Connection to GitHub (create in Console → Settings → Connections)"
+    # <-- CHANGE THIS: create connection first, then paste ARN
+
+  EcrRepositoryName:
+    Type: String
+    Description: "ECR repository name for built images"
+    Default: my-app                # <-- CHANGE THIS
+
+  EcsClusterName:
+    Type: String
+    Description: "ECS cluster to deploy to"
+    Default: my-cluster            # <-- CHANGE THIS
+
+  EcsServiceName:
+    Type: String
+    Description: "ECS service to update"
+    Default: my-service            # <-- CHANGE THIS
+
+  ContainerName:
+    Type: String
+    Description: "Container name in the ECS task definition"
+    Default: my-app                # <-- CHANGE THIS
+
+  BuildComputeType:
+    Type: String
+    Description: "CodeBuild compute type"
+    Default: BUILD_GENERAL1_SMALL
+    AllowedValues:
+      - BUILD_GENERAL1_SMALL
+      - BUILD_GENERAL1_MEDIUM
+      - BUILD_GENERAL1_LARGE
+
+Resources:
+  # ============================================================
+  # S3 Bucket — stores pipeline artifacts between stages
+  # ============================================================
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-pipeline-artifacts-${AWS::AccountId}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: CleanupOldArtifacts
+            Status: Enabled
+            ExpirationInDays: 30
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: cloudformation
+
+  # ============================================================
+  # IAM Role — CodeBuild
+  # ============================================================
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-codebuild-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # CloudWatch Logs
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ProjectName}-build*"
+              # S3 artifacts
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub "${ArtifactBucket.Arn}/*"
+              # ECR — push images
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${EcrRepositoryName}"
+
+  # ============================================================
+  # IAM Role — CodePipeline
+  # ============================================================
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-codepipeline-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # S3 artifacts
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub "${ArtifactBucket.Arn}/*"
+              # CodeBuild
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: !GetAtt CodeBuildProject.Arn
+              # CodeStar Connection (GitHub)
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref ConnectionArn
+              # ECS deploy
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:DescribeTaskDefinition
+                  - ecs:DescribeTasks
+                  - ecs:ListTasks
+                  - ecs:RegisterTaskDefinition
+                  - ecs:UpdateService
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: "*"
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                      - ecs-tasks.amazonaws.com
+
+  # ============================================================
+  # CodeBuild Project — builds the Docker image
+  # ============================================================
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${ProjectName}-build"
+      Description: !Sub "Build Docker image for ${ProjectName}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      TimeoutInMinutes: 15
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+        PrivilegedMode: true      # Required for Docker builds
+        EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: ECR_REPOSITORY
+            Value: !Ref EcrRepositoryName
+          - Name: CONTAINER_NAME
+            Value: !Ref ContainerName
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo "Logging in to ECR..."
+                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+                - IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY
+                - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+            build:
+              commands:
+                - echo "Building Docker image..."
+                - docker build -t $IMAGE_URI:$IMAGE_TAG .
+                - docker tag $IMAGE_URI:$IMAGE_TAG $IMAGE_URI:latest
+            post_build:
+              commands:
+                - echo "Pushing Docker image..."
+                - docker push $IMAGE_URI:$IMAGE_TAG
+                - docker push $IMAGE_URI:latest
+                - echo "Writing image definitions for ECS deploy..."
+                - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$IMAGE_URI:$IMAGE_TAG" > imagedefinitions.json
+          artifacts:
+            files:
+              - imagedefinitions.json
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: cloudformation
+
+  # ============================================================
+  # CodePipeline — Source → Build → Deploy
+  # ============================================================
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub "${ProjectName}-pipeline"
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        # --- Source Stage ---
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+              Configuration:
+                ConnectionArn: !Ref ConnectionArn
+                FullRepositoryId: !Ref RepositoryId
+                BranchName: !Ref BranchName
+                DetectChanges: true
+                OutputArtifactFormat: CODE_ZIP
+              OutputArtifacts:
+                - Name: SourceArtifact
+
+        # --- Build Stage ---
+        - Name: Build
+          Actions:
+            - Name: DockerBuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
+
+        # --- Manual Approval (optional — remove for auto-deploy) ---
+        - Name: Approval
+          Actions:
+            - Name: ManualApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: "1"
+              Configuration:
+                CustomData: !Sub "Approve deployment of ${ProjectName} to ECS?"
+                # NotificationArn: arn:aws:sns:...   # <-- CHANGE THIS: SNS topic for approval emails
+
+        # --- Deploy Stage ---
+        - Name: Deploy
+          Actions:
+            - Name: DeployToECS
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: "1"
+              Configuration:
+                ClusterName: !Ref EcsClusterName
+                ServiceName: !Ref EcsServiceName
+                FileName: imagedefinitions.json
+              InputArtifacts:
+                - Name: BuildArtifact
+
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: cloudformation
+
+# ============================================================
+# OUTPUTS
+# ============================================================
+Outputs:
+  PipelineUrl:
+    Description: "CodePipeline console URL"
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/${ProjectName}-pipeline/view"
+
+  CodeBuildProjectName:
+    Description: "CodeBuild project name"
+    Value: !Ref CodeBuildProject
+
+  ArtifactBucketName:
+    Description: "S3 bucket for pipeline artifacts"
+    Value: !Ref ArtifactBucket

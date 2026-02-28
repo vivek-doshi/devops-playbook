@@ -1,0 +1,126 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Ruby on Rails Build & Test
+# WHEN TO USE: Any Rails 7+ project
+# PREREQUISITES: Gemfile, Gemfile.lock, database.yml with test config
+# SECRETS NEEDED: None / CODECOV_TOKEN for coverage upload
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/ruby/Dockerfile.rails
+# MATURITY: Stable
+# ============================================================
+
+name: Rails Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  RAILS_ENV: test
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        ruby-version: ["3.2", "3.3"]             # <-- CHANGE THIS: your supported Ruby versions
+
+    services:
+      postgres:                                   # <-- CHANGE THIS: remove if using SQLite
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:                                      # <-- CHANGE THIS: remove if not using Redis
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://test:test@localhost:5432/app_test  # <-- CHANGE THIS: match postgres service
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ matrix.ruby-version }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true                     # Caches gems automatically
+
+      - name: Set up Node.js (for asset pipeline)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"                     # <-- CHANGE THIS: remove if API-only
+          cache: yarn                            # <-- CHANGE THIS: use npm if not using Yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile       # <-- CHANGE THIS: remove if API-only
+
+      - name: Set up database
+        run: |
+          bundle exec rails db:schema:load
+
+      - name: Lint with RuboCop
+        run: bundle exec rubocop --parallel
+
+      - name: Security audit with Brakeman
+        run: bundle exec brakeman --no-pager --quiet
+
+      - name: Run tests
+        run: |
+          bundle exec rails test                 # <-- CHANGE THIS: use `bundle exec rspec` for RSpec
+
+      - name: Upload coverage
+        if: matrix.ruby-version == '3.3'
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage/.resultset.json         # <-- CHANGE THIS: path depends on SimpleCov config
+
+  # Build Docker image on main branch
+  docker:
+    name: Docker Build
+    needs: build-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/ruby/Dockerfile.rails     # <-- CHANGE THIS: path to your Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest

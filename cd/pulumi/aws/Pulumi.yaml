@@ -1,0 +1,3 @@
+name: aws-ecs-fargate
+description: ECS Fargate cluster with ALB and service deployment
+runtime: nodejs
