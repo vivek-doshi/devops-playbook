@@ -37,6 +37,21 @@
 **"I need to provision an EKS cluster with Terraform"**
 → Go to [`terraform/aws-eks/`](terraform/aws-eks/)
 
+**"I need to set up OIDC auth for GitHub Actions"**
+→ Go to [`docs/guides/github-actions-oidc.md`](docs/guides/github-actions-oidc.md)
+
+**"I need an AWS-native pipeline (CodePipeline)"**
+→ Go to [`cd/targets/aws-codepipeline/codepipeline.yml`](cd/targets/aws-codepipeline/codepipeline.yml)
+
+**"I need a Dockerfile for my Go service"**
+→ Go to [`docker/go/Dockerfile`](docker/go/Dockerfile)
+
+**"I need a CI pipeline for my Rails app"**
+→ Go to [`ci/github-actions/ruby/build-test.yml`](ci/github-actions/ruby/build-test.yml)
+
+**"I need to deploy infrastructure with Pulumi instead of Terraform"**
+→ Go to [`cd/pulumi/`](cd/pulumi/)
+
 ---
 
 ## 📁 Repository Structure
@@ -91,6 +106,14 @@ docker/
 ├── java/
 │   ├── Dockerfile.springboot   # Spring Boot — layered JAR for better cache reuse
 │   └── Dockerfile.gradle       # Gradle-based build — multi-stage with Gradle cache
+│
+├── go/
+│   ├── Dockerfile              # Multi-stage: golang build → distroless static binary
+│   └── .dockerignore
+│
+├── ruby/
+│   ├── Dockerfile.rails        # Multi-stage: bundle install + assets → ruby-slim runtime
+│   └── .dockerignore
 │
 └── _base/
     ├── Dockerfile.multistage   # Heavily annotated teaching example explaining every layer
@@ -169,6 +192,15 @@ ci/
 │   │   ├── reusable-security-scan.yml  # Trivy scan, uploads SARIF to GitHub Security tab
 │   │   └── reusable-notify-slack.yml   # Success/failure Slack notification
 │   │
+│   ├── go/
+│   │   └── build-test.yml          # go vet, golangci-lint, test with race + coverage
+│   │
+│   ├── ruby/
+│   │   └── build-test.yml          # bundler, RuboCop, Brakeman, minitest/RSpec, coverage
+│   │
+│   ├── terraform/
+│   │   └── plan-apply.yml          # Plan on PR, apply on merge — OIDC auth to any cloud
+│   │
 │   └── _strategies/                # Advanced pipeline patterns
 │       ├── matrix-build.yml        # Test across multiple OS / runtime versions simultaneously
 │       ├── monorepo-affected.yml   # Only trigger jobs for services that actually changed
@@ -180,6 +212,9 @@ ci/
 │   │
 │   ├── python/
 │   │   └── .gitlab-ci.yml          # Stages: lint → test → security → docker
+│   │
+│   ├── terraform/
+│   │   └── .gitlab-ci.yml          # Validate → plan → apply (manual gate)
 │   │
 │   ├── _includes/                  # Reusable CI fragments (use with `include:`)
 │   │   ├── .docker-build.yml       # Kaniko-based image build (works in rootless runners)
@@ -204,6 +239,9 @@ ci/
 │   │   ├── build-template.yml      # Reusable build steps parametrised by language
 │   │   ├── docker-template.yml     # ACR login + build + push
 │   │   └── test-template.yml       # Test run + result publishing + coverage
+│   │
+│   ├── terraform/
+│   │   └── azure-pipelines.yml     # Plan on PR, apply on merge via AzureCLI task
 │   │
 │   └── _strategies/
 │       ├── variable-groups.yml     # Linking pipeline variables to Azure Key Vault secrets
@@ -281,8 +319,27 @@ cd/
 │   ├── aws-ecs/
 │   │   └── github-actions-deploy.yml       # Push image → update ECS task definition → deploy
 │   │
-│   └── aws-lambda/
-│       └── serverless-deploy.yml           # Serverless Framework or SAM deploy workflow
+│   ├── aws-lambda/
+│   │   └── serverless-deploy.yml           # Serverless Framework or SAM deploy workflow
+│   │
+│   └── aws-codepipeline/               # AWS-native CI/CD (no GitHub/GitLab)
+│       ├── codepipeline.yml                # CloudFormation: Source → Build → Approve → Deploy
+│       └── buildspec.yml                   # CodeBuild spec: Docker build + test + push to ECR
+│
+├── pulumi/                          # Pulumi IaC (TypeScript) — alternative to Terraform
+│   ├── deploy.yml                  # GitHub Actions: preview on PR, up on merge
+│   ├── aws/                        # ECS Fargate cluster + ALB + service
+│   │   ├── index.ts
+│   │   ├── Pulumi.yaml
+│   │   └── Pulumi.prod.yaml
+│   ├── azure/                      # AKS cluster + ACR integration
+│   │   ├── index.ts
+│   │   ├── Pulumi.yaml
+│   │   └── Pulumi.prod.yaml
+│   └── gcp/                        # GKE cluster + Artifact Registry
+│       ├── index.ts
+│       ├── Pulumi.yaml
+│       └── Pulumi.prod.yaml
 │
 └── gitops/                         # GitOps-based continuous delivery
     ├── argocd/
@@ -406,8 +463,17 @@ Notification snippets to paste into any pipeline. They handle both success and f
 notifications/
 ├── slack-notify.yml        # Slack webhook — shows branch, commit, run link, pass/fail
 ├── teams-notify.yml        # Microsoft Teams adaptive card notification
-└── pagerduty-notify.yml    # PagerDuty — triggers incident on pipeline failure in prod
+├── pagerduty-notify.yml    # PagerDuty — triggers incident on pipeline failure in prod
+├── datadog-notify.yml      # Datadog — deployment event, DORA metrics, service check
+└── grafana-notify.yml      # Grafana — dashboard annotation for deployment correlation
 ```
+
+**Datadog integration sends three signals per deployment:**
+1. **Event** — appears in Event Stream, tagged by service/env/version
+2. **DORA Deployment** — feeds deployment frequency metrics in Datadog DORA dashboard
+3. **Service Check** — confirms deployment health status
+
+**Grafana integration creates dashboard annotations** — vertical markers on time-series graphs that let you visually correlate deployments with metric changes. Supports both global annotations and targeting specific dashboards by UID.
 
 ---
 
@@ -438,7 +504,8 @@ docs/
 │   ├── secrets-management.md       # How to handle secrets: Vault, Key Vault, Secrets Manager
 │   ├── branching-strategy.md       # GitFlow vs trunk-based — pros, cons, recommendations
 │   ├── versioning-strategy.md      # SemVer, CalVer, build numbers — what to use when
-│   └── environment-strategy.md     # dev → staging → prod promotion patterns
+│   ├── environment-strategy.md     # dev → staging → prod promotion patterns
+│   └── github-actions-oidc.md      # OIDC setup for Azure, AWS, GCP — step-by-step
 │
 └── diagrams/
     ├── pipeline-overview.drawio    # End-to-end pipeline architecture (editable in draw.io)
@@ -489,14 +556,14 @@ Please don't submit templates you haven't personally run. Untested templates ero
 
 ## 🗺️ Roadmap
 
-- [ ] Go (Dockerfile + CI)
-- [ ] Ruby on Rails (Dockerfile + CI)
+- [x] ~~Go (Dockerfile + CI)~~
+- [x] ~~Ruby on Rails (Dockerfile + CI)~~
 - [x] ~~Terraform infrastructure provisioning (AKS, EKS, GKE, App Service, ECS, Lambda)~~
-- [ ] Terraform plan/apply CI/CD pipeline templates
-- [ ] Pulumi CD examples
-- [ ] AWS CodePipeline target
-- [ ] Datadog / Grafana deployment notification integrations
-- [ ] GitHub Actions OIDC guide for all three major clouds
+- [x] ~~Terraform plan/apply CI/CD pipeline templates (GitHub Actions, GitLab CI, Azure Pipelines)~~
+- [x] ~~Datadog / Grafana deployment notification integrations~~
+- [x] ~~AWS CodePipeline target~~
+- [x] ~~GitHub Actions OIDC guide for all three major clouds~~
+- [x] ~~Pulumi CD examples~~
 
 ---
 
