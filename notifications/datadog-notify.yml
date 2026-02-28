@@ -1,0 +1,141 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Datadog Deployment Notification (Reusable)
+# WHEN TO USE: Tracking deployments in Datadog for APM correlation and DORA metrics
+# PREREQUISITES: Datadog account, API key
+# SECRETS NEEDED: datadog-api-key (Datadog API Key)
+# WHAT TO CHANGE: Datadog site, service name, environment tag
+# RELATED FILES: notifications/slack-notify.yml, notifications/grafana-notify.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Datadog Deployment Notification Template
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: "Service name as it appears in Datadog APM (e.g., my-api)"
+        required: true
+        type: string
+      environment:
+        description: "Deployment environment (dev, staging, prod)"
+        required: true
+        type: string
+      version:
+        description: "Version being deployed (semver, commit SHA, etc.)"
+        required: false
+        type: string
+        default: ""
+      datadog-site:
+        description: "Datadog site (datadoghq.com, datadoghq.eu, us3.datadoghq.com, etc.)"
+        required: false
+        type: string
+        default: "datadoghq.com"  # <-- CHANGE THIS: your Datadog region
+    secrets:
+      datadog-api-key:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      # -----------------------------------------------
+      # Deployment Event — appears in Datadog Event Stream
+      # and correlates with APM traces, error tracking, etc.
+      # -----------------------------------------------
+      - name: Send Deployment Event to Datadog
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ github.sha }}"
+          fi
+
+          curl -s -X POST "https://api.${{ inputs.datadog-site }}/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ secrets.datadog-api-key }}" \
+            -d "{
+              \"title\": \"Deployment: ${{ inputs.service }} → ${{ inputs.environment }}\",
+              \"text\": \"Deployed version ${VERSION} of ${{ inputs.service }} to ${{ inputs.environment }}.\\n\\nRepository: ${{ github.repository }}\\nBranch: ${{ github.ref_name }}\\nCommit: ${{ github.sha }}\\nTriggered by: ${{ github.actor }}\\n\\n[View pipeline run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\",
+              \"alert_type\": \"info\",
+              \"source_type_name\": \"github\",
+              \"tags\": [
+                \"service:${{ inputs.service }}\",
+                \"environment:${{ inputs.environment }}\",
+                \"version:${VERSION}\",
+                \"source:github-actions\",
+                \"repository:${{ github.repository }}\",
+                \"branch:${{ github.ref_name }}\"
+              ]
+            }"
+
+      # -----------------------------------------------
+      # DORA Metrics — Deployment Frequency tracking
+      # Uses the Datadog CI Visibility / DORA metrics API
+      # -----------------------------------------------
+      - name: Send DORA Deployment Metric
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ github.sha }}"
+          fi
+
+          TIMESTAMP=$(date +%s)
+
+          curl -s -X POST "https://api.${{ inputs.datadog-site }}/api/v2/dora/deployment" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ secrets.datadog-api-key }}" \
+            -d "{
+              \"data\": {
+                \"attributes\": {
+                  \"service\": \"${{ inputs.service }}\",
+                  \"started_at\": ${TIMESTAMP},
+                  \"finished_at\": ${TIMESTAMP},
+                  \"git\": {
+                    \"commit_sha\": \"${{ github.sha }}\",
+                    \"repository_url\": \"${{ github.server_url }}/${{ github.repository }}\"
+                  },
+                  \"env\": \"${{ inputs.environment }}\",
+                  \"version\": \"${VERSION}\"
+                }
+              }
+            }"
+
+      # -----------------------------------------------
+      # Service Check — monitors deployment health in Datadog
+      # -----------------------------------------------
+      - name: Send Service Check
+        run: |
+          TIMESTAMP=$(date +%s)
+
+          curl -s -X POST "https://api.${{ inputs.datadog-site }}/api/v1/check_run" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ secrets.datadog-api-key }}" \
+            -d "{
+              \"check\": \"deployment.status\",
+              \"host_name\": \"github-actions\",
+              \"status\": 0,
+              \"message\": \"Deployment of ${{ inputs.service }} to ${{ inputs.environment }} completed successfully.\",
+              \"tags\": [
+                \"service:${{ inputs.service }}\",
+                \"environment:${{ inputs.environment }}\"
+              ],
+              \"timestamp\": ${TIMESTAMP}
+            }"
+
+# ============================================================
+# USAGE EXAMPLE (add to your deployment workflow):
+#
+# jobs:
+#   deploy:
+#     # ... your deploy steps ...
+#
+#   notify-datadog:
+#     needs: deploy
+#     uses: ./.github/workflows/datadog-notify.yml
+#     with:
+#       service: my-api                      # <-- CHANGE THIS
+#       environment: production
+#       version: ${{ needs.deploy.outputs.version }}
+#     secrets:
+#       datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+# ============================================================
