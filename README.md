@@ -34,6 +34,9 @@
 **"I need to add security scanning to my pipeline"**
 → Go to [`security/`](security/) and pick your scanner
 
+**"I need to provision an EKS cluster with Terraform"**
+→ Go to [`terraform/aws-eks/`](terraform/aws-eks/)
+
 ---
 
 ## 📁 Repository Structure
@@ -44,6 +47,7 @@ cicd-reference/
 ├── compose/              # Docker Compose for local dev environments
 ├── ci/                   # CI pipeline templates (GitHub, GitLab, Azure, Jenkins)
 ├── cd/                   # CD pipeline templates + K8s manifests + Helm charts
+├── terraform/            # Infrastructure provisioning (AKS, EKS, GKE, ECS, Lambda)
 ├── security/             # Security scanning integrations
 ├── quality/              # Code quality configs (SonarQube, linters, formatters)
 ├── notifications/        # Slack, Teams, PagerDuty alert templates
@@ -296,6 +300,53 @@ Use **Kustomize** when you want plain YAML you can read and audit without a temp
 
 ---
 
+## 🏗️ `terraform/` — Infrastructure Provisioning
+
+Standalone Terraform configurations for provisioning the cloud infrastructure your pipelines deploy to. Each folder is a self-contained root module with `main.tf`, `variables.tf`, and `outputs.tf`.
+
+```
+terraform/
+├── azure-aks/                      # AKS cluster + VNet + ACR + Log Analytics
+│   ├── main.tf                     # All resources: RG, VNet, ACR, AKS, monitoring
+│   ├── variables.tf                # Cluster size, K8s version, networking CIDRs
+│   └── outputs.tf                  # Cluster name, ACR URL, kubeconfig command
+│
+├── aws-eks/                        # EKS cluster + VPC + ECR + IAM
+│   ├── main.tf                     # VPC, subnets, NAT, IAM roles, EKS, node group
+│   ├── variables.tf                # Region, AZs, instance type, node counts
+│   └── outputs.tf                  # Cluster endpoint, ECR URL, kubeconfig command
+│
+├── gcp-gke/                        # GKE cluster + VPC + Artifact Registry
+│   ├── main.tf                     # VPC, subnet, NAT, GKE with Workload Identity
+│   ├── variables.tf                # Project ID, region, machine type, pod/service CIDRs
+│   └── outputs.tf                  # Cluster name, Artifact Registry URL, gcloud command
+│
+├── azure-app-service/              # App Service + staging slot (no K8s)
+│   ├── main.tf                     # App Service Plan, Web App, staging slot, App Insights
+│   ├── variables.tf                # SKU, runtime stack, Docker registry config
+│   └── outputs.tf                  # App URL, staging URL, managed identity
+│
+├── aws-ecs/                        # ECS Fargate + ALB + ECR
+│   ├── main.tf                     # VPC, ECS cluster, task def, ALB, autoscaling
+│   ├── variables.tf                # CPU/memory, container port, scaling limits
+│   └── outputs.tf                  # ALB URL, ECR URL, cluster/service names
+│
+└── aws-lambda/                     # Lambda + API Gateway
+    ├── main.tf                     # Lambda function, HTTP API Gateway, IAM, logging
+    ├── variables.tf                # Runtime, handler, memory, timeout, CORS
+    └── outputs.tf                  # API Gateway URL, function ARN, log group
+```
+
+**Key patterns used across all Terraform configs:**
+- Pinned provider versions in `required_providers`
+- `project` + `environment` naming convention on all resources
+- Consistent tagging (`Project`, `Environment`, `ManagedBy`)
+- Remote state backend commented out (ready to uncomment)
+- `# <-- CHANGE THIS` markers on every line you need to customise
+- Container registry provisioned alongside compute (ACR, ECR, Artifact Registry)
+
+---
+
 ## 🔒 `security/` — Security Scanning
 
 Security checks that can be dropped into any pipeline. Each file is self-contained and includes instructions for viewing results.
@@ -440,7 +491,8 @@ Please don't submit templates you haven't personally run. Untested templates ero
 
 - [ ] Go (Dockerfile + CI)
 - [ ] Ruby on Rails (Dockerfile + CI)
-- [ ] Terraform plan/apply pipeline templates
+- [x] ~~Terraform infrastructure provisioning (AKS, EKS, GKE, App Service, ECS, Lambda)~~
+- [ ] Terraform plan/apply CI/CD pipeline templates
 - [ ] Pulumi CD examples
 - [ ] AWS CodePipeline target
 - [ ] Datadog / Grafana deployment notification integrations
