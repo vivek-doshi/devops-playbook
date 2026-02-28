@@ -1,0 +1,37 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Grype Container Scan (Anchore)
+# WHEN TO USE: Alternative to Trivy for Docker image vulnerability scanning
+# PREREQUISITES: Dockerfile in the repository
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Image build command and Dockerfile path
+# RELATED FILES: security/container-scanning/trivy-scan.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Grype Container Scan
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  grype:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t my-app:scan .
+
+      - name: Scan with Grype
+        uses: anchore/scan-action@v3
+        id: scan
+        with:
+          image: my-app:scan
+          severity-cutoff: high
+          output-format: sarif
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}

@@ -1,0 +1,40 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Deploy to AKS
+# WHEN TO USE: AKS deployment from Azure DevOps pipelines
+# PREREQUISITES: AKS cluster, Azure service connection
+# SECRETS NEEDED: AzureServiceConnection, AKS_RESOURCE_GROUP, AKS_CLUSTER_NAME
+# WHAT TO CHANGE: Pipeline resource, environment name, namespace
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Deploy to AKS
+trigger: none  # Triggered by CD pipeline, not directly
+
+resources:
+  pipelines:
+    - pipeline: ci-build
+      source: CI-Build-Pipeline
+      trigger:
+        branches:
+          include: [main]
+
+stages:
+  - stage: Deploy
+    jobs:
+      - deployment: DeployAKS
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@1
+                  displayName: Deploy to AKS
+                  inputs:
+                    action: deploy
+                    connectionType: azureResourceManager
+                    azureSubscriptionConnection: $(AzureServiceConnection)
+                    azureResourceGroup: $(AKS_RESOURCE_GROUP)
+                    kubernetesCluster: $(AKS_CLUSTER_NAME)
+                    namespace: production
+                    manifests: cd/kubernetes/_overlays/prod/kustomization.yaml

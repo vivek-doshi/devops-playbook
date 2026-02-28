@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+# ============================================================
+# TEMPLATE: Dockerfile — ASP.NET Core Web API
+# WHEN TO USE: Any ASP.NET Core / .NET 8+ Web API project
+# PREREQUISITES: .NET solution with a publishable web project
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/dotnet/.dockerignore
+# MATURITY: Stable
+# ============================================================
+
+# ── Stage 1: Build ──────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+WORKDIR /src
+
+# Restore dependencies first (better layer caching)
+COPY ["MyApp/MyApp.csproj", "MyApp/"]                     # <-- CHANGE THIS: your project path
+RUN dotnet restore "MyApp/MyApp.csproj"                     # <-- CHANGE THIS: your .csproj path
+
+# Copy source and publish
+COPY . .
+WORKDIR "/src/MyApp"                                        # <-- CHANGE THIS: your project folder
+RUN dotnet publish "MyApp.csproj" \                         # <-- CHANGE THIS: your .csproj name
+    -c Release \
+    -o /app/publish \
+    /p:UseAppHost=false \
+    --no-restore
+
+# ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
+WORKDIR /app
+
+# Security: run as non-root user
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+# Copy only published output
+COPY --from=build --chown=appuser:appgroup /app/publish .
+
+USER appuser
+
+# Health check — uses wget (available in Alpine; curl is NOT included)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8080/health || exit 1      # <-- CHANGE THIS: your health endpoint
+
+ENV ASPNETCORE_URLS=http://+:8080                           # <-- CHANGE THIS: your port
+EXPOSE 8080                                                 # <-- CHANGE THIS: your port
+
+ENTRYPOINT ["dotnet", "MyApp.dll"]                          # <-- CHANGE THIS: your assembly name

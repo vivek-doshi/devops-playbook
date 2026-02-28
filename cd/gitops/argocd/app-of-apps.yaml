@@ -1,0 +1,33 @@
+﻿# ============================================================
+# TEMPLATE: ArgoCD App of Apps — Multi-Application Management
+# WHEN TO USE: Managing multiple ArgoCD Applications from one parent
+# PREREQUISITES: ArgoCD installed, Application manifests in Git
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: repoURL, path to Application manifests directory
+# RELATED FILES: cd/gitops/argocd/application.yaml
+# MATURITY: Stable
+# ============================================================
+
+# ArgoCD App of Apps pattern
+# One application that manages all other applications
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/my-org/gitops-repo.git
+    targetRevision: HEAD
+    path: argocd/apps   # Directory containing Application manifests
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

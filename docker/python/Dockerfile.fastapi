@@ -1,0 +1,31 @@
+﻿# syntax=docker/dockerfile:1
+# ============================================================
+# TEMPLATE: Dockerfile — FastAPI Application
+# WHEN TO USE: FastAPI applications served via Uvicorn
+# PREREQUISITES: requirements.txt with fastapi and uvicorn
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/python/.dockerignore
+# MATURITY: Stable
+# ============================================================
+
+FROM python:3.12-slim AS base
+WORKDIR /app
+
+# Install wget for healthcheck (curl is NOT included in python:slim)
+RUN apt-get update && apt-get install -y --no-install-recommends wget && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=appuser:appgroup . .
+USER appuser
+
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8000/health || exit 1      # <-- CHANGE THIS: your health endpoint
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]  # <-- CHANGE THIS: your app module

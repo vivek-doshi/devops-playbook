@@ -1,0 +1,43 @@
+﻿# syntax=docker/dockerfile:1
+# ============================================================
+# TEMPLATE: Dockerfile — Spring Boot (Gradle)
+# WHEN TO USE: Spring Boot applications built with Gradle
+# PREREQUISITES: build.gradle with bootJar task
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/java/Dockerfile.springboot (Maven variant)
+# MATURITY: Stable
+# ============================================================
+
+# ── Stage 1: Build ───────────────────────────────────────────────────────────
+FROM gradle:8.7-jdk21 AS build
+WORKDIR /app
+
+# Download dependencies first for better layer caching
+COPY build.gradle settings.gradle ./
+COPY gradle ./gradle
+RUN gradle dependencies -q --no-daemon
+
+COPY src ./src
+RUN gradle bootJar -x test -q --no-daemon
+
+# ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+FROM eclipse-temurin:21-jre-alpine AS runtime
+WORKDIR /app
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=build --chown=appuser:appgroup /app/build/libs/*.jar app.jar
+
+USER appuser
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+
+# JVM tuning for containers
+ENTRYPOINT ["java", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-jar", "app.jar"]

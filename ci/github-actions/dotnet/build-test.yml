@@ -1,0 +1,58 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — .NET Build & Test
+# WHEN TO USE: Any ASP.NET Core / .NET 8+ project
+# PREREQUISITES: None (self-contained)
+# SECRETS NEEDED: None for CI / CODECOV_TOKEN for coverage upload
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: ci/github-actions/dotnet/sonar-scan.yml
+# MATURITY: Stable
+# ============================================================
+
+name: .NET Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: "8.0.x"
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release \
+          --logger trx \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults/
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          directory: TestResults

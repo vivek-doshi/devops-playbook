@@ -1,0 +1,66 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — .NET Build & Test
+# WHEN TO USE: .NET projects in Azure DevOps
+# PREREQUISITES: .NET solution in the repository root
+# SECRETS NEEDED: None for CI
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: ci/azure-pipelines/_templates/build-template.yml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — .NET Build & Test
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  buildConfiguration: Release
+  dotnetVersion: "8.0.x"
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    displayName: Build & Test
+    jobs:
+      - job: BuildTest
+        steps:
+          - task: UseDotNet@2
+            displayName: Install .NET SDK
+            inputs:
+              version: $(dotnetVersion)
+
+          - task: DotNetCoreCLI@2
+            displayName: Restore
+            inputs:
+              command: restore
+
+          - task: DotNetCoreCLI@2
+            displayName: Build
+            inputs:
+              command: build
+              arguments: --configuration $(buildConfiguration) --no-restore
+
+          - task: DotNetCoreCLI@2
+            displayName: Test
+            inputs:
+              command: test
+              arguments: --configuration $(buildConfiguration) --logger trx --collect:"XPlat Code Coverage"
+
+          - task: PublishTestResults@2
+            condition: always()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: "**/*.trx"
+
+          - task: PublishCodeCoverageResults@2
+            inputs:
+              summaryFileLocation: "**/coverage.cobertura.xml"

@@ -1,0 +1,61 @@
+﻿# syntax=docker/dockerfile:1
+# ============================================================
+# TEMPLATE: Annotated Multi-stage Dockerfile — Teaching Example
+# WHEN TO USE: Learning reference for multi-stage Docker builds
+# PREREQUISITES: Node.js project with package.json and build script
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Adapt patterns to your stack
+# RELATED FILES: docker/_base/security-hardened.Dockerfile
+# MATURITY: Stable
+# ============================================================
+# A multi-stage build separates build-time tools from the final runtime image.
+# Only the last stage is used when you run `docker build` with no --target flag.
+
+# ── Stage 1: Dependencies ────────────────────────────────────────────────────
+# Use a full SDK image for building — this stage will NOT be shipped
+FROM node:22-alpine AS deps
+WORKDIR /app
+
+# LAYER CACHE TIP: Copy package files BEFORE source code.
+# If source changes but packages don't, this layer is reused.
+COPY package*.json ./
+RUN npm ci --ignore-scripts   # --ignore-scripts prevents malicious postinstall
+
+# ── Stage 2: Builder ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS build
+WORKDIR /app
+
+# Bring installed deps from the previous stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Now copy app source
+COPY . .
+
+# Run your build step (TypeScript compile, webpack bundle, etc.)
+RUN npm run build
+
+# ── Stage 3: Runtime ─────────────────────────────────────────────────────────
+# Minimal base — no build tools, smaller attack surface
+FROM node:22-alpine AS runtime
+WORKDIR /app
+
+# SECURITY: Always run as a non-root user in production
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Copy only the compiled output — not node_modules dev deps, not source
+COPY --from=build --chown=appuser:appgroup /app/dist ./dist
+
+# Install only production deps in the final image
+COPY package*.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
+USER appuser
+
+# HEALTHCHECK lets orchestrators know when the container is ready
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+EXPOSE 3000
+
+# Use exec form (JSON array) — not shell form — so signals are received properly
+CMD ["node", "dist/index.js"]

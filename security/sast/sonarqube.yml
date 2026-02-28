@@ -1,0 +1,31 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — SonarQube / SonarCloud Scan
+# WHEN TO USE: Code quality and security scanning on any codebase
+# PREREQUISITES: SonarQube/SonarCloud project configured
+# SECRETS NEEDED: SONAR_TOKEN
+# WHAT TO CHANGE: SONAR_HOST_URL variable
+# RELATED FILES: quality/sonar-project.properties
+# MATURITY: Stable
+# ============================================================
+
+name: SonarQube Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}

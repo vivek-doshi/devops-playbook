@@ -1,0 +1,71 @@
+﻿# ============================================================
+# TEMPLATE: Docker Compose — Python + PostgreSQL + Redis
+# WHEN TO USE: Local development for Python APIs with database and cache
+# PREREQUISITES: Docker and Docker Compose v2+
+# SECRETS NEEDED: POSTGRES_PASSWORD (in .env file)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/python/Dockerfile.fastapi
+# MATURITY: Stable
+# ============================================================
+
+# Python API + PostgreSQL + Redis — Local Dev Stack
+
+services:
+  api:
+    build:
+      context: ../../
+      dockerfile: docker/python/Dockerfile.fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/appdb
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app   # hot reload in dev
+    networks:
+      - app-net
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=appdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-net
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  app-net:
+    driver: bridge

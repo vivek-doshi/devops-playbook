@@ -1,0 +1,43 @@
+﻿# syntax=docker/dockerfile:1
+# ============================================================
+# TEMPLATE: Dockerfile — Spring Boot (Maven)
+# WHEN TO USE: Spring Boot applications built with Maven
+# PREREQUISITES: pom.xml with spring-boot-maven-plugin
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/java/Dockerfile.gradle
+# MATURITY: Stable
+# ============================================================
+
+# ── Stage 1: Build ───────────────────────────────────────────────────────────
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
+
+# Download dependencies first for better layer caching
+COPY pom.xml .
+RUN mvn dependency:go-offline -q
+
+COPY src ./src
+RUN mvn package -DskipTests -q
+
+# ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+FROM eclipse-temurin:21-jre-alpine AS runtime
+WORKDIR /app
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Use layered JAR for better Docker layer caching
+COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
+
+USER appuser
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+
+# JVM tuning for containers
+ENTRYPOINT ["java", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-jar", "app.jar"]

@@ -1,0 +1,23 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Deploy to AWS EKS
+# WHEN TO USE: Deploying to EKS from GitLab CI/CD
+# PREREQUISITES: AWS IAM credentials in GitLab variables
+# SECRETS NEEDED: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (or IAM role)
+# WHAT TO CHANGE: Cluster name, region, overlay path
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+# GitLab CI — Deploy to AWS EKS
+deploy-eks:
+  stage: deploy
+  image: amazon/aws-cli:latest
+  script:
+    - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+    - kubectl apply -k cd/kubernetes/_overlays/prod
+    - kubectl rollout status deployment/app -n production
+  environment:
+    name: production
+    url: https://app.example.com
+  only:
+    - main

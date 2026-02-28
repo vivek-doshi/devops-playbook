@@ -1,0 +1,50 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Python Build & Test
+# WHEN TO USE: Python projects in Azure DevOps
+# PREREQUISITES: requirements.txt and requirements-dev.txt
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: quality/python/pyproject.toml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Python Build & Test
+trigger:
+  branches:
+    include: [main, develop]
+
+pool:
+  vmImage: ubuntu-latest
+
+strategy:
+  matrix:
+    Python311:
+      python.version: "3.11"
+    Python312:
+      python.version: "3.12"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(python.version)
+
+  - script: |
+      pip install --upgrade pip
+      pip install -r requirements.txt -r requirements-dev.txt
+    displayName: Install dependencies
+
+  - script: ruff check . && black --check .
+    displayName: Lint & Format check
+
+  - script: |
+      pytest --junitxml=test-results.xml --cov=. --cov-report=xml
+    displayName: Test
+
+  - task: PublishTestResults@2
+    condition: always()
+    inputs:
+      testResultsFiles: test-results.xml
+
+  - task: PublishCodeCoverageResults@2
+    inputs:
+      summaryFileLocation: coverage.xml

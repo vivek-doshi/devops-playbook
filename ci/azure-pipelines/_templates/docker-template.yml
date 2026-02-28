@@ -1,0 +1,31 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Docker Build & Push Template
+# WHEN TO USE: Pushing Docker images to Azure Container Registry
+# PREREQUISITES: ACR service connection configured in Azure DevOps
+# SECRETS NEEDED: containerRegistry service connection
+# WHAT TO CHANGE: Parameters when referencing this template
+# RELATED FILES: ci/azure-pipelines/_templates/build-template.yml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Docker Build Template
+parameters:
+  - name: imageName
+    type: string
+  - name: dockerfilePath
+    type: string
+    default: Dockerfile
+  - name: containerRegistry
+    type: string
+
+steps:
+  - task: Docker@2
+    displayName: Build and push Docker image
+    inputs:
+      command: buildAndPush
+      repository: ${{ parameters.imageName }}
+      dockerfile: ${{ parameters.dockerfilePath }}
+      containerRegistry: ${{ parameters.containerRegistry }}
+      tags: |
+        $(Build.SourceVersion)
+        latest

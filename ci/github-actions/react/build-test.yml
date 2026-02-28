@@ -1,0 +1,48 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — React Build & Test
+# WHEN TO USE: Any React application (CRA, Vite, Next.js)
+# PREREQUISITES: package.json with lint, test, and build scripts
+# SECRETS NEEDED: None / CODECOV_TOKEN for coverage
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/react/Dockerfile
+# MATURITY: Stable
+# ============================================================
+
+name: React Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --watchAll=false --coverage --ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          directory: coverage/

@@ -1,0 +1,24 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Reusable Slack/Teams Notification
+# WHEN TO USE: Post-pipeline notifications to messaging platforms
+# PREREQUISITES: SLACK_WEBHOOK_URL variable configured in GitLab
+# SECRETS NEEDED: SLACK_WEBHOOK_URL
+# WHAT TO CHANGE: Webhook URL and message format
+# RELATED FILES: notifications/slack-notify.yml
+# MATURITY: Stable
+# ============================================================
+
+# Reusable Slack notification job
+.notify:
+  stage: .post
+  image: alpine:latest
+  script:
+    - apk add --no-cache curl
+    - |
+      STATUS="${CI_JOB_STATUS:-unknown}"
+      COLOR="good"
+      if [ "$STATUS" != "success" ]; then COLOR="danger"; fi
+      curl -X POST "$SLACK_WEBHOOK_URL" \
+        -H "Content-Type: application/json" \
+        -d "{\"text\":\"Pipeline $STATUS for $CI_PROJECT_NAME ($CI_COMMIT_REF_NAME)\"}"
+  when: always

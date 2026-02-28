@@ -1,0 +1,45 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Reusable Slack Notification
+# WHEN TO USE: Call from any workflow to send Slack alerts
+# PREREQUISITES: Slack Incoming Webhook URL configured
+# SECRETS NEEDED: slack-webhook (Slack Incoming Webhook URL)
+# WHAT TO CHANGE: Inputs when calling this workflow
+# RELATED FILES: notifications/slack-notify.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Reusable Slack Notify
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string  # success | failure | cancelled
+      message:
+        required: false
+        type: string
+    secrets:
+      slack-webhook:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "${{ inputs.status == 'success' && '✅' || '❌' }} *${{ github.repository }}* — ${{ inputs.message || github.workflow }} (${{ github.ref_name }})",
+              "attachments": [{
+                "color": "${{ inputs.status == 'success' && 'good' || 'danger' }}",
+                "fields": [
+                  { "title": "Run", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.slack-webhook }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

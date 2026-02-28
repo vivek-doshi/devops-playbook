@@ -1,0 +1,58 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Python Build & Test
+# WHEN TO USE: Any Python project with pytest
+# PREREQUISITES: requirements.txt and requirements-dev.txt
+# SECRETS NEEDED: None / CODECOV_TOKEN for coverage
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: quality/python/pyproject.toml
+# MATURITY: Stable
+# ============================================================
+
+name: Python Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint with ruff
+        run: ruff check .
+
+      - name: Format check with black
+        run: black --check .
+
+      - name: Type check with mypy
+        run: mypy .
+
+      - name: Test with pytest
+        run: pytest --cov=. --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.xml

@@ -1,0 +1,40 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Matrix Build Strategy
+# WHEN TO USE: Testing across multiple OS / runtime versions
+# PREREQUISITES: Node.js project (adapt for other runtimes)
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Matrix values for your target platforms
+# RELATED FILES: None
+# MATURITY: Stable
+# ============================================================
+
+name: Matrix Build Example
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }} / ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false  # Don't cancel other matrix jobs on failure
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ["18", "20"]
+        exclude:
+          - os: macos-latest
+            node: "18"  # Skip this combination
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - run: npm ci
+      - run: npm test

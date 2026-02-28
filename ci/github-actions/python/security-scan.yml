@@ -1,0 +1,55 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Python Security Scan
+# WHEN TO USE: Python projects needing SAST + dependency vulnerability checks
+# PREREQUISITES: requirements.txt
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: security/dependency-audit/pip-audit.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Python Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+
+jobs:
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install security tools
+        run: pip install bandit pip-audit
+
+      - name: Run Bandit (SAST)
+        run: bandit -r . -f json -o bandit-report.json --exit-zero  # <-- CHANGE THIS: adjust -r path
+
+      - name: Run pip-audit (dependency CVEs)
+        run: pip-audit --format json --output pip-audit-report.json || true
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            pip-audit-report.json

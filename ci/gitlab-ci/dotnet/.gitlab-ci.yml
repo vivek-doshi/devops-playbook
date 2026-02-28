@@ -1,0 +1,58 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — .NET Build, Test, Scan & Package
+# WHEN TO USE: .NET 8+ projects hosted on GitLab
+# PREREQUISITES: .NET solution in the repository root
+# SECRETS NEEDED: CI_REGISTRY_* (automatic in GitLab)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: ci/gitlab-ci/_includes/.docker-build.yml
+# MATURITY: Stable
+# ============================================================
+
+# .NET GitLab CI Pipeline
+
+include:
+  - local: ci/gitlab-ci/_includes/.docker-build.yml
+  - local: ci/gitlab-ci/_includes/.sast-scan.yml
+
+variables:
+  DOTNET_VERSION: "8.0"
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+stages:
+  - build
+  - test
+  - scan
+  - package
+  - deploy
+
+build:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - dotnet restore
+    - dotnet build --no-restore --configuration Release
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+
+test:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - dotnet test --configuration Release
+      --logger "junit;LogFilePath=test-results.xml"
+      --collect:"XPlat Code Coverage"
+  artifacts:
+    when: always
+    reports:
+      junit: test-results.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: "**/coverage.cobertura.xml"
+  coverage: '/Total\s+\|\s+(\d+\.?\d+)/'
+
+docker-build:
+  extends: .docker-build
+  variables:
+    DOCKERFILE: docker/dotnet/Dockerfile.api

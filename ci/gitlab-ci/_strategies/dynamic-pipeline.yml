@@ -1,0 +1,31 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Dynamic Pipeline Generation
+# WHEN TO USE: Generate child pipeline YAML at runtime based on changed files
+# PREREQUISITES: Python script at scripts/generate-pipeline.py
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Script path and generated pipeline structure
+# RELATED FILES: ci/gitlab-ci/_strategies/parent-child-pipeline.yml
+# MATURITY: Beta
+# ============================================================
+
+# Dynamic Pipeline — generate child pipeline YAML at runtime
+stages:
+  - generate
+  - trigger
+
+generate-pipeline:
+  stage: generate
+  image: python:3.12-slim
+  script:
+    - python scripts/generate-pipeline.py > generated-pipeline.yml
+  artifacts:
+    paths:
+      - generated-pipeline.yml
+
+trigger-generated:
+  stage: trigger
+  trigger:
+    include:
+      - artifact: generated-pipeline.yml
+        job: generate-pipeline
+    strategy: depend

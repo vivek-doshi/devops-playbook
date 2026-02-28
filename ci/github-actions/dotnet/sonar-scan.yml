@@ -1,0 +1,52 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — .NET SonarQube/SonarCloud Scan
+# WHEN TO USE: .NET projects needing code quality gates and PR decoration
+# PREREQUISITES: SonarQube or SonarCloud project configured
+# SECRETS NEEDED: SONAR_TOKEN
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: quality/sonar-project.properties
+# MATURITY: Stable
+# ============================================================
+
+name: .NET SonarQube Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonar:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history required by SonarQube
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Begin SonarQube analysis
+        run: |
+          dotnet-sonarscanner begin \
+            /k:"${{ vars.SONAR_PROJECT_KEY }}" \
+            /d:sonar.host.url="${{ vars.SONAR_HOST_URL }}" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+
+      - name: Build
+        run: dotnet build --configuration Release
+
+      - name: Test with coverage
+        run: dotnet test --collect:"XPlat Code Coverage;Format=opencover"
+
+      - name: End SonarQube analysis
+        run: dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"

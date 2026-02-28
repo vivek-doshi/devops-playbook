@@ -1,0 +1,49 @@
+﻿# ============================================================
+# TEMPLATE: ArgoCD ApplicationSet — Auto-generate Applications
+# WHEN TO USE: Creating one ArgoCD Application per service/environment
+# PREREQUISITES: ArgoCD installed, ApplicationSet controller
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: repoURL, directory path, template namespace
+# RELATED FILES: cd/gitops/argocd/application.yaml
+# MATURITY: Beta
+# ============================================================
+
+# ArgoCD ApplicationSet — generate apps from a list or Git directories
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: microservices
+  namespace: argocd
+spec:
+  generators:
+    # Git generator: create one app per directory in the repo
+    - git:
+        repoURL: https://github.com/my-org/gitops-repo.git
+        revision: HEAD
+        directories:
+          - path: services/*
+
+    # List generator: create apps from a hardcoded list
+    # - list:
+    #     elements:
+    #       - service: user-service
+    #         namespace: production
+    #       - service: order-service
+    #         namespace: production
+
+  template:
+    metadata:
+      name: "{{path.basename}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/my-org/gitops-repo.git
+        targetRevision: HEAD
+        path: "{{path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: production
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

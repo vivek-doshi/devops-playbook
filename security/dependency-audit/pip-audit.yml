@@ -1,0 +1,39 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — pip-audit Dependency Audit
+# WHEN TO USE: Python projects to scan for vulnerable dependencies
+# PREREQUISITES: requirements.txt in the repository
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Requirements file path if different
+# RELATED FILES: ci/github-actions/python/security-scan.yml
+# MATURITY: Stable
+# ============================================================
+
+name: pip-audit Dependency Audit
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 1"
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Run pip-audit
+        run: pip-audit -r requirements.txt --format json -o pip-audit.json || true
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: pip-audit.json

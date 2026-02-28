@@ -1,0 +1,30 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Reusable Docker Build (Kaniko)
+# WHEN TO USE: Building Docker images in GitLab CI (works in rootless runners)
+# PREREQUISITES: Dockerfile in the repository
+# SECRETS NEEDED: CI_REGISTRY_* (automatic in GitLab)
+# WHAT TO CHANGE: Override DOCKERFILE and IMAGE_TAG variables
+# RELATED FILES: ci/gitlab-ci/dotnet/.gitlab-ci.yml
+# MATURITY: Stable
+# ============================================================
+
+# Reusable Docker Build job — uses Kaniko (no Docker-in-Docker required)
+.docker-build:
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  variables:
+    DOCKERFILE: Dockerfile
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  script:
+    - |
+      /kaniko/executor \
+        --context "$CI_PROJECT_DIR" \
+        --dockerfile "$CI_PROJECT_DIR/$DOCKERFILE" \
+        --destination "$IMAGE_TAG" \
+        --destination "$CI_REGISTRY_IMAGE:latest" \
+        --cache=true \
+        --cache-repo "$CI_REGISTRY_IMAGE/cache"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"

@@ -1,0 +1,20 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Reusable SAST Scan (Semgrep)
+# WHEN TO USE: Static analysis on any codebase
+# PREREQUISITES: None
+# SECRETS NEEDED: None (optional: SEMGREP_APP_TOKEN for Semgrep Cloud)
+# WHAT TO CHANGE: Semgrep config rules if needed
+# RELATED FILES: security/sast/semgrep.yml
+# MATURITY: Stable
+# ============================================================
+
+# Reusable SAST scan — Semgrep
+.sast-scan:
+  stage: scan
+  image: returntocorp/semgrep:latest
+  script:
+    - semgrep --config auto --json --output semgrep-report.json . || true
+  artifacts:
+    paths:
+      - semgrep-report.json
+    when: always

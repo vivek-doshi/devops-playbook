@@ -1,0 +1,32 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Parent-Child Pipeline (Monorepo)
+# WHEN TO USE: Monorepos where each service has its own .gitlab-ci.yml
+# PREREQUISITES: Per-service .gitlab-ci.yml files
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Service paths and pipeline includes
+# RELATED FILES: ci/gitlab-ci/_strategies/dynamic-pipeline.yml
+# MATURITY: Stable
+# ============================================================
+
+# Parent-Child Pipeline example
+# The parent triggers child pipelines per service
+stages:
+  - trigger
+
+trigger-user-service:
+  stage: trigger
+  trigger:
+    include: services/user-service/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes:
+        - services/user-service/**
+
+trigger-order-service:
+  stage: trigger
+  trigger:
+    include: services/order-service/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes:
+        - services/order-service/**

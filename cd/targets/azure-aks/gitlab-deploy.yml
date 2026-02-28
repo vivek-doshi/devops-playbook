@@ -1,0 +1,24 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Deploy to Azure AKS
+# WHEN TO USE: Deploying to AKS from GitLab CI/CD
+# PREREQUISITES: Azure service principal credentials in GitLab variables
+# SECRETS NEEDED: AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID
+# WHAT TO CHANGE: Resource group, cluster name, overlay path
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+# GitLab CI — Deploy to Azure AKS
+deploy-aks:
+  stage: deploy
+  image: mcr.microsoft.com/azure-cli:latest
+  environment:
+    name: production
+    url: https://app.example.com
+  script:
+    - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+    - az aks get-credentials --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME
+    - kubectl apply -k cd/kubernetes/_overlays/prod
+    - kubectl rollout status deployment/app -n production
+  only:
+    - main

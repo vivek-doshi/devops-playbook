@@ -1,0 +1,21 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Variable Groups with Key Vault
+# WHEN TO USE: Linking pipeline variables to Azure Key Vault secrets
+# PREREQUISITES: Azure Key Vault and variable group configured
+# SECRETS NEEDED: Key Vault access policy for Azure DevOps
+# WHAT TO CHANGE: Variable group names and Key Vault reference
+# RELATED FILES: docs/guides/secrets-management.md
+# MATURITY: Stable
+# ============================================================
+
+# Variable Groups — Linking to Azure Key Vault
+# Reference this from your pipeline via group: name
+variables:
+  - group: MyApp-Dev-Vars      # Define in Azure DevOps Library
+  - group: MyApp-Dev-Secrets   # Linked to Azure Key Vault
+
+# In Azure DevOps UI: Pipelines → Library → + Variable Group
+# Toggle "Link secrets from an Azure key vault"
+# Select your Key Vault and choose which secrets to sync
+#
+# Then reference in pipeline steps as: $(MY_SECRET)

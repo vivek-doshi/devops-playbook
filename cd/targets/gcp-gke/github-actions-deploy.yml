@@ -1,0 +1,47 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Deploy to GCP GKE
+# WHEN TO USE: Deploying to Google Kubernetes Engine via Workload Identity
+# PREREQUISITES: GKE cluster, Workload Identity Federation setup
+# SECRETS NEEDED: WIF_PROVIDER, WIF_SERVICE_ACCOUNT
+# WHAT TO CHANGE: Project ID, cluster name, zone
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+name: Deploy to GCP GKE
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: my-gcp-project
+  GKE_CLUSTER: my-gke-cluster
+  GKE_ZONE: us-central1-a
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+
+      - name: Deploy
+        run: |
+          kubectl apply -k cd/kubernetes/_overlays/prod
+          kubectl rollout status deployment/app

@@ -1,0 +1,22 @@
+﻿# Production overrides
+replicaCount: 3
+
+image:
+  tag: "1.0.0"  # Pin to immutable tag
+
+ingress:
+  host: app.example.com
+  tls: true
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi

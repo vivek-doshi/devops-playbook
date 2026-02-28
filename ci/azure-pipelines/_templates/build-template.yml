@@ -1,0 +1,35 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Reusable Build Template
+# WHEN TO USE: Standardise .NET build steps across pipelines
+# PREREQUISITES: None
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Parameters when referencing this template
+# RELATED FILES: ci/azure-pipelines/_templates/test-template.yml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Build Template (extends)
+# Usage: extends: { template: ci/azure-pipelines/_templates/build-template.yml }
+parameters:
+  - name: buildConfiguration
+    type: string
+    default: Release
+  - name: dotnetVersion
+    type: string
+    default: "8.0.x"
+
+steps:
+  - task: UseDotNet@2
+    inputs:
+      version: ${{ parameters.dotnetVersion }}
+
+  - task: DotNetCoreCLI@2
+    displayName: Restore
+    inputs:
+      command: restore
+
+  - task: DotNetCoreCLI@2
+    displayName: Build
+    inputs:
+      command: build
+      arguments: --configuration ${{ parameters.buildConfiguration }} --no-restore

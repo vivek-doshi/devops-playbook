@@ -1,0 +1,49 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Deploy to AWS EKS
+# WHEN TO USE: Deploying to Amazon EKS via OIDC
+# PREREQUISITES: EKS cluster, IAM role for OIDC
+# SECRETS NEEDED: AWS_DEPLOY_ROLE_ARN
+# WHAT TO CHANGE: Cluster name, region, and Kustomize overlay path
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+name: Deploy to AWS EKS
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER: my-eks-cluster
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy with Kustomize
+        run: |
+          kubectl apply -k cd/kubernetes/_overlays/prod
+          kubectl rollout status deployment/app -n production

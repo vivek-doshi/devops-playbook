@@ -1,0 +1,59 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Slack Notification (Reusable)
+# WHEN TO USE: Any pipeline needing Slack success/failure alerts
+# PREREQUISITES: Slack Incoming Webhook URL
+# SECRETS NEEDED: webhook-url (Slack Incoming Webhook URL)
+# WHAT TO CHANGE: Block formatting if needed
+# RELATED FILES: ci/github-actions/_shared/reusable-notify-slack.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Slack Notification Template
+
+# Usage: call from another workflow using workflow_call
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string      # success | failure | cancelled
+      environment:
+        required: false
+        type: string
+        default: ""
+    secrets:
+      webhook-url:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ inputs.status == 'success' && ':white_check_mark:' || ':x:' }} *${{ github.repository }}* pipeline *${{ inputs.status }}*\n*Branch:* `${{ github.ref_name }}`${{ inputs.environment != '' && format('\n*Environment:* `{0}`', inputs.environment) || '' }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Run" },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.webhook-url }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

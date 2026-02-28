@@ -1,0 +1,63 @@
+﻿# Blue-Green Deployment Pattern
+# Two identical environments; switch traffic between them
+---
+# Blue deployment (currently active)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-blue
+  labels:
+    version: blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: my-app
+        version: blue
+    spec:
+      containers:
+        - name: app
+          image: my-registry/my-app:1.0.0
+
+---
+# Green deployment (new version being tested)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  labels:
+    version: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+      version: green
+  template:
+    metadata:
+      labels:
+        app: my-app
+        version: green
+    spec:
+      containers:
+        - name: app
+          image: my-registry/my-app:2.0.0
+
+---
+# Service — switch between blue/green by changing selector
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector:
+    app: my-app
+    version: blue  # Change to "green" to switch traffic
+  ports:
+    - port: 80
+      targetPort: 8080

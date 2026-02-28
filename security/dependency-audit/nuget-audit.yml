@@ -1,0 +1,39 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — NuGet Dependency Audit
+# WHEN TO USE: .NET projects to scan for vulnerable NuGet packages
+# PREREQUISITES: .NET solution in the repository
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: .NET version if not 8.0
+# RELATED FILES: ci/github-actions/dotnet/build-test.yml
+# MATURITY: Stable
+# ============================================================
+
+name: NuGet Dependency Audit
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 1"
+
+jobs:
+  nuget-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore packages
+        run: dotnet restore
+
+      - name: Audit NuGet packages
+        run: dotnet list package --vulnerable --include-transitive 2>&1 | tee nuget-audit.txt
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-audit-report
+          path: nuget-audit.txt

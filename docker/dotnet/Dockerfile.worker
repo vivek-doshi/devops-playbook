@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1
+# ============================================================
+# TEMPLATE: Dockerfile — .NET Background Worker / Hosted Service
+# WHEN TO USE: .NET Worker Service, console apps, background processors
+# PREREQUISITES: .NET project with no HTTP endpoints
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/dotnet/.dockerignore
+# MATURITY: Stable
+# ============================================================
+
+# ── Stage 1: Build ──────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+WORKDIR /src
+
+COPY ["MyWorker/MyWorker.csproj", "MyWorker/"]             # <-- CHANGE THIS: your project path
+RUN dotnet restore "MyWorker/MyWorker.csproj"               # <-- CHANGE THIS: your .csproj path
+
+COPY . .
+WORKDIR "/src/MyWorker"                                     # <-- CHANGE THIS: your project folder
+RUN dotnet publish "MyWorker.csproj" \                      # <-- CHANGE THIS: your .csproj name
+    -c Release \
+    -o /app/publish \
+    /p:UseAppHost=false \
+    --no-restore
+
+# ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+# NOTE: Uses dotnet/runtime (NOT aspnet) — workers don't need the HTTP stack
+FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine AS runtime
+WORKDIR /app
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+COPY --from=build --chown=appuser:appgroup /app/publish .
+
+USER appuser
+
+# No EXPOSE — workers don't serve HTTP
+# No HEALTHCHECK — use Kubernetes liveness probes or process monitoring instead
+
+ENTRYPOINT ["dotnet", "MyWorker.dll"]                       # <-- CHANGE THIS: your assembly name

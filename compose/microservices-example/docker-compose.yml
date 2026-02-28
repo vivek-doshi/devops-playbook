@@ -1,0 +1,86 @@
+﻿# ============================================================
+# TEMPLATE: Docker Compose — Microservices Example
+# WHEN TO USE: Learning reference for multi-service local dev
+# PREREQUISITES: Docker and Docker Compose v2+
+# SECRETS NEEDED: None (dev-only passwords)
+# WHAT TO CHANGE: Service build contexts and environment variables
+# RELATED FILES: compose/_templates/docker-compose.base.yml
+# MATURITY: Beta
+# ============================================================
+
+# Microservices Example — Local Dev Stack
+# Demonstrates: shared network, service discovery, API gateway pattern
+
+services:
+  # API Gateway / reverse proxy
+  gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - user-service
+      - order-service
+    networks:
+      - app-net
+
+  user-service:
+    build:
+      context: ./user-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:devpassword@postgres:5432/usersdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  order-service:
+    build:
+      context: ./order-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:devpassword@postgres:5432/ordersdb
+      - MESSAGE_BROKER=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=devpassword
+      - POSTGRES_MULTIPLE_DATABASES=usersdb,ordersdb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "15672:15672"  # management UI
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - app-net
+
+volumes:
+  postgres-data:
+
+networks:
+  app-net:
+    driver: bridge

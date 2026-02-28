@@ -1,0 +1,50 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Trivy Container Scan
+# WHEN TO USE: Scanning Docker images for OS and app-level CVEs
+# PREREQUISITES: Dockerfile in the repository
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Image build command and Dockerfile path
+# RELATED FILES: ci/github-actions/_shared/reusable-security-scan.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Trivy Container Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *"   # Daily scan
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t my-app:scan .
+
+      - name: Run Trivy (table output)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: my-app:scan
+          format: table
+          exit-code: "1"
+          severity: "CRITICAL"
+
+      - name: Run Trivy (SARIF upload)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: my-app:scan
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: Upload to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif

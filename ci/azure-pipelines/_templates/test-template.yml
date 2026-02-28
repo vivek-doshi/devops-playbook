@@ -1,0 +1,33 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Reusable Test Template
+# WHEN TO USE: Standardise .NET test steps across pipelines
+# PREREQUISITES: Test projects following naming convention
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Parameters when referencing this template
+# RELATED FILES: ci/azure-pipelines/_templates/build-template.yml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Test Template
+parameters:
+  - name: testProjects
+    type: string
+    default: "**/*Tests/*.csproj"
+
+steps:
+  - task: DotNetCoreCLI@2
+    displayName: Run tests
+    inputs:
+      command: test
+      projects: ${{ parameters.testProjects }}
+      arguments: --logger trx --collect:"XPlat Code Coverage"
+
+  - task: PublishTestResults@2
+    condition: always()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: "**/*.trx"
+
+  - task: PublishCodeCoverageResults@2
+    inputs:
+      summaryFileLocation: "**/coverage.cobertura.xml"

@@ -1,0 +1,41 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Release Please (automated releases)
+# WHEN TO USE: Automating changelog, version bumps, and GitHub Releases
+# PREREQUISITES: Conventional Commits in your commit messages
+# SECRETS NEEDED: NPM_TOKEN (if publishing to npm)
+# WHAT TO CHANGE: release-type and publish steps
+# RELATED FILES: None
+# MATURITY: Stable
+# ============================================================
+
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: node  # or: python, java, go, etc.
+          # Reads conventional commits to bump version automatically
+
+      # Only run on release (not on every push)
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
+
+      - name: Publish to npm
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          npm ci
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

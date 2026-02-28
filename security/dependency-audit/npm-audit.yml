@@ -1,0 +1,42 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — npm Dependency Audit
+# WHEN TO USE: Node.js projects to scan for vulnerable dependencies
+# PREREQUISITES: package-lock.json in the repository
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: audit-level threshold if needed
+# RELATED FILES: security/sast/snyk.yml
+# MATURITY: Stable
+# ============================================================
+
+name: npm Dependency Audit
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 1"  # Weekly Monday
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+
+      - name: Run audit with JSON output
+        run: npm audit --json > npm-audit.json || true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: npm-audit.json

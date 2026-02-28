@@ -1,0 +1,35 @@
+﻿apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../_base
+
+namespace: production
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: app
+
+# PodDisruptionBudget for production high availability
+  - patch: |-
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: app-pdb
+      spec:
+        minAvailable: 1
+        selector:
+          matchLabels:
+            app: app
+    target:
+      kind: Deployment
+      name: app
+
+images:
+  - name: my-registry/my-app
+    newTag: v1.0.0   # Pin to immutable tag in production               # <-- CHANGE THIS

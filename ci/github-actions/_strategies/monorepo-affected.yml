@@ -1,0 +1,53 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Monorepo Affected Services
+# WHEN TO USE: Monorepos with multiple services in subdirectories
+# PREREQUISITES: dorny/paths-filter action, per-service workflows
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Path filters and service names
+# RELATED FILES: None
+# MATURITY: Stable
+# ============================================================
+
+name: Monorepo — Build Affected Services
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      user-service: ${{ steps.filter.outputs.user-service }}
+      order-service: ${{ steps.filter.outputs.order-service }}
+      api-gateway: ${{ steps.filter.outputs.api-gateway }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            user-service:
+              - 'services/user-service/**'
+            order-service:
+              - 'services/order-service/**'
+            api-gateway:
+              - 'services/api-gateway/**'
+              - 'shared/**'  # Shared changes affect gateway
+
+  build-user-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-service == 'true'
+    uses: ./.github/workflows/build-service.yml
+    with:
+      service: user-service
+
+  build-order-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.order-service == 'true'
+    uses: ./.github/workflows/build-service.yml
+    with:
+      service: order-service

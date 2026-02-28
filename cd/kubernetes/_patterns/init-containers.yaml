@@ -1,0 +1,38 @@
+﻿# Init Containers Pattern
+# Run setup tasks before the main container starts
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      initContainers:
+        # Wait for database to be ready
+        - name: wait-for-db
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z db-service 5432; do echo waiting; sleep 2; done']
+
+        # Run database migrations
+        - name: db-migrate
+          image: my-registry/my-app:latest
+          command: ['dotnet', 'ef', 'database', 'update']
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: db-connection-string
+
+      containers:
+        - name: app
+          image: my-registry/my-app:latest
+          ports:
+            - containerPort: 8080

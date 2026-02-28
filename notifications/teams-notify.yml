@@ -1,0 +1,77 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Microsoft Teams Notification (Reusable)
+# WHEN TO USE: Any pipeline needing Teams success/failure alerts
+# PREREQUISITES: Teams Incoming Webhook URL (Workflows connector)
+# SECRETS NEEDED: webhook-url (Teams Incoming Webhook URL)
+# WHAT TO CHANGE: Adaptive Card layout if needed
+# RELATED FILES: notifications/slack-notify.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Microsoft Teams Notification Template
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string
+      message:
+        required: false
+        type: string
+        default: ""
+    secrets:
+      webhook-url:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Teams Notification (Adaptive Card)
+        run: |
+          STATUS="${{ inputs.status }}"
+          if [ "$STATUS" = "success" ]; then
+            ICON="\u2705"
+            COLOR="good"
+          else
+            ICON="\u274C"
+            COLOR="attention"
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"type\": \"message\",
+              \"attachments\": [{
+                \"contentType\": \"application/vnd.microsoft.card.adaptive\",
+                \"content\": {
+                  \"\$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",
+                  \"type\": \"AdaptiveCard\",
+                  \"version\": \"1.4\",
+                  \"body\": [
+                    {
+                      \"type\": \"TextBlock\",
+                      \"size\": \"medium\",
+                      \"weight\": \"bolder\",
+                      \"text\": \"$ICON Pipeline $STATUS\"
+                    },
+                    {
+                      \"type\": \"FactSet\",
+                      \"facts\": [
+                        { \"title\": \"Repository\", \"value\": \"${{ github.repository }}\" },
+                        { \"title\": \"Branch\", \"value\": \"${{ github.ref_name }}\" },
+                        { \"title\": \"Commit\", \"value\": \"${{ github.sha }}\" }
+                      ]
+                    }
+                  ],
+                  \"actions\": [
+                    {
+                      \"type\": \"Action.OpenUrl\",
+                      \"title\": \"View Run\",
+                      \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                    }
+                  ]
+                }
+              }]
+            }" \
+            "${{ secrets.webhook-url }}"

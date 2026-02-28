@@ -1,0 +1,16 @@
+﻿# Dev overrides
+replicaCount: 1
+
+image:
+  tag: dev-latest
+
+ingress:
+  host: dev.app.example.com
+  tls: false
+
+resources:
+  limits:
+    memory: "256Mi"
+
+autoscaling:
+  enabled: false

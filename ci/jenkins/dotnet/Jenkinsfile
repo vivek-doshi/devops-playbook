@@ -1,0 +1,78 @@
+﻿// ============================================================
+// TEMPLATE: Jenkins — .NET Declarative Pipeline
+// WHEN TO USE: .NET projects using Jenkins for CI/CD
+// PREREQUISITES: Docker agent with .NET SDK image, Slack plugin
+// SECRETS NEEDED: registry-credentials (Jenkins credential ID)
+// WHAT TO CHANGE: Lines marked with // <-- CHANGE THIS
+// RELATED FILES: docker/dotnet/Dockerfile.api
+// MATURITY: Stable
+// ============================================================
+
+// Jenkins Declarative Pipeline — .NET Build & Test
+pipeline {
+    agent {
+        docker {
+            image 'mcr.microsoft.com/dotnet/sdk:8.0'
+            args '-v $HOME/.nuget:/root/.nuget'
+        }
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    stages {
+        stage('Restore') {
+            steps {
+                sh 'dotnet restore'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'dotnet build --no-restore --configuration Release'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    dotnet test --no-build --configuration Release \
+                        --logger "trx;LogFileName=TestResults.trx" \
+                        --collect:"XPlat Code Coverage"
+                '''
+            }
+            post {
+                always {
+                    mstest testResultsFile: '**/TestResults.trx', keepLongStdio: true
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            when { branch 'main' }
+            steps {
+                script {
+                    def image = docker.build("${env.IMAGE_NAME}:${env.BUILD_NUMBER}",
+                        '-f docker/dotnet/Dockerfile.api .')
+                    docker.withRegistry("https://${env.REGISTRY}", 'registry-credentials') {
+                        image.push()
+                        image.push('latest')
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            slackSend(channel: '#ci-alerts', color: 'danger',
+                message: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+        }
+        success {
+            slackSend(channel: '#ci-alerts', color: 'good',
+                message: "Build PASSED: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+        }
+    }
+}

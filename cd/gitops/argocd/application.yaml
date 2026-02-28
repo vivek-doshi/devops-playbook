@@ -1,0 +1,51 @@
+﻿# ============================================================
+# TEMPLATE: ArgoCD Application — Single Application
+# WHEN TO USE: Deploying one service via ArgoCD GitOps
+# PREREQUISITES: ArgoCD installed, Git repo accessible from cluster
+# SECRETS NEEDED: None (ArgoCD uses its own repo credentials)
+# WHAT TO CHANGE: repoURL, path, destination namespace
+# RELATED FILES: cd/gitops/argocd/app-of-apps.yaml
+# MATURITY: Stable
+# ============================================================
+
+# ArgoCD Application — single app
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io  # Cascade delete on app removal
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/my-org/my-app.git
+    targetRevision: HEAD
+    path: cd/kubernetes/_overlays/prod
+
+  destination:
+    server: https://kubernetes.default.svc  # In-cluster
+    namespace: production
+
+  syncPolicy:
+    automated:
+      prune: true       # Remove resources deleted from Git
+      selfHeal: true    # Revert manual changes in cluster
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 2m
+
+  # Health check customization
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # Ignore HPA-managed replica count

@@ -1,0 +1,38 @@
+﻿# ============================================================
+# TEMPLATE: Flux Kustomization — GitOps Reconciliation
+# WHEN TO USE: Deploying Kubernetes manifests via FluxCD
+# PREREQUISITES: Flux installed, GitRepository source configured
+# SECRETS NEEDED: Git credentials (configured in Flux)
+# WHAT TO CHANGE: sourceRef, path, interval, namespace
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+# Flux Kustomization — reconcile Kubernetes manifests from Git
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: my-app
+  namespace: flux-system
+spec:
+  interval: 5m      # Reconcile every 5 minutes
+  path: ./cd/kubernetes/_overlays/prod
+  prune: true       # Remove resources deleted from Git
+  sourceRef:
+    kind: GitRepository
+    name: my-app-repo
+
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: app
+      namespace: production
+
+  # Post-build variable substitution
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: flux-vars
+      - kind: Secret
+        name: flux-secrets
+        optional: true

@@ -1,0 +1,50 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Deploy to Azure AKS
+# WHEN TO USE: Deploying to Azure Kubernetes Service via OIDC
+# PREREQUISITES: AKS cluster, Azure AD credentials
+# SECRETS NEEDED: AZURE_CREDENTIALS
+# WHAT TO CHANGE: Cluster name, resource group, namespace, image
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+name: Deploy to Azure AKS
+
+on:
+  workflow_run:
+    workflows: [".NET Docker Build & Publish"]
+    types: [completed]
+    branches: [main]
+
+env:
+  CLUSTER_NAME: my-aks-cluster
+  RESOURCE_GROUP: my-resource-group
+  NAMESPACE: production
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+
+      - name: Deploy with Helm
+        uses: azure/k8s-deploy@v4
+        with:
+          namespace: ${{ env.NAMESPACE }}
+          manifests: |
+            cd/kubernetes/_overlays/prod/kustomization.yaml
+          images: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}

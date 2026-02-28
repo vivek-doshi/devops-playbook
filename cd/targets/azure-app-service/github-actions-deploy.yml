@@ -1,0 +1,41 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Deploy to Azure App Service
+# WHEN TO USE: Teams not yet on Kubernetes, using Azure PaaS
+# PREREQUISITES: Azure Container Registry, App Service plan
+# SECRETS NEEDED: AZURE_CREDENTIALS
+# WHAT TO CHANGE: ACR name, App Service name, Dockerfile path
+# RELATED FILES: docker/dotnet/Dockerfile.api
+# MATURITY: Stable
+# ============================================================
+
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push Docker image
+        run: |
+          az acr build \
+            --registry ${{ vars.ACR_NAME }} \
+            --image my-app:${{ github.sha }} \
+            --file docker/dotnet/Dockerfile.api \
+            .
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.APP_SERVICE_NAME }}
+          images: "${{ vars.ACR_NAME }}.azurecr.io/my-app:${{ github.sha }}"

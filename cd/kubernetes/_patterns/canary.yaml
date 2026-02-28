@@ -1,0 +1,58 @@
+﻿# Canary Deployment Pattern
+# Route small percentage of traffic to new version
+---
+# Stable deployment (90% of replicas)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-stable
+spec:
+  replicas: 9
+  selector:
+    matchLabels:
+      app: my-app
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: my-app
+        track: stable
+    spec:
+      containers:
+        - name: app
+          image: my-registry/my-app:1.0.0
+
+---
+# Canary deployment (10% of replicas)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-canary
+spec:
+  replicas: 1  # 1 canary : 9 stable = ~10% canary traffic
+  selector:
+    matchLabels:
+      app: my-app
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: my-app
+        track: canary
+    spec:
+      containers:
+        - name: app
+          image: my-registry/my-app:2.0.0
+
+---
+# Service selects BOTH stable + canary (no track label)
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector:
+    app: my-app   # Matches both stable and canary pods
+  ports:
+    - port: 80
+      targetPort: 8080

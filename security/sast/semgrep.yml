@@ -1,0 +1,33 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Semgrep SAST Scan
+# WHEN TO USE: Fast, customisable static analysis on any codebase
+# PREREQUISITES: None
+# SECRETS NEEDED: None (optional: SEMGREP_APP_TOKEN for Semgrep Cloud)
+# WHAT TO CHANGE: Semgrep config if using custom rules
+# RELATED FILES: ci/gitlab-ci/_includes/.sast-scan.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Semgrep SAST
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep --config auto --sarif --output semgrep.sarif || true
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif

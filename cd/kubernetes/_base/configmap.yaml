@@ -1,0 +1,8 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  environment: production
+  log-level: info
+  # Add feature flags, non-sensitive config here

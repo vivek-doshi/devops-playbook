@@ -1,0 +1,35 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — Reusable Trivy Security Scan
+# WHEN TO USE: Call after any Docker image build to scan for CVEs
+# PREREQUISITES: Built Docker image available as image-ref
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Inputs when calling this workflow
+# RELATED FILES: security/container-scanning/trivy-scan.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Reusable Security Scan
+
+on:
+  workflow_call:
+    inputs:
+      image-ref:
+        required: true
+        type: string
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ inputs.image-ref }}
+          format: "sarif"
+          output: trivy-results.sarif
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif

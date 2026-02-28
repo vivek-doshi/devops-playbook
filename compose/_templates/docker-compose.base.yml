@@ -1,0 +1,101 @@
+﻿# ============================================================
+# TEMPLATE: Docker Compose — Annotated Base Template
+# WHEN TO USE: Starting point for any new local dev environment
+# PREREQUISITES: Docker and Docker Compose v2+
+# SECRETS NEEDED: None (uses .env file)
+# WHAT TO CHANGE: Adapt services, ports, and volumes to your stack
+# RELATED FILES: compose/dotnet-sqlserver/, compose/python-postgres-redis/
+# MATURITY: Stable
+# ============================================================
+#
+# NOTE: The top-level 'version:' key is obsolete in Docker Compose v2+
+# and has been intentionally omitted. See:
+# https://docs.docker.com/compose/compose-file/04-version-and-name/
+
+# Extension fields: define anchors to reuse across services
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-restart-policy: &restart-policy
+  restart: unless-stopped
+
+services:
+  app:
+    # Build from local Dockerfile
+    build:
+      context: .          # Build context (directory sent to Docker daemon)
+      dockerfile: Dockerfile
+      args:
+        - BUILD_ENV=development  # ARGs available during build only
+      target: runtime     # Stop at a specific multi-stage target
+
+    # Or pull a pre-built image:
+    # image: myregistry.io/my-app:1.2.3
+
+    container_name: my-app  # Avoid auto-generated names in dev
+
+    ports:
+      - "3000:3000"     # host:container — only expose what you need
+
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db      # Container names resolve as DNS on the same network
+
+    # Load from .env file (never commit secrets)
+    env_file:
+      - .env
+
+    volumes:
+      # Named volume: managed by Docker, persists between restarts
+      - app-data:/app/data
+      # Bind mount: reflects local file changes instantly (great for dev)
+      - ./src:/app/src:ro   # :ro = read-only inside container
+
+    depends_on:
+      db:
+        condition: service_healthy  # Wait for healthcheck to pass
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s  # Grace period before first check
+
+    networks:
+      - app-net
+
+    logging: *default-logging
+    <<: *restart-policy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${DB_USER:-appuser}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}  # Fails if not set
+      - POSTGRES_DB=${DB_NAME:-appdb}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Run on first start
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-appuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-net
+    logging: *default-logging
+    <<: *restart-policy
+
+volumes:
+  app-data:     # Persists across container restarts
+  db-data:
+
+networks:
+  app-net:
+    driver: bridge
+    # For external network (e.g., shared across compose files):
+    # external: true

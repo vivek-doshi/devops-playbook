@@ -1,0 +1,31 @@
+﻿# syntax=docker/dockerfile:1
+# ============================================================
+# TEMPLATE: Dockerfile — Flask Application
+# WHEN TO USE: Flask web applications served via Gunicorn
+# PREREQUISITES: requirements.txt with Flask and gunicorn
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/python/.dockerignore
+# MATURITY: Stable
+# ============================================================
+
+FROM python:3.12-slim AS base
+WORKDIR /app
+
+# Install wget for healthcheck (curl is NOT included in python:slim)
+RUN apt-get update && apt-get install -y --no-install-recommends wget && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=appuser:appgroup . .
+USER appuser
+
+EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:5000/health || exit 1      # <-- CHANGE THIS: your health endpoint
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "app:app"]  # <-- CHANGE THIS: your WSGI app

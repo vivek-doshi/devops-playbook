@@ -1,0 +1,50 @@
+﻿# ============================================================
+# TEMPLATE: GitLab CI — Python Lint, Test, Scan & Package
+# WHEN TO USE: Python projects hosted on GitLab
+# PREREQUISITES: requirements.txt and requirements-dev.txt
+# SECRETS NEEDED: CI_REGISTRY_* (automatic in GitLab)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: ci/gitlab-ci/_includes/.sast-scan.yml
+# MATURITY: Stable
+# ============================================================
+
+# Python GitLab CI Pipeline
+
+include:
+  - local: ci/gitlab-ci/_includes/.sast-scan.yml
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHON_VERSION: "3.12"
+
+stages:
+  - lint
+  - test
+  - scan
+  - package
+
+cache:
+  paths:
+    - .cache/pip
+
+lint:
+  stage: lint
+  image: python:3.12-slim
+  script:
+    - pip install ruff black mypy
+    - ruff check .
+    - black --check .
+    - mypy .
+
+test:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+    - pytest --cov=. --cov-report=xml --cov-report=term
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  coverage: '/TOTAL.*\s+(\d+%)$/'

@@ -1,0 +1,47 @@
+﻿# ============================================================
+# TEMPLATE: GitHub Actions — PagerDuty Alert (Reusable)
+# WHEN TO USE: Triggering incidents on production pipeline failures
+# PREREQUISITES: PagerDuty service with Events API v2 integration
+# SECRETS NEEDED: pagerduty-integration-key
+# WHAT TO CHANGE: Severity and summary inputs
+# RELATED FILES: notifications/slack-notify.yml
+# MATURITY: Stable
+# ============================================================
+
+name: PagerDuty Alert Template
+
+on:
+  workflow_call:
+    inputs:
+      severity:
+        required: true
+        type: string   # critical | error | warning | info
+      summary:
+        required: true
+        type: string
+    secrets:
+      pagerduty-integration-key:
+        required: true
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger PagerDuty
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"routing_key\": \"${{ secrets.pagerduty-integration-key }}\",
+              \"event_action\": \"trigger\",
+              \"payload\": {
+                \"summary\": \"${{ inputs.summary }}\",
+                \"severity\": \"${{ inputs.severity }}\",
+                \"source\": \"GitHub Actions\",
+                \"custom_details\": {
+                  \"repository\": \"${{ github.repository }}\",
+                  \"branch\": \"${{ github.ref_name }}\",
+                  \"run_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                }
+              }
+            }"

@@ -1,0 +1,46 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Angular Build & Test
+# WHEN TO USE: Angular projects in Azure DevOps
+# PREREQUISITES: package.json with lint, test, and build scripts
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/angular/Dockerfile
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Angular Build & Test
+trigger:
+  branches:
+    include: [main, develop]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  nodeVersion: "20.x"
+
+stages:
+  - stage: BuildTest
+    jobs:
+      - job: Build
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+
+          - script: npm ci
+            displayName: Install dependencies
+
+          - script: npm run lint
+            displayName: Lint
+
+          - script: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+            displayName: Test
+
+          - script: npm run build -- --configuration production
+            displayName: Build
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: dist
+              ArtifactName: angular-dist

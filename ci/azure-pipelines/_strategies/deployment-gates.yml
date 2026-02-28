@@ -1,0 +1,31 @@
+﻿# ============================================================
+# TEMPLATE: Azure Pipelines — Deployment Gates & Approvals
+# WHEN TO USE: Production deployments requiring manual approval or health checks
+# PREREQUISITES: Azure DevOps environment with approval policies
+# SECRETS NEEDED: None (configured in Azure DevOps UI)
+# WHAT TO CHANGE: Environment name and deployment steps
+# RELATED FILES: ci/azure-pipelines/_strategies/variable-groups.yml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Deployment Gates
+# Gates pause deployment until conditions are met
+stages:
+  - stage: Deploy
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployProd
+        environment: production
+        strategy:
+          runOnce:
+            preDeploy:
+              steps:
+                - script: echo "Pre-deploy checks"
+            deploy:
+              steps:
+                - script: echo "Deploying..."
+
+# In Azure DevOps environment settings, configure:
+# - Approvals: require manual sign-off before deployment
+# - Gates: query Azure Monitor, REST endpoint health checks, etc.
+# - Branch policies: only deploy from protected branches
