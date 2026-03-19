@@ -1,0 +1,25 @@
+# ============================================================
+# TEMPLATE: GitLab CI — Deploy to Red Hat OpenShift
+# WHEN TO USE: Deploying to OpenShift from GitLab CI/CD
+# PREREQUISITES: OpenShift cluster, service account credentials in GitLab variables
+# SECRETS NEEDED: OPENSHIFT_SERVER, OPENSHIFT_TOKEN
+# WHAT TO CHANGE: Project/namespace, app name, overlay path
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+# GitLab CI — Deploy to Red Hat OpenShift
+deploy-openshift:
+  stage: deploy
+  image: registry.redhat.io/openshift4/ose-cli:latest
+  environment:
+    name: production
+    url: https://app.example.com
+  script:
+    - oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify=false
+    - oc project $OPENSHIFT_NAMESPACE
+    - kubectl apply -k cd/kubernetes/_overlays/prod
+    - kubectl rollout status deployment/$APP_NAME -n $OPENSHIFT_NAMESPACE
+    - oc get pods -n $OPENSHIFT_NAMESPACE -l app=$APP_NAME
+  only:
+    - main

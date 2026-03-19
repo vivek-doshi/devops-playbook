@@ -8,7 +8,7 @@ Templates for deploying applications to various targets.
 |--------|---------|
 | `kubernetes/` | Raw Kubernetes manifests with Kustomize |
 | `helm/` | Helm chart templates |
-| `targets/` | Cloud-specific deployment pipelines (AKS, EKS, GKE, App Service, ECS, Lambda) |
+| `targets/` | Cloud-specific deployment pipelines (AKS, EKS, GKE, App Service, ECS, Lambda, OpenShift) |
 | `gitops/` | ArgoCD and Flux GitOps patterns |
 
 ## Choosing a Deployment Strategy
@@ -21,3 +21,4 @@ Templates for deploying applications to various targets.
 | AWS team | `targets/aws-eks/` or `targets/aws-ecs/` |
 | Serverless | `targets/aws-lambda/` |
 | GitOps | `gitops/argocd/` or `gitops/flux/` |
+| Red Hat OpenShift | `targets/openshift/` |

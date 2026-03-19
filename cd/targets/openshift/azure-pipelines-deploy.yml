@@ -1,0 +1,49 @@
+# ============================================================
+# TEMPLATE: Azure Pipelines — Deploy to Red Hat OpenShift
+# WHEN TO USE: OpenShift deployment from Azure DevOps pipelines
+# PREREQUISITES: OpenShift cluster, service account token stored in Azure DevOps
+# SECRETS NEEDED: OPENSHIFT_SERVER, OPENSHIFT_TOKEN
+# WHAT TO CHANGE: Pipeline resource, environment name, project/namespace, app name
+# RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+# Azure Pipelines — Deploy to OpenShift
+trigger: none  # Triggered by CD pipeline, not directly
+
+resources:
+  pipelines:
+    - pipeline: ci-build
+      source: CI-Build-Pipeline
+      trigger:
+        branches:
+          include: [main]
+
+stages:
+  - stage: Deploy
+    jobs:
+      - deployment: DeployOpenShift
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    curl -fsSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
+                      | tar -xz -C /usr/local/bin oc
+                    oc version --client
+                  displayName: Install oc CLI
+
+                - script: |
+                    oc login $(OPENSHIFT_SERVER) --token=$(OPENSHIFT_TOKEN) --insecure-skip-tls-verify=false
+                    oc project production
+                  displayName: Log in to OpenShift
+
+                - script: |
+                    kubectl apply -k cd/kubernetes/_overlays/prod
+                    kubectl rollout status deployment/$(APP_NAME) -n production
+                  displayName: Deploy with Kustomize
+
+                - script: |
+                    oc get pods -n production -l app=$(APP_NAME)
+                  displayName: Verify rollout
