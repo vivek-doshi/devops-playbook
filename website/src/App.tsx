@@ -3,6 +3,8 @@ import { Sidebar } from './components/Sidebar';
 import { CodeViewer } from './components/CodeViewer';
 import './App.css';
 
+type ThemeName = 'ocean' | 'paper';
+
 interface FileItem {
   path: string;
   category: string;
@@ -16,8 +18,16 @@ function App() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [theme, setTheme] = useState<ThemeName>(() => {
+    const savedTheme = window.localStorage.getItem('devops-playbook-theme');
+    return savedTheme === 'paper' ? 'paper' : 'ocean';
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem('devops-playbook-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const loadFiles = async () => {
@@ -63,13 +73,15 @@ function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-theme={theme}>
       <Sidebar
         files={files}
         selectedFile={selectedFile}
         onFileSelect={setSelectedFile}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        theme={theme}
+        onThemeChange={setTheme}
       />
       <CodeViewer file={selectedFile} />
     </div>

@@ -17,6 +17,87 @@ interface SidebarProps {
   onFileSelect: (file: FileItem) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  theme: 'ocean' | 'paper';
+  onThemeChange: (theme: 'ocean' | 'paper') => void;
+}
+
+interface TreeNode {
+  name: string;
+  path: string;
+  type: 'folder' | 'file';
+  children: TreeNode[];
+  file?: FileItem;
+}
+
+function createFolderNode(name: string, path: string): TreeNode {
+  return {
+    name,
+    path,
+    type: 'folder',
+    children: []
+  };
+}
+
+function createFileNode(file: FileItem): TreeNode {
+  return {
+    name: file.fileName,
+    path: file.path,
+    type: 'file',
+    children: [],
+    file
+  };
+}
+
+function sortTree(node: TreeNode): void {
+  node.children.sort((a, b) => {
+    if (a.type !== b.type) {
+      return a.type === 'folder' ? -1 : 1;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  node.children.forEach((child) => {
+    if (child.type === 'folder') {
+      sortTree(child);
+    }
+  });
+}
+
+function buildTree(files: FileItem[]): TreeNode {
+  const root = createFolderNode('root', '');
+
+  files.forEach((file) => {
+    const parts = file.path.split('/').filter(Boolean);
+    let current = root;
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      const folderName = parts[i];
+      const folderPath = parts.slice(0, i + 1).join('/');
+      let folder = current.children.find(
+        (child) => child.type === 'folder' && child.path === folderPath
+      );
+
+      if (!folder) {
+        folder = createFolderNode(folderName, folderPath);
+        current.children.push(folder);
+      }
+
+      current = folder;
+    }
+
+    current.children.push(createFileNode(file));
+  });
+
+  sortTree(root);
+  return root;
+}
+
+function getFileCount(node: TreeNode): number {
+  if (node.type === 'file') {
+    return 1;
+  }
+
+  return node.children.reduce((sum, child) => sum + getFileCount(child), 0);
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -24,9 +105,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedFile,
   onFileSelect,
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  theme,
+  onThemeChange
 }) => {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['docker', 'ci', 'kubernetes']));
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set(['cd', 'ci', 'docker', 'kubernetes'])
+  );
 
   const toggleFolder = (folder: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -38,62 +123,78 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setExpandedFolders(newExpanded);
   };
 
-  // Group files by category and subcategory
-  const groupedFiles = useMemo(() => {
-    const groups: Record<string, Record<string, FileItem[]>> = {};
+  const filteredFiles = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return files;
+    }
 
-    files.forEach(file => {
-      if (!groups[file.category]) {
-        groups[file.category] = {};
-      }
+    return files.filter(
+      (item) =>
+        item.path.toLowerCase().includes(query) ||
+        item.fileName.toLowerCase().includes(query)
+    );
+  }, [files, searchQuery]);
 
-      const parts = file.path.split('/');
-      const subCategory = parts.length > 1 ? parts[1] : 'root';
+  const tree = useMemo(() => buildTree(filteredFiles), [filteredFiles]);
 
-      if (!groups[file.category][subCategory]) {
-        groups[file.category][subCategory] = [];
-      }
+  const renderNode = (node: TreeNode, depth: number): React.ReactNode => {
+    if (node.type === 'file' && node.file) {
+      return (
+        <button
+          key={node.path}
+          className={`file-item ${selectedFile?.path === node.path ? 'active' : ''}`}
+          onClick={() => onFileSelect(node.file as FileItem)}
+          title={node.path}
+          style={{ paddingLeft: `${24 + depth * 14}px` }}
+        >
+          <span className="file-name">{node.name}</span>
+          <span className="file-lang">{node.file.language}</span>
+        </button>
+      );
+    }
 
-      groups[file.category][subCategory].push(file);
-    });
+    const isExpanded = expandedFolders.has(node.path);
+    const count = getFileCount(node);
 
-    return groups;
-  }, [files]);
+    return (
+      <div key={node.path} className="category">
+        <button
+          className={depth === 0 ? 'category-header' : 'folder-header'}
+          onClick={() => toggleFolder(node.path)}
+          style={depth > 0 ? { paddingLeft: `${12 + depth * 14}px` } : undefined}
+        >
+          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <span className={depth === 0 ? 'category-name' : 'folder-name'}>{node.name}</span>
+          <span className="file-count">{count}</span>
+        </button>
 
-  // Filter files based on search
-  const filteredGroups = useMemo(() => {
-    if (!searchQuery.trim()) return groupedFiles;
-
-    const query = searchQuery.toLowerCase();
-    const filtered: typeof groupedFiles = {};
-
-    Object.entries(groupedFiles).forEach(([category, subcats]) => {
-      const filteredSubcats: Record<string, FileItem[]> = {};
-
-      Object.entries(subcats).forEach(([subcat, items]) => {
-        const matchedItems = items.filter(item =>
-          item.path.toLowerCase().includes(query) ||
-          item.fileName.toLowerCase().includes(query)
-        );
-
-        if (matchedItems.length > 0) {
-          filteredSubcats[subcat] = matchedItems;
-        }
-      });
-
-      if (Object.keys(filteredSubcats).length > 0) {
-        filtered[category] = filteredSubcats;
-      }
-    });
-
-    return filtered;
-  }, [groupedFiles, searchQuery]);
+        {isExpanded && <div>{node.children.map((child) => renderNode(child, depth + 1))}</div>}
+      </div>
+    );
+  };
 
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h1>CI/CD Reference</h1>
+        <h1>devops-playbook</h1>
         <p className="subtitle">Code Template Browser</p>
+        <div className="theme-switcher" role="group" aria-label="Theme selector">
+          <button
+            className={`theme-btn ${theme === 'ocean' ? 'active' : ''}`}
+            onClick={() => onThemeChange('ocean')}
+            type="button"
+          >
+            Ocean Ops
+          </button>
+          <button
+            className={`theme-btn ${theme === 'paper' ? 'active' : ''}`}
+            onClick={() => onThemeChange('paper')}
+            type="button"
+          >
+            Paper Terminal
+          </button>
+        </div>
       </div>
 
       <div className="search-box">
@@ -108,47 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="file-tree">
-        {Object.entries(filteredGroups).map(([category, subcats]) => (
-          <div key={category} className="category">
-            <button
-              className="category-header"
-              onClick={() => toggleFolder(category)}
-            >
-              {expandedFolders.has(category) ? (
-                <ChevronDown size={16} />
-              ) : (
-                <ChevronRight size={16} />
-              )}
-              <span className="category-name">{category}</span>
-              <span className="file-count">
-                {Object.values(subcats).reduce((sum, items) => sum + items.length, 0)}
-              </span>
-            </button>
-
-            {expandedFolders.has(category) && (
-              <div className="subcategories">
-                {Object.entries(subcats).map(([subcat, items]) => (
-                  <div key={subcat} className="subcategory">
-                    <div className="subcat-name">{subcat}</div>
-                    <div className="file-list">
-                      {items.map((file) => (
-                        <button
-                          key={file.path}
-                          className={`file-item ${selectedFile?.path === file.path ? 'active' : ''}`}
-                          onClick={() => onFileSelect(file)}
-                          title={file.path}
-                        >
-                          <span className="file-name">{file.fileName}</span>
-                          <span className="file-lang">{file.language}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+        {tree.children.map((node) => renderNode(node, 0))}
       </div>
     </div>
   );

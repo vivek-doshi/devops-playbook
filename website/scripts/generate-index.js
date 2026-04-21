@@ -15,13 +15,28 @@ const EXCLUDE_PATTERNS = [
   '.DS_Store'
 ];
 
+const EXCLUDE_EXTENSIONS = ['.md', '.markdown', '.txt'];
+const EXCLUDE_FILE_NAMES = ['license', 'readme', 'getting_started'];
+
 function shouldExclude(filePath) {
+  const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
+  const fileName = path.basename(normalizedPath);
+  const ext = path.extname(normalizedPath);
+
+  if (EXCLUDE_EXTENSIONS.includes(ext)) {
+    return true;
+  }
+
+  if (EXCLUDE_FILE_NAMES.some(name => fileName.startsWith(name))) {
+    return true;
+  }
+
   return EXCLUDE_PATTERNS.some(pattern => {
     if (pattern.includes('*')) {
       const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-      return regex.test(filePath);
+      return regex.test(normalizedPath);
     }
-    return filePath.includes(pattern);
+    return normalizedPath.includes(pattern);
   });
 }
 

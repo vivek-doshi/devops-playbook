@@ -2,7 +2,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
+  background: linear-gradient(180deg, rgba(252, 253, 253, 0.92) 0%, rgba(247, 251, 251, 0.94) 100%);
   overflow: hidden;
 }
 
@@ -14,35 +14,41 @@
 
 .empty-state {
   text-align: center;
-  color: #888;
+  color: #4f6b72;
+  padding: 26px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #d1e0e3;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(19, 53, 60, 0.1);
 }
 
 .empty-icon {
   font-size: 48px;
   margin-bottom: 16px;
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .empty-state h2 {
   margin: 0 0 8px 0;
   font-size: 18px;
-  color: #b4b4b4;
+  color: #12343b;
 }
 
 .empty-state p {
   margin: 0;
   font-size: 13px;
-  color: #666;
+  color: #4f6b72;
 }
 
 .code-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: #252526;
-  border-bottom: 1px solid #333;
+  padding: 14px 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.93) 0%, rgba(247, 251, 251, 0.85) 100%);
+  border-bottom: 1px solid #d1e0e3;
   gap: 16px;
+  backdrop-filter: blur(6px);
 }
 
 .file-info {
@@ -55,8 +61,8 @@
 
 .file-path {
   font-size: 13px;
-  color: #e0e0e0;
-  font-family: 'Monaco', 'Courier New', monospace;
+  color: #12343b;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -64,7 +70,7 @@
 
 .file-size {
   font-size: 12px;
-  color: #888;
+  color: #4f6b72;
   white-space: nowrap;
 }
 
@@ -78,25 +84,28 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: #2d2d30;
-  border: 1px solid #3e3e42;
-  color: #e0e0e0;
+  padding: 7px 12px;
+  background: #ffffff;
+  border: 1px solid #c8dce0;
+  color: #1b5a61;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 10px;
   transition: all 0.2s;
   text-decoration: none;
+  box-shadow: 0 4px 14px rgba(22, 67, 76, 0.08);
 }
 
 .action-btn:hover {
-  background: #3e3e42;
-  border-color: #555;
+  background: #eff8f8;
+  border-color: #9ec8ce;
+  transform: translateY(-1px);
 }
 
 .action-btn.copied {
-  background: #07a041;
-  border-color: #07a041;
+  background: linear-gradient(145deg, #27a6ad 0%, #1b6b72 100%);
+  border-color: #1b6b72;
   color: #fff;
 }
 
@@ -108,19 +117,19 @@
   flex: 1;
   overflow: auto;
   font-size: 13px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
   line-height: 1.5;
 }
 
 .code-content pre {
   margin: 0;
-  padding: 20px;
-  background: #1e1e1e;
+  padding: 22px;
+  background: linear-gradient(165deg, #12343b 0%, #173d45 52%, #1a4650 100%);
   height: 100%;
 }
 
 .code-content code {
-  color: #d4d4d4;
+  color: #eaf6f7;
 }
 
 /* Prism syntax highlighting adjustments */
@@ -128,11 +137,11 @@
 .token.prolog,
 .token.doctype,
 .token.cdata {
-  color: #6a9955;
+  color: #93c8a9;
 }
 
 .token.punctuation {
-  color: #d4d4d4;
+  color: #dceff2;
 }
 
 .token.property,
@@ -141,7 +150,7 @@
 .token.control,
 .token.directive,
 .token.unit {
-  color: #569cd6;
+  color: #7fc6dd;
 }
 
 .token.selector,
@@ -150,23 +159,23 @@
 .token.char,
 .token.builtin,
 .token.inserted {
-  color: #ce9178;
+  color: #ffd28a;
 }
 
 .token.operator {
-  color: #d4d4d4;
+  color: #dceff2;
 }
 
 .token.variable {
-  color: #9cdcfe;
+  color: #b2e9f9;
 }
 
 .token.number {
-  color: #b5cea8;
+  color: #a7e8c4;
 }
 
 .token.function {
-  color: #dcdcaa;
+  color: #ffe2ac;
 }
 
 /* Scrollbar styling */
@@ -180,12 +189,113 @@
 }
 
 .code-content::-webkit-scrollbar-thumb {
-  background: #424245;
+  background: #3f5f66;
   border-radius: 4px;
 }
 
 .code-content::-webkit-scrollbar-thumb:hover {
-  background: #4e4e50;
+  background: #53757d;
+}
+
+.app[data-theme='paper'] .code-viewer {
+  background: linear-gradient(180deg, rgba(255, 249, 241, 0.95) 0%, rgba(253, 243, 230, 0.95) 100%);
+}
+
+.app[data-theme='paper'] .empty-state {
+  color: #6b4a2f;
+  background: rgba(255, 252, 248, 0.82);
+  border-color: #e9d5bb;
+  box-shadow: 0 20px 50px rgba(78, 46, 24, 0.12);
+}
+
+.app[data-theme='paper'] .empty-state h2,
+.app[data-theme='paper'] .file-path {
+  color: #5a3b21;
+}
+
+.app[data-theme='paper'] .empty-state p,
+.app[data-theme='paper'] .file-size {
+  color: #866349;
+}
+
+.app[data-theme='paper'] .code-header {
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.95) 0%, rgba(253, 243, 230, 0.9) 100%);
+  border-bottom-color: #e9d5bb;
+}
+
+.app[data-theme='paper'] .action-btn {
+  background: #fff8ef;
+  border-color: #e8cfb0;
+  color: #70472a;
+  box-shadow: 0 4px 14px rgba(101, 60, 31, 0.1);
+}
+
+.app[data-theme='paper'] .action-btn:hover {
+  background: #fff1de;
+  border-color: #daaf7f;
+}
+
+.app[data-theme='paper'] .action-btn.copied {
+  background: linear-gradient(145deg, #d38b45 0%, #b56e2e 100%);
+  border-color: #a76429;
+}
+
+.app[data-theme='paper'] .code-content pre {
+  background: linear-gradient(165deg, #4f3621 0%, #64472b 55%, #765333 100%);
+}
+
+.app[data-theme='paper'] .code-content code {
+  color: #fff4e6;
+}
+
+.app[data-theme='paper'] .token.comment,
+.app[data-theme='paper'] .token.prolog,
+.app[data-theme='paper'] .token.doctype,
+.app[data-theme='paper'] .token.cdata {
+  color: #d8b995;
+}
+
+.app[data-theme='paper'] .token.punctuation,
+.app[data-theme='paper'] .token.operator {
+  color: #f4dfca;
+}
+
+.app[data-theme='paper'] .token.property,
+.app[data-theme='paper'] .token.tag,
+.app[data-theme='paper'] .token.keyword,
+.app[data-theme='paper'] .token.control,
+.app[data-theme='paper'] .token.directive,
+.app[data-theme='paper'] .token.unit {
+  color: #ffd39a;
+}
+
+.app[data-theme='paper'] .token.selector,
+.app[data-theme='paper'] .token.attr-name,
+.app[data-theme='paper'] .token.string,
+.app[data-theme='paper'] .token.char,
+.app[data-theme='paper'] .token.builtin,
+.app[data-theme='paper'] .token.inserted {
+  color: #ffebc6;
+}
+
+.app[data-theme='paper'] .token.variable {
+  color: #ffd8ad;
+}
+
+.app[data-theme='paper'] .token.number {
+  color: #ffce8a;
+}
+
+.app[data-theme='paper'] .token.function {
+  color: #fff1d6;
+}
+
+.app[data-theme='paper'] .code-content::-webkit-scrollbar-thumb {
+  background: #8a6544;
+}
+
+.app[data-theme='paper'] .code-content::-webkit-scrollbar-thumb:hover {
+  background: #9a7553;
 }
 
 @media (max-width: 768px) {
