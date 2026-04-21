@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Search, Copy, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import './Sidebar.css';
 
 interface FileItem {
@@ -7,6 +7,7 @@ interface FileItem {
   category: string;
   language: string;
   size: number;
+  content: string;
   fileName: string;
 }
 

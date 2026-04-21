@@ -102,8 +102,8 @@ function scanDirectory(dir, baseDir = '', maxSize = 1024 * 50) {
 }
 
 function generateIndex() {
-  const repoRoot = path.join(__dirname, '..');
-  const websiteDir = path.join(repoRoot, 'website');
+  const websiteDir = path.join(__dirname, '..');
+  const repoRoot = path.join(websiteDir, '..');
   const outputPath = path.join(websiteDir, 'public', 'index.json');
 
   console.log('Generating index.json...');
