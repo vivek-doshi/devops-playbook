@@ -1,0 +1,77 @@
+.app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  background: #1e1e1e;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app.loading,
+.app.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.loading-spinner {
+  font-size: 16px;
+  color: #b4b4b4;
+}
+
+.error-message {
+  text-align: center;
+  max-width: 500px;
+  padding: 40px;
+  background: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+}
+
+.error-message h2 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+}
+
+.error-message p {
+  margin: 0 0 8px 0;
+  color: #b4b4b4;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.error-message code {
+  background: #1e1e1e;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: #ce9178;
+}
+
+/* Reset default styles */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+  }
+}
