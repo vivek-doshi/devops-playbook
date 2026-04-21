@@ -26,14 +26,13 @@ The site auto-deploys to GitHub Pages via GitHub Actions when you push to main.
 ### Setup GitHub Pages
 
 1. Go to your repo **Settings** → **Pages**
-2. Set source to **Deploy from a branch**
-3. Select branch: `gh-pages`
-4. Save
+2. Set source to **GitHub Actions**
+3. Save
 
 The GitHub Actions workflow automatically:
 - Generates the file index
 - Builds the React app  
-- Deploys to `gh-pages` branch
+- Deploys to GitHub Pages
 - Updates your live site
 
 ### View your site

@@ -31,9 +31,7 @@ Open http://localhost:3000 and verify the browser works.
 
 Go to your repo:
 1. **Settings** → **Pages**
-2. **Source**: Deploy from a branch
-3. **Branch**: `gh-pages`
-4. **Folder**: `/ (root)`
+2. **Source**: **GitHub Actions**
 5. Click **Save**
 
 ### 5. Update Configuration Files
@@ -63,7 +61,7 @@ git push origin main
 
 GitHub Actions will automatically:
 - Build the site
-- Deploy to gh-pages
+- Deploy to GitHub Pages
 - Your site goes live at: `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
 
 ## Daily Workflow
