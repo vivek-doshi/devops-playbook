@@ -8,33 +8,44 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: npm Dependency Audit
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   schedule:
     - cron: "0 8 * * 1"  # Weekly Monday
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   audit:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     steps:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           node-version: "20"
 
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Install dependencies
         run: npm ci
 
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run npm audit
         run: npm audit --audit-level=high
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run audit with JSON output
         run: npm audit --json > npm-audit.json || true
 
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload audit report
         uses: actions/upload-artifact@v4
         with:

@@ -9,44 +9,61 @@
 # ============================================================
 
 # Azure Pipelines — .NET Build & Test
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger:
   branches:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     include:
       - main
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - develop
 
 pr:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   branches:
     include:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - main
 
 variables:
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   buildConfiguration: Release
   dotnetVersion: "8.0.x"
 
+# Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 pool:
   vmImage: ubuntu-latest
 
+# Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
   - stage: Build
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: Build & Test
     jobs:
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - job: BuildTest
         steps:
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - task: UseDotNet@2
             displayName: Install .NET SDK
+            # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             inputs:
               version: $(dotnetVersion)
 
+          # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - task: DotNetCoreCLI@2
             displayName: Restore
+            # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             inputs:
               command: restore
 
+          # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - task: DotNetCoreCLI@2
             displayName: Build
+            # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             inputs:
               command: build
+              # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               arguments: --configuration $(buildConfiguration) --no-restore
 
           - task: DotNetCoreCLI@2

@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitHub Actions — Datadog Deployment Notification (Reusable)
 # WHEN TO USE: Tracking deployments in Datadog for APM correlation and DORA metrics
 # PREREQUISITES: Datadog account, API key
@@ -8,63 +8,89 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Datadog Deployment Notification Template
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_call:
     inputs:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       service:
         description: "Service name as it appears in Datadog APM (e.g., my-api)"
+        # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
         type: string
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       environment:
         description: "Deployment environment (dev, staging, prod)"
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
         type: string
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       version:
         description: "Version being deployed (semver, commit SHA, etc.)"
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: false
         type: string
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         default: ""
       datadog-site:
+        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         description: "Datadog site (datadoghq.com, datadoghq.eu, us3.datadoghq.com, etc.)"
         required: false
+        # Note 11: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string
         default: "datadoghq.com"  # <-- CHANGE THIS: your Datadog region
+    # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     secrets:
       datadog-api-key:
+        # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
 
 jobs:
+  # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   notify:
     runs-on: ubuntu-latest
+    # Note 15: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       # -----------------------------------------------
       # Deployment Event — appears in Datadog Event Stream
       # and correlates with APM traces, error tracking, etc.
       # -----------------------------------------------
       - name: Send Deployment Event to Datadog
+        # Note 16: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           VERSION="${{ inputs.version }}"
+          # Note 17: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
           if [ -z "$VERSION" ]; then
             VERSION="${{ github.sha }}"
+          # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           fi
 
           curl -s -X POST "https://api.${{ inputs.datadog-site }}/api/v1/events" \
+            # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -H "Content-Type: application/json" \
             -H "DD-API-KEY: ${{ secrets.datadog-api-key }}" \
+            # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -d "{
               \"title\": \"Deployment: ${{ inputs.service }} → ${{ inputs.environment }}\",
+              # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               \"text\": \"Deployed version ${VERSION} of ${{ inputs.service }} to ${{ inputs.environment }}.\\n\\nRepository: ${{ github.repository }}\\nBranch: ${{ github.ref_name }}\\nCommit: ${{ github.sha }}\\nTriggered by: ${{ github.actor }}\\n\\n[View pipeline run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\",
               \"alert_type\": \"info\",
+              # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               \"source_type_name\": \"github\",
               \"tags\": [
+                # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 \"service:${{ inputs.service }}\",
                 \"environment:${{ inputs.environment }}\",
+                # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 \"version:${VERSION}\",
                 \"source:github-actions\",
+                # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 \"repository:${{ github.repository }}\",
                 \"branch:${{ github.ref_name }}\"
+              # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               ]
             }"
 
@@ -72,26 +98,36 @@ jobs:
       # DORA Metrics — Deployment Frequency tracking
       # Uses the Datadog CI Visibility / DORA metrics API
       # -----------------------------------------------
+      # Note 27: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Send DORA Deployment Metric
         run: |
+          # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           VERSION="${{ inputs.version }}"
           if [ -z "$VERSION" ]; then
+            # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             VERSION="${{ github.sha }}"
           fi
 
+          # Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           TIMESTAMP=$(date +%s)
 
           curl -s -X POST "https://api.${{ inputs.datadog-site }}/api/v2/dora/deployment" \
+            # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -H "Content-Type: application/json" \
             -H "DD-API-KEY: ${{ secrets.datadog-api-key }}" \
+            # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -d "{
               \"data\": {
+                # Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 \"attributes\": {
                   \"service\": \"${{ inputs.service }}\",
+                  # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   \"started_at\": ${TIMESTAMP},
                   \"finished_at\": ${TIMESTAMP},
+                  # Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   \"git\": {
                     \"commit_sha\": \"${{ github.sha }}\",
+                    # Note 36: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     \"repository_url\": \"${{ github.server_url }}/${{ github.repository }}\"
                   },
                   \"env\": \"${{ inputs.environment }}\",

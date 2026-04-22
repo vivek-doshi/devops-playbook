@@ -1,9 +1,12 @@
-﻿apiVersion: v2
+﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+apiVersion: v2
 name: webapp
 description: Generic Web Application Helm Chart
+# Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
+# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 keywords:
   - webapp
   - api

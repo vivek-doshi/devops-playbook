@@ -8,43 +8,58 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: .NET Build & Test
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main, develop]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
   DOTNET_VERSION: "8.0.x"
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   build-test:
+    # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Build & Test
     runs-on: ubuntu-latest
 
+    # Note 7: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - name: Checkout
+        # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: actions/checkout@v4
 
       - name: Setup .NET
+        # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: actions/setup-dotnet@v4
         with:
+          # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore dependencies
+        # Note 11: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: dotnet restore
 
       - name: Build
+        # Note 12: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: dotnet build --no-restore --configuration Release
 
       - name: Test
+        # Note 13: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
+        # Note 14: --collect:"XPlat Code Coverage" wires in the cross-platform coverage driver; results land in ./TestResults.
         run: dotnet test --no-build --configuration Release \
           --logger trx \
           --collect:"XPlat Code Coverage" \
           --results-directory ./TestResults
 
+      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -53,6 +68,6 @@ jobs:
           path: TestResults/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           directory: TestResults

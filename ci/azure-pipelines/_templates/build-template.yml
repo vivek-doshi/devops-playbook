@@ -10,25 +10,34 @@
 
 # Azure Pipelines — Build Template (extends)
 # Usage: extends: { template: ci/azure-pipelines/_templates/build-template.yml }
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 parameters:
   - name: buildConfiguration
+    # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     type: string
     default: Release
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - name: dotnetVersion
     type: string
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     default: "8.0.x"
 
 steps:
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - task: UseDotNet@2
     inputs:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       version: ${{ parameters.dotnetVersion }}
 
   - task: DotNetCoreCLI@2
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: Restore
     inputs:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       command: restore
 
   - task: DotNetCoreCLI@2
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: Build
     inputs:
       command: build

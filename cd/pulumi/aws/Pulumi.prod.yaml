@@ -1,6 +1,8 @@
+﻿# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 config:
   aws:region: us-east-1
   aws-ecs-fargate:containerPort: "3000"
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   aws-ecs-fargate:cpu: "256"
   aws-ecs-fargate:memory: "512"
   aws-ecs-fargate:desiredCount: "2"

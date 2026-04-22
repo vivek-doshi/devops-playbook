@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitHub Actions — Grafana Deployment Notification (Reusable)
 # WHEN TO USE: Annotating deployments on Grafana dashboards for visual correlation
 # PREREQUISITES: Grafana instance with API access (Cloud or self-hosted)
@@ -8,88 +8,122 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Grafana Deployment Notification Template
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_call:
     inputs:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       service:
         description: "Service name (used in annotation tags)"
+        # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
         type: string
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       environment:
         description: "Deployment environment (dev, staging, prod)"
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
         type: string
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       version:
         description: "Version being deployed (semver, commit SHA, etc.)"
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: false
         type: string
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         default: ""
       grafana-url:
+        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         description: "Grafana base URL (e.g., https://my-org.grafana.net or https://grafana.internal)"
         required: true
+        # Note 11: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string     # <-- CHANGE THIS: your Grafana instance URL
       dashboard-uid:
+        # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         description: "Optional: UID of a specific dashboard to annotate (leave empty for global annotation)"
         required: false
+        # Note 13: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string
         default: ""
+    # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     secrets:
       grafana-api-token:
+        # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
 
 jobs:
+  # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   notify:
     runs-on: ubuntu-latest
+    # Note 17: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       # -----------------------------------------------
       # Grafana Annotation — appears as vertical lines on dashboards
       # Correlate deployments with metric changes visually
       # -----------------------------------------------
       - name: Create Grafana Annotation
+        # Note 18: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           VERSION="${{ inputs.version }}"
+          # Note 19: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
           if [ -z "$VERSION" ]; then
             VERSION="${{ github.sha }}"
+          # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           fi
 
           TIMESTAMP_MS=$(date +%s%3N)
 
           # Build annotation payload
+          # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           TAGS="[\"deployment\", \"service:${{ inputs.service }}\", \"env:${{ inputs.environment }}\", \"version:${VERSION}\"]"
 
           TEXT="**Deployment:** ${{ inputs.service }} → ${{ inputs.environment }}\n"
+          # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           TEXT+="**Version:** ${VERSION}\n"
           TEXT+="**Branch:** ${{ github.ref_name }}\n"
+          # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           TEXT+="**Commit:** ${{ github.sha }}\n"
           TEXT+="**By:** ${{ github.actor }}\n"
+          # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           TEXT+="**[View Pipeline Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**"
 
           # Global annotation (visible on all dashboards with matching tags)
           PAYLOAD="{
+            # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             \"time\": ${TIMESTAMP_MS},
             \"tags\": ${TAGS},
+            # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             \"text\": \"${TEXT}\"
           }"
 
           # If a specific dashboard UID is provided, add dashboardUID to the payload
+          # Note 27: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
           if [ -n "${{ inputs.dashboard-uid }}" ]; then
             PAYLOAD="{
+              # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               \"dashboardUID\": \"${{ inputs.dashboard-uid }}\",
               \"time\": ${TIMESTAMP_MS},
+              # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               \"tags\": ${TAGS},
               \"text\": \"${TEXT}\"
+            # Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             }"
           fi
 
+          # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           HTTP_STATUS=$(curl -s -o /tmp/grafana_response.json -w "%{http_code}" \
             -X POST "${{ inputs.grafana-url }}/api/annotations" \
+            # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.grafana-api-token }}" \
+            # Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -d "${PAYLOAD}")
 
           echo "Grafana API response (HTTP ${HTTP_STATUS}):"
+          # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cat /tmp/grafana_response.json
 
           if [ "$HTTP_STATUS" -ge 400 ]; then

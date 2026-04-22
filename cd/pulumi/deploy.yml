@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitHub Actions — Pulumi Preview / Deploy
 # WHEN TO USE: Automating Pulumi infrastructure deployments with PR review
 # PREREQUISITES: Pulumi project with Pulumi.yaml, cloud credentials via OIDC
@@ -8,30 +8,51 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Pulumi Preview / Deploy
 
+# Note 2: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 on:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     branches: [main]
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     paths:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "cd/pulumi/**"                         # <-- CHANGE THIS: path to your Pulumi project
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     branches: [main]
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     paths:
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "cd/pulumi/**"                         # <-- CHANGE THIS: match above
 
+# Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 concurrency:
+  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   group: pulumi-${{ github.ref }}
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   cancel-in-progress: false                    # Never cancel in-progress deploys
 
+# Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 permissions:
+  # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   contents: read
+  # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull-requests: write
+  # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   id-token: write                              # For OIDC authentication
 
+# Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
+  # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   PULUMI_WORKING_DIR: "cd/pulumi/aws"          # <-- CHANGE THIS: path to Pulumi project
+  # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   PULUMI_STACK: "prod"                         # <-- CHANGE THIS: your stack name
+  # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   NODE_VERSION: "22"                           # <-- CHANGE THIS: your Node.js version
 
   # --- AWS (uncomment if using AWS) ---
@@ -43,16 +64,23 @@ env:
   # --- GCP (uncomment if using GCP) ---
   # GOOGLE_PROJECT: my-project-id
 
+# Note 22: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   # =============================================
   # PREVIEW — runs on every Pull Request
   # =============================================
+  # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   preview:
+    # Note 24: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Pulumi Preview
+    # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
+    # Note 26: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
     if: github.event_name == 'pull_request'
 
+    # Note 27: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
+      # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       # --- Cloud Authentication (uncomment ONE) ---
@@ -79,19 +107,31 @@ jobs:
       #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
+      # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Set up Node.js
+        # Note 30: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: actions/setup-node@v4
+        # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
+          # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           node-version: ${{ env.NODE_VERSION }}
+          # Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cache: npm
+          # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cache-dependency-path: ${{ env.PULUMI_WORKING_DIR }}/package-lock.json
 
+      # Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Install dependencies
+        # Note 36: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         working-directory: ${{ env.PULUMI_WORKING_DIR }}
+        # Note 37: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: npm ci
 
+      # Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Pulumi Preview
+        # Note 39: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: pulumi/actions@v5
+        # Note 40: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           command: preview
           stack-name: ${{ env.PULUMI_STACK }}

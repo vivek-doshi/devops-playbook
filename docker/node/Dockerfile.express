@@ -10,26 +10,38 @@
 # ============================================================
 
 # ── Stage 1: Install production dependencies only ─────────────────────────
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS build
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY package*.json ./
+# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm ci --omit=dev --ignore-scripts
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+# Note 5: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS runtime
+# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
+# Note 7: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
+# Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --from=build /app/node_modules ./node_modules
+# Note 9: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --chown=appuser:appgroup . .
 
 USER appuser
 
 ENV NODE_ENV=production
-EXPOSE 3000                                                 # <-- CHANGE THIS: your port
+# <-- CHANGE THIS: your port
+EXPOSE 3000
 
+# <-- CHANGE THIS: your health endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/health || exit 1      # <-- CHANGE THIS: your health endpoint
+  CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["node", "src/index.js"]                                 # <-- CHANGE THIS: your entrypoint
+# <-- CHANGE THIS: your entrypoint
+CMD ["node", "src/index.js"]

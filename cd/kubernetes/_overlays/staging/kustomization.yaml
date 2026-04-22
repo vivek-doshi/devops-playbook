@@ -1,9 +1,12 @@
-﻿apiVersion: kustomize.config.k8s.io/v1beta1
+﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 resources:
   - ../../_base
 
+# Note 3: Resource identity and metadata drive automation, selectors, and operational traceability.
 namespace: staging
 
 images:

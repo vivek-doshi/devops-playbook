@@ -9,20 +9,28 @@
 # ============================================================
 
 # Reusable Docker Build job — uses Kaniko (no Docker-in-Docker required)
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 .docker-build:
   stage: package
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    # Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
     entrypoint: [""]
   variables:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     DOCKERFILE: Dockerfile
     IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - |
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       /kaniko/executor \
         --context "$CI_PROJECT_DIR" \
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         --dockerfile "$CI_PROJECT_DIR/$DOCKERFILE" \
         --destination "$IMAGE_TAG" \
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         --destination "$CI_REGISTRY_IMAGE:latest" \
         --cache=true \
         --cache-repo "$CI_REGISTRY_IMAGE/cache"

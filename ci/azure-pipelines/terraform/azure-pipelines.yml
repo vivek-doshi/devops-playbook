@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: Azure Pipelines — Terraform Plan / Apply
 # WHEN TO USE: Automating Terraform workflows in Azure DevOps
 # PREREQUISITES: Azure service connection, Terraform extension installed
@@ -8,113 +8,153 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger:
   branches:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     include:
       - main
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   paths:
     include:
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - terraform/**                # <-- CHANGE THIS: path to your Terraform configs
 
 pr:
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   branches:
     include:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - main
   paths:
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     include:
       - terraform/**                # <-- CHANGE THIS: match above
 
+# Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 variables:
-  TF_VERSION: "1.7.0"                              # <-- CHANGE THIS: pin to your version
+  TF_VERSION: "1.10.0"                             # <-- CHANGE THIS: pin to your version
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   TF_WORKING_DIR: "$(System.DefaultWorkingDirectory)/terraform/azure-aks"  # <-- CHANGE THIS
   azureServiceConnection: "my-azure-connection"     # <-- CHANGE THIS: Azure DevOps service connection name
 
   # Backend config for remote state (Azure Storage)
+  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   backendResourceGroup: "tfstate-rg"                # <-- CHANGE THIS
   backendStorageAccount: "tfstatesa"                # <-- CHANGE THIS
+  # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   backendContainer: "tfstate"                       # <-- CHANGE THIS
   backendKey: "terraform.tfstate"                   # <-- CHANGE THIS
 
+# Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 pool:
   vmImage: "ubuntu-latest"
 
+# Note 13: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
   # =============================================
   # VALIDATE — format check + validation
   # =============================================
   - stage: Validate
+    # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: "Terraform Validate"
     jobs:
+      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - job: Validate
         displayName: "Format & Validate"
+        # Note 16: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         steps:
           - task: TerraformInstaller@1
+            # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: "Install Terraform $(TF_VERSION)"
             inputs:
+              # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               terraformVersion: $(TF_VERSION)
 
           - script: terraform fmt -check -diff
+            # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: "Terraform Format Check"
             workingDirectory: $(TF_WORKING_DIR)
 
+          # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - script: terraform init -backend=false
             displayName: "Terraform Init (validation only)"
+            # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             workingDirectory: $(TF_WORKING_DIR)
 
           - script: terraform validate -no-color
+            # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: "Terraform Validate"
             workingDirectory: $(TF_WORKING_DIR)
 
   # =============================================
   # PLAN — runs on PR and main branch
   # =============================================
+  # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - stage: Plan
     displayName: "Terraform Plan"
+    # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     dependsOn: Validate
     jobs:
+      # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - job: Plan
         displayName: "Generate Plan"
+        # Note 26: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         steps:
           - task: TerraformInstaller@1
+            # Note 27: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: "Install Terraform $(TF_VERSION)"
             inputs:
+              # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               terraformVersion: $(TF_VERSION)
 
           - task: AzureCLI@2
+            # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: "Terraform Init + Plan"
             inputs:
+              # Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               azureSubscription: $(azureServiceConnection)
               scriptType: bash
+              # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               scriptLocation: inlineScript
               workingDirectory: $(TF_WORKING_DIR)
+              # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               addSpnToEnvironment: true  # Exposes ARM_CLIENT_ID, ARM_CLIENT_SECRET, etc.
               inlineScript: |
                 # Export Azure credentials for Terraform
+                # Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 export ARM_CLIENT_ID=$servicePrincipalId
                 export ARM_CLIENT_SECRET=$servicePrincipalKey
+                # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
                 export ARM_TENANT_ID=$tenantId
 
                 # Init with backend
+                # Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 terraform init -input=false \
                   -backend-config="resource_group_name=$(backendResourceGroup)" \
+                  # Note 36: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   -backend-config="storage_account_name=$(backendStorageAccount)" \
                   -backend-config="container_name=$(backendContainer)" \
+                  # Note 37: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   -backend-config="key=$(backendKey)"
 
                 # Plan
                 terraform plan -input=false -no-color -out=tfplan
 
                 # Save human-readable plan for review
+                # Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 terraform show -no-color tfplan > $(Build.ArtifactStagingDirectory)/plan_output.txt
 
           - publish: $(Build.ArtifactStagingDirectory)/plan_output.txt
+            # Note 39: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             artifact: terraform-plan
             displayName: "Publish Plan Output"
 
   # =============================================
   # APPLY — runs only on main branch, with approval
   # =============================================
+  # Note 40: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - stage: Apply
     displayName: "Terraform Apply"
     dependsOn: Plan

@@ -9,19 +9,26 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # Install dependencies (full dev deps for hot reload)
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY package*.json ./
+# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm install
 
 # Source is bind-mounted at runtime for hot reload — this COPY is a fallback
+# Note 5: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY . .
 
 # Create non-root user for development
+# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
     chown -R appuser:appgroup /app
+# Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 USER appuser
 
 EXPOSE 3000                                                 # <-- CHANGE THIS: your dev server port

@@ -10,8 +10,11 @@
 
 # Variable Groups — Linking to Azure Key Vault
 # Reference this from your pipeline via group: name
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 variables:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - group: MyApp-Dev-Vars      # Define in Azure DevOps Library
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - group: MyApp-Dev-Secrets   # Linked to Azure Key Vault
 
 # In Azure DevOps UI: Pipelines → Library → + Variable Group

@@ -8,23 +8,31 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: SonarQube Scan
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   sonar:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     steps:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
         with:
+          # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           fetch-depth: 0
 
       - name: SonarQube Scan
+        # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -10,35 +10,48 @@
 
 # Python GitLab CI Pipeline
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 include:
   - local: ci/gitlab-ci/_includes/.sast-scan.yml
 
+# Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   PYTHON_VERSION: "3.12"
 
 stages:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - lint
   - test
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - scan
   - package
 
+# Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 cache:
   paths:
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - .cache/pip
 
 lint:
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   stage: lint
   image: python:3.12-slim
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - pip install ruff black mypy
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - ruff check .
     - black --check .
+    # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - mypy .
 
 test:
+  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   stage: test
   image: python:3.12-slim
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - pip install -r requirements.txt -r requirements-dev.txt
     - pytest --cov=. --cov-report=xml --cov-report=term

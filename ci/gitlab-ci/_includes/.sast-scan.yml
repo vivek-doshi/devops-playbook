@@ -9,11 +9,17 @@
 # ============================================================
 
 # Reusable SAST scan — Semgrep
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 .sast-scan:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   stage: scan
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image: returntocorp/semgrep:latest
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - semgrep --config auto --json --output semgrep-report.json . || true
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   artifacts:
     paths:
       - semgrep-report.json

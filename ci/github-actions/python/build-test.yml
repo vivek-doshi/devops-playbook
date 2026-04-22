@@ -8,42 +8,57 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Python Build & Test
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main, develop]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   build-test:
+    # Note 5: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Build & Test
     runs-on: ubuntu-latest
 
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+        python-version: ["3.12", "3.13"]
 
     steps:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
+        # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: actions/setup-python@v5
         with:
+          # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Install dependencies
         run: |
+          # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           pip install --upgrade pip
           pip install -r requirements.txt
+          # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           pip install -r requirements-dev.txt
 
       - name: Lint with ruff
+        # Note 14: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: ruff check .
 
       - name: Format check with black
+        # Note 15: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: black --check .
 
       - name: Type check with mypy
@@ -53,6 +68,6 @@ jobs:
         run: pytest --cov=. --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: coverage.xml

@@ -8,36 +8,49 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to Azure AKS
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_run:
     workflows: [".NET Docker Build & Publish"]
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     types: [completed]
     branches: [main]
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
   CLUSTER_NAME: my-aks-cluster
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   RESOURCE_GROUP: my-resource-group
   NAMESPACE: production
 
+# Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
+    # Note 7: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
+    # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Azure Login
         uses: azure/login@v2
+        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Set AKS context
         uses: azure/aks-set-context@v3
+        # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           resource-group: ${{ env.RESOURCE_GROUP }}
+          # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cluster-name: ${{ env.CLUSTER_NAME }}
 
       - name: Deploy with Helm

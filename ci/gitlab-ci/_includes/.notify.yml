@@ -9,12 +9,19 @@
 # ============================================================
 
 # Reusable Slack notification job
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 .notify:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   stage: .post
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image: alpine:latest
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - apk add --no-cache curl
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - |
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       STATUS="${CI_JOB_STATUS:-unknown}"
       COLOR="good"
       if [ "$STATUS" != "success" ]; then COLOR="danger"; fi

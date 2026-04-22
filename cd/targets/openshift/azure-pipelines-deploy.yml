@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: Azure Pipelines — Deploy to Red Hat OpenShift
 # WHEN TO USE: OpenShift deployment from Azure DevOps pipelines
 # PREREQUISITES: OpenShift cluster, service account token stored in Azure DevOps
@@ -9,33 +9,46 @@
 # ============================================================
 
 # Azure Pipelines — Deploy to OpenShift
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger: none  # Triggered by CD pipeline, not directly
 
 resources:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pipelines:
     - pipeline: ci-build
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source: CI-Build-Pipeline
       trigger:
+        # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         branches:
           include: [main]
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
   - stage: Deploy
+    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     jobs:
       - deployment: DeployOpenShift
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         environment: production
         strategy:
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           runOnce:
             deploy:
+              # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
               steps:
                 - script: |
+                    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     curl -fsSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
                       | tar -xz -C /usr/local/bin oc
+                    # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     oc version --client
                   displayName: Install oc CLI
 
+                # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 - script: |
                     oc login $(OPENSHIFT_SERVER) --token=$(OPENSHIFT_TOKEN) --insecure-skip-tls-verify=false
+                    # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     oc project production
                   displayName: Log in to OpenShift
 

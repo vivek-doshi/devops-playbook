@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+﻿# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — ASP.NET Core Web API
 # WHEN TO USE: Any ASP.NET Core / .NET 8+ Web API project
@@ -10,24 +10,35 @@
 # ============================================================
 
 # ── Stage 1: Build ──────────────────────────────────────────────────────────
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /src
 
 # Restore dependencies first (better layer caching)
-COPY ["MyApp/MyApp.csproj", "MyApp/"]                     # <-- CHANGE THIS: your project path
-RUN dotnet restore "MyApp/MyApp.csproj"                     # <-- CHANGE THIS: your .csproj path
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
+# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
+# <-- CHANGE THIS: your .csproj path
+RUN dotnet restore "MyApp/MyApp.csproj"
 
 # Copy source and publish
+# Note 5: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY . .
-WORKDIR "/src/MyApp"                                        # <-- CHANGE THIS: your project folder
-RUN dotnet publish "MyApp.csproj" \                         # <-- CHANGE THIS: your .csproj name
+# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
+# <-- CHANGE THIS: your project folder
+WORKDIR "/src/MyApp"
+# Note 7: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
+# <-- CHANGE THIS: your .csproj name
+RUN dotnet publish "MyApp.csproj" \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false \
     --no-restore
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+# Note 12: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
+# Note 13: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # Security: run as non-root user
@@ -39,10 +50,14 @@ COPY --from=build --chown=appuser:appgroup /app/publish .
 USER appuser
 
 # Health check — uses wget (available in Alpine; curl is NOT included)
+# <-- CHANGE THIS: your health endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:8080/health || exit 1      # <-- CHANGE THIS: your health endpoint
+  CMD wget -qO- http://localhost:8080/health || exit 1
 
-ENV ASPNETCORE_URLS=http://+:8080                           # <-- CHANGE THIS: your port
-EXPOSE 8080                                                 # <-- CHANGE THIS: your port
+# <-- CHANGE THIS: your port
+ENV ASPNETCORE_URLS=http://+:8080
+# <-- CHANGE THIS: your port
+EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "MyApp.dll"]                          # <-- CHANGE THIS: your assembly name
+# <-- CHANGE THIS: your assembly name
+ENTRYPOINT ["dotnet", "MyApp.dll"]

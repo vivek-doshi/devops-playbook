@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+﻿# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — Ruby on Rails Application
 # WHEN TO USE: Any Rails 7+ application (API or full-stack)
@@ -10,10 +10,13 @@
 # ============================================================
 
 # ── Stage 1: Build (install gems + precompile assets) ────────────────────────
-FROM ruby:3.3-slim AS build
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
+FROM ruby:3.4-slim AS build
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # Install build dependencies for native gem extensions
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -22,26 +25,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js for asset pipeline (remove if API-only)
+# Note 9: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g yarn                        # <-- CHANGE THIS: remove if not using Yarn
 
 # Install gems — copy Gemfile first for layer caching
+# Note 12: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY Gemfile Gemfile.lock ./
+# Note 13: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN bundle config set --local deployment true && \
     bundle config set --local without 'development test' && \
     bundle install --jobs 4 --retry 3
 
 # Copy app source
+# Note 16: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY . .
 
 # Precompile assets (skip if API-only — comment out this block)
+# Note 17: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN SECRET_KEY_BASE=placeholder \
     RAILS_ENV=production \
     bundle exec rails assets:precompile
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
-FROM ruby:3.3-slim AS runtime
+FROM ruby:3.4-slim AS runtime
 WORKDIR /app
 
 # Install runtime-only dependencies
@@ -62,9 +70,9 @@ USER appuser
 ENV RAILS_ENV=production \
     RAILS_LOG_TO_STDOUT=true \
     RAILS_SERVE_STATIC_FILES=true \
-    PORT=3000                                  # <-- CHANGE THIS: your port
-
-EXPOSE 3000                                    # <-- CHANGE THIS: match PORT above
+    PORT=3000
+# <-- CHANGE THIS: your port; update EXPOSE below to match
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3000/up || exit 1   # <-- CHANGE THIS: Rails 7.1+ has /up by default

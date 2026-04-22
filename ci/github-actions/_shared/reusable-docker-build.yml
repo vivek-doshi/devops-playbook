@@ -8,46 +8,64 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Reusable Docker Build
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_call:
     inputs:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       image-name:
         required: true
+        # Note 4: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string
       dockerfile:
+        # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: false
         type: string
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         default: Dockerfile
       context:
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: false
         type: string
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         default: .
     secrets:
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       registry-token:
         required: true
 
+# Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   docker-build:
+    # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     permissions:
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       contents: read
       packages: write
 
+    # Note 13: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Log in to GHCR
         uses: docker/login-action@v3
+        # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           registry: ghcr.io
+          # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           username: ${{ github.actor }}
           password: ${{ secrets.registry-token }}
 
+      # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5

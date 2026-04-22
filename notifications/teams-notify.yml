@@ -8,66 +8,86 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Microsoft Teams Notification Template
 
 on:
   workflow_call:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     inputs:
       status:
         required: true
+        # Note 3: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string
       message:
         required: false
+        # Note 4: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string
         default: ""
     secrets:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       webhook-url:
         required: true
 
 jobs:
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   notify:
     runs-on: ubuntu-latest
     steps:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Teams Notification (Adaptive Card)
         run: |
           STATUS="${{ inputs.status }}"
+          # Note 8: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
           if [ "$STATUS" = "success" ]; then
             ICON="\u2705"
             COLOR="good"
+          # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           else
             ICON="\u274C"
             COLOR="attention"
+          # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           fi
 
           curl -H "Content-Type: application/json" \
             -d "{
+              # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               \"type\": \"message\",
               \"attachments\": [{
                 \"contentType\": \"application/vnd.microsoft.card.adaptive\",
+                # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 \"content\": {
                   \"\$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",
                   \"type\": \"AdaptiveCard\",
+                  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   \"version\": \"1.4\",
                   \"body\": [
                     {
+                      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                       \"type\": \"TextBlock\",
                       \"size\": \"medium\",
                       \"weight\": \"bolder\",
+                      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                       \"text\": \"$ICON Pipeline $STATUS\"
                     },
                     {
+                      # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                       \"type\": \"FactSet\",
                       \"facts\": [
                         { \"title\": \"Repository\", \"value\": \"${{ github.repository }}\" },
+                        # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                         { \"title\": \"Branch\", \"value\": \"${{ github.ref_name }}\" },
                         { \"title\": \"Commit\", \"value\": \"${{ github.sha }}\" }
                       ]
+                    # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     }
                   ],
                   \"actions\": [
+                    # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     {
                       \"type\": \"Action.OpenUrl\",
                       \"title\": \"View Run\",
+                      # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                       \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
                     }
                   ]

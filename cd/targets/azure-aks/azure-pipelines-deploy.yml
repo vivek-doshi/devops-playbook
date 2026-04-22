@@ -9,28 +9,39 @@
 # ============================================================
 
 # Azure Pipelines — Deploy to AKS
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger: none  # Triggered by CD pipeline, not directly
 
 resources:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pipelines:
     - pipeline: ci-build
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source: CI-Build-Pipeline
       trigger:
+        # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         branches:
           include: [main]
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
   - stage: Deploy
+    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     jobs:
       - deployment: DeployAKS
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         environment: production
         strategy:
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           runOnce:
             deploy:
+              # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
               steps:
                 - task: KubernetesManifest@1
+                  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   displayName: Deploy to AKS
                   inputs:
+                    # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     action: deploy
                     connectionType: azureResourceManager
                     azureSubscriptionConnection: $(AzureServiceConnection)

@@ -9,17 +9,23 @@
 # ============================================================
 
 # ArgoCD ApplicationSet — generate apps from a list or Git directories
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
+# Note 2: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 metadata:
   name: microservices
+  # Note 3: Resource identity and metadata drive automation, selectors, and operational traceability.
   namespace: argocd
 spec:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   generators:
     # Git generator: create one app per directory in the repo
     - git:
+        # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         repoURL: https://github.com/my-org/gitops-repo.git
         revision: HEAD
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         directories:
           - path: services/*
 
@@ -31,18 +37,25 @@ spec:
     #       - service: order-service
     #         namespace: production
 
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   template:
     metadata:
+      # Note 8: Resource identity and metadata drive automation, selectors, and operational traceability.
       name: "{{path.basename}}"
     spec:
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       project: default
       source:
+        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         repoURL: https://github.com/my-org/gitops-repo.git
         targetRevision: HEAD
+        # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         path: "{{path}}"
       destination:
+        # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         server: https://kubernetes.default.svc
         namespace: production
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       syncPolicy:
         automated:
           prune: true

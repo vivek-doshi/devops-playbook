@@ -8,36 +8,50 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Monorepo — Build Affected Services
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   detect-changes:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     outputs:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       user-service: ${{ steps.filter.outputs.user-service }}
       order-service: ${{ steps.filter.outputs.order-service }}
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       api-gateway: ${{ steps.filter.outputs.api-gateway }}
 
     steps:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         id: filter
         with:
+          # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           filters: |
             user-service:
+              # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               - 'services/user-service/**'
             order-service:
+              # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               - 'services/order-service/**'
             api-gateway:
+              # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               - 'services/api-gateway/**'
               - 'shared/**'  # Shared changes affect gateway
 
+  # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   build-user-service:
     needs: detect-changes
     if: needs.detect-changes.outputs.user-service == 'true'

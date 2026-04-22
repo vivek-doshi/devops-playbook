@@ -8,30 +8,42 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: PagerDuty Alert Template
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_call:
     inputs:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       severity:
         required: true
+        # Note 4: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string   # critical | error | warning | info
       summary:
+        # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
         type: string
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     secrets:
       pagerduty-integration-key:
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
 
 jobs:
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   alert:
     runs-on: ubuntu-latest
+    # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - name: Trigger PagerDuty
+        # Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           curl -X POST https://events.pagerduty.com/v2/enqueue \
+            # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -H "Content-Type: application/json" \
             -d "{
+              # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               \"routing_key\": \"${{ secrets.pagerduty-integration-key }}\",
               \"event_action\": \"trigger\",
               \"payload\": {

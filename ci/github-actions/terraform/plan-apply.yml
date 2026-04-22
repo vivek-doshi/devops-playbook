@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitHub Actions — Terraform Plan / Apply
 # WHEN TO USE: Automating Terraform workflows with PR-based plan review
 # PREREQUISITES: Cloud credentials configured via OIDC or secrets
@@ -8,31 +8,52 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Terraform Plan / Apply
 
+# Note 2: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 on:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     branches: [main]
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     paths:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "terraform/**"    # <-- CHANGE THIS: path to your Terraform configs
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     branches: [main]
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     paths:
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "terraform/**"    # <-- CHANGE THIS: match above
 
 # Prevent concurrent Terraform runs against the same state
+# Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 concurrency:
+  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   group: terraform-${{ github.ref }}
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   cancel-in-progress: false   # Never cancel in-progress Terraform applies
 
+# Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 permissions:
+  # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   contents: read
+  # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull-requests: write        # For posting plan output as PR comment
+  # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   id-token: write             # For OIDC authentication to cloud providers
 
+# Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
-  TF_VERSION: "1.7.0"                       # <-- CHANGE THIS: pin to your version
+  # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  TF_VERSION: "1.10.0"                      # <-- CHANGE THIS: pin to your version
+  # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   TF_WORKING_DIR: "terraform/azure-aks"      # <-- CHANGE THIS: path to root module
+  # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   TF_VAR_FILE: ""                            # <-- CHANGE THIS: e.g., "environments/prod.tfvars"
 
   # --- Azure (uncomment if using Azure) ---
@@ -47,16 +68,23 @@ env:
   # --- GCP (uncomment if using GCP) ---
   # GOOGLE_PROJECT: my-project-id
 
+# Note 22: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   # =============================================
   # PLAN — runs on every PR
   # =============================================
+  # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   plan:
+    # Note 24: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Terraform Plan
+    # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
+    # Note 26: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
     if: github.event_name == 'pull_request'
 
+    # Note 27: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
+      # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       # --- Cloud Authentication (uncomment ONE) ---
@@ -83,31 +111,53 @@ jobs:
       #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
+      # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Terraform
+        # Note 30: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: hashicorp/setup-terraform@v3
+        # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
+          # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           terraform_version: ${{ env.TF_VERSION }}
+          # Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           terraform_wrapper: true   # Enables stdout capture for PR comments
 
+      # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Terraform Format Check
+        # Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         id: fmt
+        # Note 36: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         working-directory: ${{ env.TF_WORKING_DIR }}
+        # Note 37: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: terraform fmt -check -diff
+        # Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         continue-on-error: true
 
+      # Note 39: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Terraform Init
+        # Note 40: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         id: init
+        # Note 41: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         working-directory: ${{ env.TF_WORKING_DIR }}
+        # Note 42: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: terraform init -input=false
 
+      # Note 43: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Terraform Validate
+        # Note 44: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         id: validate
+        # Note 45: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         working-directory: ${{ env.TF_WORKING_DIR }}
+        # Note 46: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: terraform validate -no-color
 
+      # Note 47: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Terraform Plan
+        # Note 48: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         id: plan
+        # Note 49: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         working-directory: ${{ env.TF_WORKING_DIR }}
+        # Note 50: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           PLAN_ARGS="-input=false -no-color -out=tfplan"
           if [ -n "${{ env.TF_VAR_FILE }}" ]; then

@@ -1,18 +1,24 @@
 ﻿# Production overrides
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 replicaCount: 3
 
 image:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tag: "1.0.0"  # Pin to immutable tag
 
 ingress:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   host: app.example.com
   tls: true
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 autoscaling:
   enabled: true
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   minReplicas: 3
   maxReplicas: 20
 
+# Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 resources:
   requests:
     cpu: 250m

@@ -8,36 +8,49 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to AWS EKS
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_run:
     workflows: ["CI"]
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     types: [completed]
     branches: [main]
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
   AWS_REGION: us-east-1
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   EKS_CLUSTER: my-eks-cluster
 
 jobs:
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     permissions:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       id-token: write
       contents: read
 
+    # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
+        # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Update kubeconfig
+        # Note 13: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
 
       - name: Login to ECR

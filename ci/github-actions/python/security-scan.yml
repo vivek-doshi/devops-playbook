@@ -8,40 +8,54 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Python Security Scan
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   schedule:
     - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   security:
+    # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Security Scan
     runs-on: ubuntu-latest
 
+    # Note 7: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Set up Python
         uses: actions/setup-python@v5
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           python-version: "3.12"
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Install dependencies
         run: |
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Install security tools
         run: pip install bandit pip-audit
 
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run Bandit (SAST)
         run: bandit -r . -f json -o bandit-report.json --exit-zero  # <-- CHANGE THIS: adjust -r path
 
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run pip-audit (dependency CVEs)
         run: pip-audit --format json --output pip-audit-report.json || true
 

@@ -8,23 +8,31 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Gitleaks Secret Detection
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main, develop]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
 
 jobs:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   gitleaks:
     runs-on: ubuntu-latest
+    # Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           fetch-depth: 0  # Full history for complete scan
 
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}  # Required for orgs

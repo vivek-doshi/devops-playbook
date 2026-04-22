@@ -10,23 +10,32 @@
 
 # Parent-Child Pipeline example
 # The parent triggers child pipelines per service
+# Note 1: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
   - trigger
 
+# Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger-user-service:
   stage: trigger
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   trigger:
     include: services/user-service/.gitlab-ci.yml
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     strategy: depend
   rules:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - changes:
         - services/user-service/**
 
+# Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger-order-service:
   stage: trigger
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   trigger:
     include: services/order-service/.gitlab-ci.yml
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     strategy: depend
   rules:
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - changes:
         - services/order-service/**

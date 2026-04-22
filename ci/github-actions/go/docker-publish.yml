@@ -1,0 +1,77 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Go Docker Build & Publish
+# WHEN TO USE: Publishing Go container images to GHCR
+# PREREQUISITES: Dockerfile at docker/go/Dockerfile
+# SECRETS NEEDED: GITHUB_TOKEN (automatic for GHCR)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: docker/go/Dockerfile, ci/github-actions/go/build-test.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Go Docker Build & Publish
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write   # Required for anchore/sbom-action to attach SBOM as OCI referrer
+      id-token: write       # Required for OIDC-based attestation signing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        id: build-push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/go/Dockerfile                        # <-- CHANGE THIS: path to your Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Generate a Software Bill of Materials (SBOM) in SPDX format and
+      # attach it to the image as an OCI referrer. Required for SLSA level 2+.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-push.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: true
+          artifact-name: sbom-go-${{ github.sha }}.spdx.json

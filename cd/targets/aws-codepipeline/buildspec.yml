@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: AWS CodePipeline — buildspec.yml for CodeBuild
 # WHEN TO USE: When using the codepipeline.yml CloudFormation template
 # PREREQUISITES: Dockerfile in the project root
@@ -16,24 +16,40 @@
 #     BuildSpec: buildspec.yml
 #
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 version: 0.2
 
+# Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   variables:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     DOCKER_BUILDKIT: "1"          # Enable BuildKit for faster builds
 
+# Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 phases:
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   install:
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runtime-versions:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       docker: 20                   # <-- CHANGE THIS: match your Docker version needs
 
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pre_build:
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     commands:
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - echo "--- Pre-build phase ---"
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - echo "Logging in to Amazon ECR..."
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY
+      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+      # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - echo "Image URI = $IMAGE_URI:$IMAGE_TAG"
 
       # Run unit tests before building the image
@@ -43,10 +59,15 @@ phases:
       # - pip install -r requirements.txt && pytest  # Python
       # - ./gradlew test                       # Java/Gradle
 
+  # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   build:
+    # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     commands:
+      # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - echo "--- Build phase ---"
+      # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - echo "Building Docker image..."
+      # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - docker build -t $IMAGE_URI:$IMAGE_TAG -f Dockerfile .   # <-- CHANGE THIS: Dockerfile path
       - docker tag $IMAGE_URI:$IMAGE_TAG $IMAGE_URI:latest
 

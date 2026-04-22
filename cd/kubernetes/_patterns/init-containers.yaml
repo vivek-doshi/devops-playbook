@@ -1,36 +1,46 @@
 ﻿# Init Containers Pattern
 # Run setup tasks before the main container starts
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Note 2: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: app
 spec:
   replicas: 1
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   selector:
     matchLabels:
       app: my-app
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   template:
     metadata:
       labels:
+        # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         app: my-app
     spec:
       initContainers:
         # Wait for database to be ready
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: wait-for-db
           image: busybox:1.36
           command: ['sh', '-c', 'until nc -z db-service 5432; do echo waiting; sleep 2; done']
 
         # Run database migrations
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: db-migrate
           image: my-registry/my-app:latest
           command: ['dotnet', 'ef', 'database', 'update']
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           env:
             - name: ConnectionStrings__DefaultConnection
               valueFrom:
+                # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 secretKeyRef:
                   name: app-secrets
                   key: db-connection-string
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       containers:
         - name: app
           image: my-registry/my-app:latest

@@ -13,42 +13,58 @@
 
 # ── Stage 1: Dependencies ────────────────────────────────────────────────────
 # Use a full SDK image for building — this stage will NOT be shipped
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS deps
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # LAYER CACHE TIP: Copy package files BEFORE source code.
 # If source changes but packages don't, this layer is reused.
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY package*.json ./
+# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm ci --ignore-scripts   # --ignore-scripts prevents malicious postinstall
 
 # ── Stage 2: Builder ─────────────────────────────────────────────────────────
+# Note 5: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS build
+# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # Bring installed deps from the previous stage
+# Note 7: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --from=deps /app/node_modules ./node_modules
 
 # Now copy app source
+# Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY . .
 
 # Run your build step (TypeScript compile, webpack bundle, etc.)
+# Note 9: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm run build
 
 # ── Stage 3: Runtime ─────────────────────────────────────────────────────────
 # Minimal base — no build tools, smaller attack surface
+# Note 10: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS runtime
+# Note 11: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # SECURITY: Always run as a non-root user in production
+# Note 12: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Copy only the compiled output — not node_modules dev deps, not source
+# Note 13: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --from=build --chown=appuser:appgroup /app/dist ./dist
 
 # Install only production deps in the final image
+# Note 14: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY package*.json ./
+# Note 15: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
+# Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 USER appuser
 
 # HEALTHCHECK lets orchestrators know when the container is ready

@@ -8,24 +8,39 @@
 # MATURITY: Beta
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy AWS Lambda (Serverless Framework)
 
+# Note 2: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 on:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     branches: [main]
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   deploy:
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     permissions:
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       id-token: write
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       contents: read
 
+    # Note 11: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Configure AWS credentials
+        # Note 14: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: aws-actions/configure-aws-credentials@v4
+        # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1

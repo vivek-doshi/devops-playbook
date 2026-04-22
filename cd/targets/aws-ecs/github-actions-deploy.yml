@@ -8,48 +8,66 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to AWS ECS
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
 
+# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
   AWS_REGION: us-east-1
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   ECR_REPOSITORY: my-app
   ECS_SERVICE: my-service
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   ECS_CLUSTER: my-cluster
   CONTAINER_NAME: my-app
 
+# Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     permissions:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       id-token: write
       contents: read
 
+    # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
+        # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to ECR
+        # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Build and push to ECR
         id: build
+        # Note 15: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           docker build -t $IMAGE_URI -f docker/dotnet/Dockerfile.api .
           docker push $IMAGE_URI
+          # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
 
       - name: Download task definition
+        # Note 18: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: aws ecs describe-task-definition --task-definition my-task --query taskDefinition > task-definition.json
 
       - name: Update ECS task definition

@@ -8,30 +8,42 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Reusable Slack Notify
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_call:
     inputs:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       status:
         required: true
+        # Note 4: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string  # success | failure | cancelled
       message:
+        # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: false
         type: string
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     secrets:
       slack-webhook:
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
 
 jobs:
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   notify:
     runs-on: ubuntu-latest
+    # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - name: Send Slack notification
+        # Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: slackapi/slack-github-action@v1
         with:
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           payload: |
             {
+              # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               "text": "${{ inputs.status == 'success' && '✅' || '❌' }} *${{ github.repository }}* — ${{ inputs.message || github.workflow }} (${{ github.ref_name }})",
               "attachments": [{
                 "color": "${{ inputs.status == 'success' && 'good' || 'danger' }}",

@@ -8,31 +8,42 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Matrix Build Example
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
 
+# Note 3: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   build:
+    # Note 4: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Build (${{ matrix.os }} / ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
 
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     strategy:
       fail-fast: false  # Don't cancel other matrix jobs on failure
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         node: ["18", "20"]
         exclude:
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - os: macos-latest
             node: "18"  # Skip this combination
 
+    # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Node ${{ matrix.node }}
         uses: actions/setup-node@v4
+        # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           node-version: ${{ matrix.node }}
 
