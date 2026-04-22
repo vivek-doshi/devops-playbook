@@ -1,4 +1,4 @@
-﻿# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy Code Browser
 
 on:
@@ -41,11 +41,11 @@ jobs:
     # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           node-version: '20'
@@ -69,7 +69,7 @@ jobs:
 
       # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload artifacts
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           path: website/dist
@@ -84,4 +84,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
