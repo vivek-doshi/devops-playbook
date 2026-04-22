@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — React (Multi-stage: Node build → nginx serve)
 # WHEN TO USE: Any React application (CRA, Vite, etc.)
@@ -11,7 +11,7 @@
 
 # ── Stage 1: Build ───────────────────────────────────────────────────────────
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 # Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
