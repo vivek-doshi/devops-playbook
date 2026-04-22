@@ -10,39 +10,56 @@
 
 # .NET API + SQL Server + Seq (structured logging UI) — Local Dev Stack
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 services:
   api:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     build:
       context: ../../
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       dockerfile: docker/dotnet/Dockerfile.api               # <-- CHANGE THIS: path to your Dockerfile
     ports:
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "5000:8080"                                          # <-- CHANGE THIS: host:container port
     environment:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AppDb;User Id=sa;Password=${SQL_PASSWORD};TrustServerCertificate=True
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - Serilog__WriteTo__Seq__ServerUrl=http://seq:5341
     depends_on:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       sqlserver:
         condition: service_healthy
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     networks:
       - app-net
 
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     environment:
       - ACCEPT_EULA=Y
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - SA_PASSWORD=${SQL_PASSWORD:-Dev@Password123!}
     ports:
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "1433:1433"
     volumes:
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - sqlserver-data:/var/opt/mssql
     healthcheck:
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$SA_PASSWORD" -C -Q "SELECT 1" || exit 1
       interval: 15s
+      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       timeout: 5s
       retries: 5
+      # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       start_period: 30s
     networks:
+      # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - app-net
 
   # Seq — structured logging UI (view .NET Serilog logs)

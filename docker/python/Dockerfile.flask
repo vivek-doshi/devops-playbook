@@ -9,18 +9,25 @@
 # MATURITY: Stable
 # ============================================================
 
-FROM python:3.12-slim AS base
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
+FROM python:3.13-slim AS base
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # Install wget for healthcheck (curl is NOT included in python:slim)
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN apt-get update && apt-get install -y --no-install-recommends wget && \
     rm -rf /var/lib/apt/lists/*
 
+# Note 5: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 
+# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY requirements.txt .
+# Note 7: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --chown=appuser:appgroup . .
 USER appuser
 

@@ -8,30 +8,40 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: NuGet Dependency Audit
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   schedule:
     - cron: "0 8 * * 1"
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   nuget-audit:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     steps:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           dotnet-version: "8.0.x"
 
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Restore packages
         run: dotnet restore
 
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Audit NuGet packages
         run: dotnet list package --vulnerable --include-transitive 2>&1 | tee nuget-audit.txt
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload audit report
         uses: actions/upload-artifact@v4
         with:

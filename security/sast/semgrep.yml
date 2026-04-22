@@ -8,26 +8,35 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Semgrep SAST
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
 
 jobs:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   semgrep:
     runs-on: ubuntu-latest
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     container:
       image: semgrep/semgrep:latest
+    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run Semgrep
         run: semgrep --config auto --sarif --output semgrep.sarif || true
 
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
+        # Note 9: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
         if: always()
         with:
           sarif_file: semgrep.sarif

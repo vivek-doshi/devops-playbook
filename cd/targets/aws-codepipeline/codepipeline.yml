@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: AWS CodePipeline — Build, Test, Deploy (CloudFormation)
 # WHEN TO USE: Teams using AWS-native CI/CD instead of GitHub/GitLab
 # PREREQUISITES: CodeStar Connection to repo, ECR repository, ECS/EKS target
@@ -24,6 +24,7 @@
 #         EcsServiceName=my-service
 #
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "CI/CD Pipeline — CodePipeline + CodeBuild → ECS Fargate"
 
@@ -31,76 +32,96 @@ Description: "CI/CD Pipeline — CodePipeline + CodeBuild → ECS Fargate"
 # PARAMETERS
 # ============================================================
 Parameters:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   ProjectName:
     Type: String
     Description: "Project name — used for naming all resources"
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Default: my-app                # <-- CHANGE THIS
 
   RepositoryId:
     Type: String
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Description: "GitHub repository (org/repo format) or CodeCommit repo name"
     Default: my-org/my-repo        # <-- CHANGE THIS
 
   BranchName:
+    # Note 5: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     Type: String
     Description: "Branch to trigger the pipeline"
     Default: main
 
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   ConnectionArn:
     Type: String
     Description: "ARN of the CodeStar Connection to GitHub (create in Console → Settings → Connections)"
     # <-- CHANGE THIS: create connection first, then paste ARN
 
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   EcrRepositoryName:
     Type: String
     Description: "ECR repository name for built images"
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Default: my-app                # <-- CHANGE THIS
 
   EcsClusterName:
     Type: String
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Description: "ECS cluster to deploy to"
     Default: my-cluster            # <-- CHANGE THIS
 
   EcsServiceName:
+    # Note 10: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     Type: String
     Description: "ECS service to update"
     Default: my-service            # <-- CHANGE THIS
 
+  # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   ContainerName:
     Type: String
     Description: "Container name in the ECS task definition"
+    # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Default: my-app                # <-- CHANGE THIS
 
   BuildComputeType:
     Type: String
+    # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Description: "CodeBuild compute type"
     Default: BUILD_GENERAL1_SMALL
     AllowedValues:
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - BUILD_GENERAL1_SMALL
       - BUILD_GENERAL1_MEDIUM
       - BUILD_GENERAL1_LARGE
 
+# Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 Resources:
   # ============================================================
   # S3 Bucket — stores pipeline artifacts between stages
   # ============================================================
   ArtifactBucket:
     Type: AWS::S3::Bucket
+    # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Properties:
       BucketName: !Sub "${ProjectName}-pipeline-artifacts-${AWS::AccountId}"
       VersioningConfiguration:
+        # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
+          # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
       LifecycleConfiguration:
+        # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         Rules:
           - Id: CleanupOldArtifacts
             Status: Enabled
+            # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             ExpirationInDays: 30
       Tags:
         - Key: Project
+          # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           Value: !Ref ProjectName
         - Key: ManagedBy
           Value: cloudformation
@@ -108,51 +129,66 @@ Resources:
   # ============================================================
   # IAM Role — CodeBuild
   # ============================================================
+  # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
+      # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       RoleName: !Sub "${ProjectName}-codebuild-role"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
+        # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         Statement:
           - Effect: Allow
             Principal:
+              # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - PolicyName: CodeBuildPolicy
           PolicyDocument:
             Version: "2012-10-17"
+            # Note 27: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             Statement:
               # CloudWatch Logs
               - Effect: Allow
                 Action:
+                  # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
+                # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ProjectName}-build*"
               # S3 artifacts
               - Effect: Allow
                 Action:
+                  # Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - s3:GetObject
                   - s3:PutObject
                   - s3:GetBucketAcl
+                  # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - s3:GetBucketLocation
                 Resource:
                   - !GetAtt ArtifactBucket.Arn
+                  # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - !Sub "${ArtifactBucket.Arn}/*"
               # ECR — push images
               - Effect: Allow
                 Action:
+                  # Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - ecr:GetAuthorizationToken
                 Resource: "*"
               - Effect: Allow
+                # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Action:
                   - ecr:BatchCheckLayerAvailability
                   - ecr:GetDownloadUrlForLayer
+                  # Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - ecr:BatchGetImage
                   - ecr:PutImage
                   - ecr:InitiateLayerUpload
+                  # Note 36: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - ecr:UploadLayerPart
                   - ecr:CompleteLayerUpload
                 Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${EcrRepositoryName}"
@@ -160,58 +196,75 @@ Resources:
   # ============================================================
   # IAM Role — CodePipeline
   # ============================================================
+  # Note 37: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
+      # Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       RoleName: !Sub "${ProjectName}-codepipeline-role"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
+        # Note 39: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         Statement:
           - Effect: Allow
             Principal:
+              # Note 40: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        # Note 41: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - PolicyName: CodePipelinePolicy
           PolicyDocument:
             Version: "2012-10-17"
+            # Note 42: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             Statement:
               # S3 artifacts
               - Effect: Allow
                 Action:
+                  # Note 43: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - s3:GetObject
                   - s3:PutObject
                   - s3:GetBucketVersioning
+                # Note 44: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Resource:
                   - !GetAtt ArtifactBucket.Arn
                   - !Sub "${ArtifactBucket.Arn}/*"
               # CodeBuild
+              # Note 45: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
+                  # Note 46: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - codebuild:StartBuild
                 Resource: !GetAtt CodeBuildProject.Arn
               # CodeStar Connection (GitHub)
               - Effect: Allow
+                # Note 47: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Action:
                   - codestar-connections:UseConnection
                 Resource: !Ref ConnectionArn
               # ECS deploy
+              # Note 48: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               - Effect: Allow
                 Action:
                   - ecs:DescribeServices
+                  # Note 49: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - ecs:DescribeTaskDefinition
                   - ecs:DescribeTasks
                   - ecs:ListTasks
+                  # Note 50: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   - ecs:RegisterTaskDefinition
                   - ecs:UpdateService
                 Resource: "*"
+              # Note 51: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               - Effect: Allow
                 Action:
                   - iam:PassRole
+                # Note 52: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Resource: "*"
                 Condition:
                   StringEqualsIfExists:
+                    # Note 53: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     iam:PassedToService:
                       - ecs-tasks.amazonaws.com
 
@@ -219,57 +272,75 @@ Resources:
   # CodeBuild Project — builds the Docker image
   # ============================================================
   CodeBuildProject:
+    # Note 54: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     Type: AWS::CodeBuild::Project
     Properties:
       Name: !Sub "${ProjectName}-build"
+      # Note 55: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       Description: !Sub "Build Docker image for ${ProjectName}"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       TimeoutInMinutes: 15
+      # Note 56: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       Artifacts:
         Type: CODEPIPELINE
       Environment:
+        # Note 57: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         Type: LINUX_CONTAINER
         ComputeType: !Ref BuildComputeType
         Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+        # Note 58: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         PrivilegedMode: true      # Required for Docker builds
         EnvironmentVariables:
           - Name: AWS_ACCOUNT_ID
+            # Note 59: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             Value: !Ref AWS::AccountId
           - Name: AWS_DEFAULT_REGION
             Value: !Ref AWS::Region
+          # Note 60: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - Name: ECR_REPOSITORY
             Value: !Ref EcrRepositoryName
           - Name: CONTAINER_NAME
+            # Note 61: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             Value: !Ref ContainerName
       Source:
         Type: CODEPIPELINE
+        # Note 62: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         BuildSpec: |
           version: 0.2
           phases:
+            # Note 63: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             pre_build:
               commands:
                 - echo "Logging in to ECR..."
+                # Note 64: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
                 - IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY
                 - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+            # Note 65: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             build:
               commands:
                 - echo "Building Docker image..."
+                # Note 66: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 - docker build -t $IMAGE_URI:$IMAGE_TAG .
                 - docker tag $IMAGE_URI:$IMAGE_TAG $IMAGE_URI:latest
             post_build:
+              # Note 67: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               commands:
                 - echo "Pushing Docker image..."
                 - docker push $IMAGE_URI:$IMAGE_TAG
+                # Note 68: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 - docker push $IMAGE_URI:latest
                 - echo "Writing image definitions for ECS deploy..."
                 - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$IMAGE_URI:$IMAGE_TAG" > imagedefinitions.json
+          # Note 69: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           artifacts:
             files:
               - imagedefinitions.json
+      # Note 70: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       Tags:
         - Key: Project
           Value: !Ref ProjectName
+        # Note 71: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - Key: ManagedBy
           Value: cloudformation
 
@@ -277,78 +348,100 @@ Resources:
   # CodePipeline — Source → Build → Deploy
   # ============================================================
   Pipeline:
+    # Note 72: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     Type: AWS::CodePipeline::Pipeline
     Properties:
       Name: !Sub "${ProjectName}-pipeline"
+      # Note 73: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       RoleArn: !GetAtt CodePipelineRole.Arn
       ArtifactStore:
         Type: S3
+        # Note 74: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         Location: !Ref ArtifactBucket
       Stages:
         # --- Source Stage ---
         - Name: Source
+          # Note 75: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           Actions:
             - Name: GitHubSource
               ActionTypeId:
+                # Note 76: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Category: Source
                 Owner: AWS
                 Provider: CodeStarSourceConnection
+                # Note 77: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Version: "1"
               Configuration:
                 ConnectionArn: !Ref ConnectionArn
+                # Note 78: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 FullRepositoryId: !Ref RepositoryId
                 BranchName: !Ref BranchName
                 DetectChanges: true
+                # Note 79: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 OutputArtifactFormat: CODE_ZIP
               OutputArtifacts:
                 - Name: SourceArtifact
 
         # --- Build Stage ---
+        # Note 80: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - Name: Build
           Actions:
             - Name: DockerBuild
+              # Note 81: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               ActionTypeId:
                 Category: Build
                 Owner: AWS
+                # Note 82: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Provider: CodeBuild
                 Version: "1"
               Configuration:
+                # Note 83: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 ProjectName: !Ref CodeBuildProject
               InputArtifacts:
                 - Name: SourceArtifact
+              # Note 84: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               OutputArtifacts:
                 - Name: BuildArtifact
 
         # --- Manual Approval (optional — remove for auto-deploy) ---
         - Name: Approval
+          # Note 85: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           Actions:
             - Name: ManualApproval
               ActionTypeId:
+                # Note 86: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Category: Approval
                 Owner: AWS
                 Provider: Manual
+                # Note 87: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Version: "1"
               Configuration:
                 CustomData: !Sub "Approve deployment of ${ProjectName} to ECS?"
                 # NotificationArn: arn:aws:sns:...   # <-- CHANGE THIS: SNS topic for approval emails
 
         # --- Deploy Stage ---
+        # Note 88: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - Name: Deploy
           Actions:
             - Name: DeployToECS
+              # Note 89: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
+                # Note 90: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 Provider: ECS
                 Version: "1"
               Configuration:
+                # Note 91: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 ClusterName: !Ref EcsClusterName
                 ServiceName: !Ref EcsServiceName
                 FileName: imagedefinitions.json
+              # Note 92: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               InputArtifacts:
                 - Name: BuildArtifact
 
       Tags:
+        # Note 93: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - Key: Project
           Value: !Ref ProjectName
         - Key: ManagedBy

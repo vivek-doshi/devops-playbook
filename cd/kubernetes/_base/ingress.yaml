@@ -1,21 +1,28 @@
-﻿apiVersion: networking.k8s.io/v1
+﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  # Note 2: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: app
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tls:
     - hosts:
         - app.example.com
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       secretName: app-tls
   rules:
     - host: app.example.com
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       http:
         paths:
           - path: /
+            # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             pathType: Prefix
             backend:
               service:

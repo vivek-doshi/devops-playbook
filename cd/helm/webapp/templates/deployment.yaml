@@ -1,54 +1,72 @@
-﻿apiVersion: apps/v1
+﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Note 2: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: {{ include "webapp.fullname" . }}
   labels:
     {{- include "webapp.labels" . | nindent 4 }}
+# Note 3: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   {{- end }}
   selector:
     matchLabels:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       {{- include "webapp.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
         {{- include "webapp.selectorLabels" . | nindent 8 }}
     spec:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       {{- end }}
       securityContext:
         runAsNonRoot: true
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         runAsUser: 1000
         fsGroup: 2000
       containers:
+        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
+              # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+            # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             capabilities:
               drop: ["ALL"]
           {{- if .Values.probes }}
+          # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           livenessProbe:
             httpGet:
               path: {{ .Values.probes.liveness.path }}
+              # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               port: http
             initialDelaySeconds: 15
             periodSeconds: 20
+          # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           readinessProbe:
             httpGet:
               path: {{ .Values.probes.readiness.path }}
+              # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10

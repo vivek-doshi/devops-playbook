@@ -10,25 +10,36 @@
 # ============================================================
 
 # ── Stage 1: Build ───────────────────────────────────────────────────────────
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM maven:3.9-eclipse-temurin-21 AS build
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # Download dependencies first for better layer caching
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY pom.xml .
+# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN mvn dependency:go-offline -q
 
+# Note 5: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY src ./src
+# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN mvn package -DskipTests -q
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+# Note 7: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM eclipse-temurin:21-jre-alpine AS runtime
+# Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
+# Note 9: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Use layered JAR for better Docker layer caching
+# Note 10: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
 
+# Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 USER appuser
 
 EXPOSE 8080

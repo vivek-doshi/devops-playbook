@@ -9,22 +9,30 @@
 # ============================================================
 
 # Cloud Build — GKE deployment
+# Note 1: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 steps:
   - name: "gcr.io/cloud-builders/docker"
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     args: ["build", "-t", "gcr.io/$PROJECT_ID/my-app:$COMMIT_SHA", "."]
 
   - name: "gcr.io/cloud-builders/docker"
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     args: ["push", "gcr.io/$PROJECT_ID/my-app:$COMMIT_SHA"]
 
   - name: "gcr.io/cloud-builders/kubectl"
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     args:
       - set
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - image
       - deployment/my-app
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - my-app=gcr.io/$PROJECT_ID/my-app:$COMMIT_SHA
     env:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "CLOUDSDK_COMPUTE_ZONE=us-central1-a"
       - "CLOUDSDK_CONTAINER_CLUSTER=my-gke-cluster"
 
+# Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 images:
   - "gcr.io/$PROJECT_ID/my-app:$COMMIT_SHA"

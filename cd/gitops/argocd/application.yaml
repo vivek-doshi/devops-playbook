@@ -9,33 +9,46 @@
 # ============================================================
 
 # ArgoCD Application — single app
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+# Note 2: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 metadata:
   name: my-app
+  # Note 3: Resource identity and metadata drive automation, selectors, and operational traceability.
   namespace: argocd
   finalizers:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - resources-finalizer.argocd.argoproj.io  # Cascade delete on app removal
 spec:
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   project: default
 
   source:
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     repoURL: https://github.com/my-org/my-app.git
     targetRevision: HEAD
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     path: cd/kubernetes/_overlays/prod
 
   destination:
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     server: https://kubernetes.default.svc  # In-cluster
     namespace: production
 
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   syncPolicy:
     automated:
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       prune: true       # Remove resources deleted from Git
       selfHeal: true    # Revert manual changes in cluster
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       allowEmpty: false
     syncOptions:
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
+    # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     retry:
       limit: 3
       backoff:

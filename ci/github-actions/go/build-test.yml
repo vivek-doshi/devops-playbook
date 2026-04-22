@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitHub Actions — Go Build & Test
 # WHEN TO USE: Any Go project with go.mod
 # PREREQUISITES: go.mod and go.sum in project root
@@ -8,71 +8,97 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Go Build & Test
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main, develop]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   build-test:
+    # Note 5: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Build & Test
     runs-on: ubuntu-latest
 
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     strategy:
       matrix:
-        go-version: ["1.21", "1.22"]            # <-- CHANGE THIS: your supported Go versions
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+        go-version: ["1.23", "1.24"]            # <-- CHANGE THIS: your supported Go versions
 
     steps:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Set up Go ${{ matrix.go-version }}
+        # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: actions/setup-go@v5
         with:
+          # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           go-version: ${{ matrix.go-version }}
           cache: true                            # Caches ~/go/pkg/mod and ~/.cache/go-build
 
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Download dependencies
         run: go mod download
 
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Verify dependencies
         run: go mod verify
 
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Lint with golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6
+        # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           version: latest
+          # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           args: --timeout=5m
 
       - name: Vet
+        # Note 16: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: go vet ./...
 
       - name: Test with coverage
+        # Note 17: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Check coverage threshold
+        # Note 18: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           echo "Total coverage: ${COVERAGE}%"
           THRESHOLD=70                           # <-- CHANGE THIS: your minimum coverage
+          # Note 20: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
           if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
             echo "::error::Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
+            # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             exit 1
           fi
 
+      # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload coverage
-        if: matrix.go-version == '1.22'          # Upload once, not per matrix entry
-        uses: codecov/codecov-action@v4
+        if: matrix.go-version == '1.24'          # Upload once, not per matrix entry
+        # Note 23: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
+        uses: codecov/codecov-action@v5
         with:
+          # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           file: coverage.out
 
       - name: Build
+        # Note 25: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: go build -v ./...
 
   # Build Docker image on main branch
   docker:
+    # Note 26: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Docker Build
     needs: build-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -80,6 +106,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      attestations: write   # Required for anchore/sbom-action to attach SBOM as OCI referrer
+      id-token: write       # Required for OIDC-based attestation signing
 
     steps:
       - uses: actions/checkout@v4
@@ -91,12 +119,37 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
       - name: Build and push
-        uses: docker/build-push-action@v5
+        id: build-push
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/go/Dockerfile             # <-- CHANGE THIS: path to your Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-            ghcr.io/${{ github.repository }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Generate a Software Bill of Materials (SBOM) in SPDX format and
+      # attach it to the image as an OCI referrer. Required for SLSA level 2+.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ github.repository }}@${{ steps.build-push.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: true
+          artifact-name: sbom-go-${{ github.sha }}.spdx.json

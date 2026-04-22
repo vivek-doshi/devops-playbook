@@ -11,76 +11,98 @@
 # Microservices Example — Local Dev Stack
 # Demonstrates: shared network, service discovery, API gateway pattern
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 services:
   # API Gateway / reverse proxy
   gateway:
     image: nginx:1.27-alpine
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     ports:
       - "8080:80"
     volumes:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - user-service
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - order-service
     networks:
       - app-net
 
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   user-service:
     build:
       context: ./user-service
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     environment:
       - DATABASE_URL=postgresql://postgres:devpassword@postgres:5432/usersdb
     depends_on:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       postgres:
         condition: service_healthy
     networks:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - app-net
 
   order-service:
     build:
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       context: ./order-service
     environment:
       - DATABASE_URL=postgresql://postgres:devpassword@postgres:5432/ordersdb
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - MESSAGE_BROKER=amqp://guest:guest@rabbitmq:5672/
     depends_on:
       postgres:
+        # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     networks:
       - app-net
 
   postgres:
+    # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     image: postgres:16-alpine
     environment:
       - POSTGRES_USER=postgres
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - POSTGRES_PASSWORD=devpassword
       - POSTGRES_MULTIPLE_DATABASES=usersdb,ordersdb
     volumes:
+      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
+      # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       interval: 10s
       timeout: 5s
       retries: 5
+    # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     networks:
       - app-net
 
   rabbitmq:
+    # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     image: rabbitmq:3.13-management-alpine
     ports:
       - "15672:15672"  # management UI
+    # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 15s
+      # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       timeout: 10s
       retries: 5
     networks:
+      # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - app-net
 
 volumes:
   postgres-data:
 
+# Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 networks:
   app-net:
     driver: bridge

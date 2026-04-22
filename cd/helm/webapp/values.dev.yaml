@@ -1,15 +1,20 @@
 ﻿# Dev overrides
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 replicaCount: 1
 
 image:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tag: dev-latest
 
 ingress:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   host: dev.app.example.com
   tls: false
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 resources:
   limits:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     memory: "256Mi"
 
 autoscaling:

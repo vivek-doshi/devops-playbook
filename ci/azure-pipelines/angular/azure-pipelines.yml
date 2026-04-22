@@ -9,35 +9,47 @@
 # ============================================================
 
 # Azure Pipelines — Angular Build & Test
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger:
   branches:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     include: [main, develop]
 
 pool:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   vmImage: ubuntu-latest
 
 variables:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   nodeVersion: "20.x"
 
 stages:
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - stage: BuildTest
     jobs:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - job: Build
         steps:
+          # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - task: NodeTool@0
             inputs:
+              # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               versionSpec: $(nodeVersion)
 
           - script: npm ci
+            # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: Install dependencies
 
           - script: npm run lint
+            # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: Lint
 
           - script: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+            # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: Test
 
           - script: npm run build -- --configuration production
+            # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             displayName: Build
 
           - task: PublishBuildArtifacts@1

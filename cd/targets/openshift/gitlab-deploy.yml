@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitLab CI — Deploy to Red Hat OpenShift
 # WHEN TO USE: Deploying to OpenShift from GitLab CI/CD
 # PREREQUISITES: OpenShift cluster, service account credentials in GitLab variables
@@ -9,17 +9,24 @@
 # ============================================================
 
 # GitLab CI — Deploy to Red Hat OpenShift
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 deploy-openshift:
   stage: deploy
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image: registry.redhat.io/openshift4/ose-cli:latest
   environment:
+    # Note 3: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: production
     url: https://app.example.com
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify=false
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - oc project $OPENSHIFT_NAMESPACE
     - kubectl apply -k cd/kubernetes/_overlays/prod
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - kubectl rollout status deployment/$APP_NAME -n $OPENSHIFT_NAMESPACE
     - oc get pods -n $OPENSHIFT_NAMESPACE -l app=$APP_NAME
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   only:
     - main

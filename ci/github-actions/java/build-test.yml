@@ -8,47 +8,64 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Java Build & Test
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main, develop]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   build-test-maven:
+    # Note 5: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Maven Build & Test
     runs-on: ubuntu-latest
 
+    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Set up JDK 21
         uses: actions/setup-java@v4
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           java-version: "21"
+          # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           distribution: "temurin"
           cache: "maven"
 
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Build with Maven
         run: mvn -B package --file pom.xml
 
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run tests
         run: mvn -B test
 
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload Surefire reports
         uses: actions/upload-artifact@v4
+        # Note 13: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
         if: always()
         with:
+          # Note 14: Resource identity and metadata drive automation, selectors, and operational traceability.
           name: surefire-reports
           path: target/surefire-reports/
 
+  # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   build-test-gradle:
     name: Gradle Build & Test
+    # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
 
     steps:
+      # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Set up JDK 21

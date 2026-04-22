@@ -10,13 +10,21 @@
 
 # Azure Pipelines — Deployment Gates
 # Gates pause deployment until conditions are met
+# Note 1: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - stage: Deploy
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    # Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     jobs:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - deployment: DeployProd
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         environment: production
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         strategy:
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           runOnce:
             preDeploy:
               steps:

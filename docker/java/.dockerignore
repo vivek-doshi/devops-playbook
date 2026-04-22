@@ -1,0 +1,50 @@
+# ============================================================
+# .dockerignore — Java (Gradle / Maven)
+# Keeps build context lean by excluding generated artifacts,
+# IDE metadata, and files that should never reach the image.
+# ============================================================
+
+# Gradle build outputs and caches
+.gradle/
+build/
+out/
+
+# Maven build outputs and local repo cache
+target/
+.m2/
+
+# IDE / editor metadata
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.classpath
+*.project
+.settings/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Documentation and tooling
+*.md
+README*
+LICENSE
+Makefile
+docker-compose*.yml
+
+# Test reports
+**/test-results/
+**/surefire-reports/
+**/jacoco/
+
+# Environment files (must be injected at runtime, not baked in)
+.env
+.env.*
+
+# OS artefacts
+.DS_Store
+Thumbs.db

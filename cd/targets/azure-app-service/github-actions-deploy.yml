@@ -8,32 +8,43 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to Azure App Service
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
 
+# Note 3: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
 
     steps:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Azure Login
+        # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: azure/login@v2
         with:
+          # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Build and push Docker image
+        # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           az acr build \
+            # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             --registry ${{ vars.ACR_NAME }} \
             --image my-app:${{ github.sha }} \
+            # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             --file docker/dotnet/Dockerfile.api \
             .
 
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Deploy to App Service
         uses: azure/webapps-deploy@v3
         with:

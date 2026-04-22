@@ -8,51 +8,66 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Slack Notification Template
 
 # Usage: call from another workflow using workflow_call
 on:
   workflow_call:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     inputs:
       status:
         required: true
+        # Note 3: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string      # success | failure | cancelled
       environment:
         required: false
+        # Note 4: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string
         default: ""
     secrets:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       webhook-url:
         required: true
 
 jobs:
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   notify:
     runs-on: ubuntu-latest
     steps:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Slack Notification
         uses: slackapi/slack-github-action@v1
         with:
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           payload: |
             {
               "blocks": [
+                # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 {
                   "type": "section",
                   "text": {
+                    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                     "type": "mrkdwn",
                     "text": "${{ inputs.status == 'success' && ':white_check_mark:' || ':x:' }} *${{ github.repository }}* pipeline *${{ inputs.status }}*\n*Branch:* `${{ github.ref_name }}`${{ inputs.environment != '' && format('\n*Environment:* `{0}`', inputs.environment) || '' }}"
                   }
+                # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 },
                 {
                   "type": "actions",
+                  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   "elements": [
                     {
                       "type": "button",
+                      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                       "text": { "type": "plain_text", "text": "View Run" },
                       "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     }
+                  # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                   ]
                 }
               ]
+            # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.webhook-url }}

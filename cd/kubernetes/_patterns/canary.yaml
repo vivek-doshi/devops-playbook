@@ -1,52 +1,67 @@
 ﻿# Canary Deployment Pattern
 # Route small percentage of traffic to new version
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 ---
 # Stable deployment (90% of replicas)
 apiVersion: apps/v1
 kind: Deployment
+# Note 2: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 metadata:
   name: app-stable
 spec:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   replicas: 9
   selector:
     matchLabels:
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       app: my-app
       track: stable
   template:
+    # Note 5: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
     metadata:
       labels:
         app: my-app
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         track: stable
     spec:
       containers:
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: app
           image: my-registry/my-app:1.0.0
 
 ---
 # Canary deployment (10% of replicas)
+# Note 8: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Note 9: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: app-canary
 spec:
   replicas: 1  # 1 canary : 9 stable = ~10% canary traffic
+  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   selector:
     matchLabels:
       app: my-app
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       track: canary
   template:
     metadata:
+      # Note 12: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
         app: my-app
         track: canary
+    # Note 13: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
     spec:
       containers:
         - name: app
+          # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           image: my-registry/my-app:2.0.0
 
 ---
 # Service selects BOTH stable + canary (no track label)
 apiVersion: v1
+# Note 15: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 kind: Service
 metadata:
   name: app

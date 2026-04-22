@@ -7,44 +7,60 @@
 
 # Default values — override with values.dev.yaml or values.prod.yaml
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 nameOverride: ""
 fullnameOverride: ""
 
+# Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 replicaCount: 2
 
 image:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   repository: my-registry/my-app                            # <-- CHANGE THIS
   pullPolicy: IfNotPresent
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tag: ""  # Overridden by CI with image digest or tag
 
 imagePullSecrets: []
 
+# Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 serviceAccount:
   create: false
+  # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: ""
 
 service:
+  # Note 7: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type: ClusterIP
   port: 80
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   targetPort: 8080
 
 ingress:
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   enabled: true
   className: nginx
+  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   host: app.example.com
   tls: true
 
+# Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 resources:
   requests:
+    # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     cpu: 100m
     memory: 128Mi
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   limits:
     cpu: 500m
+    # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     memory: 512Mi
 
 autoscaling:
+  # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   enabled: false
   minReplicas: 2
+  # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
 

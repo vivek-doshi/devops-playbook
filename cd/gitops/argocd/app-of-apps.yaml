@@ -10,24 +10,33 @@
 
 # ArgoCD App of Apps pattern
 # One application that manages all other applications
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+# Note 2: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 metadata:
   name: app-of-apps
+  # Note 3: Resource identity and metadata drive automation, selectors, and operational traceability.
   namespace: argocd
 spec:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   project: default
 
   source:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     repoURL: https://github.com/my-org/gitops-repo.git
     targetRevision: HEAD
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     path: argocd/apps   # Directory containing Application manifests
 
   destination:
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     server: https://kubernetes.default.svc
     namespace: argocd
 
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   syncPolicy:
     automated:
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       prune: true
       selfHeal: true

@@ -1,55 +1,71 @@
 ﻿# Blue-Green Deployment Pattern
 # Two identical environments; switch traffic between them
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 ---
 # Blue deployment (currently active)
 apiVersion: apps/v1
 kind: Deployment
+# Note 2: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 metadata:
   name: app-blue
   labels:
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     version: blue
 spec:
   replicas: 3
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   selector:
     matchLabels:
       app: my-app
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       version: blue
   template:
     metadata:
+      # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
         app: my-app
         version: blue
+    # Note 7: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
     spec:
       containers:
         - name: app
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           image: my-registry/my-app:1.0.0
 
 ---
 # Green deployment (new version being tested)
 apiVersion: apps/v1
+# Note 9: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 kind: Deployment
 metadata:
   name: app-green
+  # Note 10: Resource identity and metadata drive automation, selectors, and operational traceability.
   labels:
     version: green
 spec:
+  # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   replicas: 3
   selector:
     matchLabels:
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       app: my-app
       version: green
   template:
+    # Note 13: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
     metadata:
       labels:
         app: my-app
+        # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         version: green
     spec:
       containers:
+        # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: app
           image: my-registry/my-app:2.0.0
 
 ---
 # Service — switch between blue/green by changing selector
+# Note 16: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: v1
 kind: Service
 metadata:

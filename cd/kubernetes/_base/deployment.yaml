@@ -1,65 +1,85 @@
-﻿apiVersion: apps/v1
+﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Note 2: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: app
   labels:
     app: app
+# Note 3: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 spec:
   replicas: 2
   selector:
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     matchLabels:
       app: app
   strategy:
+    # Note 5: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       maxSurge: 1
   template:
     metadata:
+      # Note 7: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
         app: app
     spec:
       # Security: run as non-root
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         fsGroup: 2000
 
       containers:
         - name: app
+          # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           image: my-registry/my-app:latest  # Overridden per environment
           ports:
             - containerPort: 8080
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           env:
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
+                # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
                 configMapKeyRef:
                   name: app-config
                   key: environment
+            # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
+                  # Note 14: Resource identity and metadata drive automation, selectors, and operational traceability.
                   name: app-secrets
                   key: db-password
 
           resources:
+            # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             requests:
               memory: "128Mi"
               cpu: "100m"
+            # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             limits:
               memory: "512Mi"
               cpu: "500m"
 
+          # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           readinessProbe:
             httpGet:
               path: /health/ready
+              # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
 
+          # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           livenessProbe:
             httpGet:
               path: /health/live
+              # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 20

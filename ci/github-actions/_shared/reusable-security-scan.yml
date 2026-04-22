@@ -8,24 +8,33 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Reusable Security Scan
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_call:
     inputs:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       image-ref:
         required: true
+        # Note 4: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
         type: string
 
 jobs:
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   trivy-scan:
     runs-on: ubuntu-latest
+    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - name: Run Trivy vulnerability scanner
+        # Note 7: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: aquasecurity/trivy-action@0.28.0
         with:
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           image-ref: ${{ inputs.image-ref }}
           format: "sarif"
+          # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           output: trivy-results.sarif
           severity: "CRITICAL,HIGH"
 

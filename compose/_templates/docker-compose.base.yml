@@ -13,23 +13,31 @@
 # https://docs.docker.com/compose/compose-file/04-version-and-name/
 
 # Extension fields: define anchors to reuse across services
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 x-logging: &default-logging
   driver: "json-file"
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   options:
     max-size: "10m"
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     max-file: "3"
 
 x-restart-policy: &restart-policy
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   restart: unless-stopped
 
 services:
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   app:
     # Build from local Dockerfile
     build:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       context: .          # Build context (directory sent to Docker daemon)
       dockerfile: Dockerfile
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       args:
         - BUILD_ENV=development  # ARGs available during build only
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       target: runtime     # Stop at a specific multi-stage target
 
     # Or pull a pre-built image:
@@ -37,51 +45,69 @@ services:
 
     container_name: my-app  # Avoid auto-generated names in dev
 
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     ports:
       - "3000:3000"     # host:container — only expose what you need
 
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     environment:
       - NODE_ENV=development
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - DB_HOST=db      # Container names resolve as DNS on the same network
 
     # Load from .env file (never commit secrets)
     env_file:
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - .env
 
     volumes:
       # Named volume: managed by Docker, persists between restarts
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - app-data:/app/data
       # Bind mount: reflects local file changes instantly (great for dev)
       - ./src:/app/src:ro   # :ro = read-only inside container
 
+    # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     depends_on:
       db:
+        # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         condition: service_healthy  # Wait for healthcheck to pass
 
     healthcheck:
+      # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
+      # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       timeout: 5s
       retries: 3
+      # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       start_period: 20s  # Grace period before first check
 
     networks:
+      # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - app-net
 
     logging: *default-logging
+    # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     <<: *restart-policy
 
   db:
+    # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     image: postgres:16-alpine
     environment:
+      # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - POSTGRES_USER=${DB_USER:-appuser}
       - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}  # Fails if not set
+      # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - POSTGRES_DB=${DB_NAME:-appdb}
     volumes:
+      # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - db-data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Run on first start
+    # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-appuser}"]
+      # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       interval: 10s
       timeout: 5s
       retries: 5

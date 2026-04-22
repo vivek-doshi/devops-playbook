@@ -8,35 +8,48 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Trivy Container Scan
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   schedule:
     - cron: "0 6 * * *"   # Daily scan
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   trivy:
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     steps:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Build image
+        # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: docker build -t my-app:scan .
 
       - name: Run Trivy (table output)
+        # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: aquasecurity/trivy-action@0.28.0
         with:
+          # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           image-ref: my-app:scan
           format: table
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           exit-code: "1"
           severity: "CRITICAL"
 
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run Trivy (SARIF upload)
         if: always()
+        # Note 13: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: my-app:scan

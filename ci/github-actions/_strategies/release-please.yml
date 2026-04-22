@@ -8,33 +8,44 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Release Please
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
 
+# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 permissions:
   contents: write
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull-requests: write
 
 jobs:
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   release-please:
     runs-on: ubuntu-latest
+    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: googleapis/release-please-action@v4
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         id: release
         with:
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           release-type: node  # or: python, java, go, etc.
           # Reads conventional commits to bump version automatically
 
       # Only run on release (not on every push)
       - uses: actions/checkout@v4
+        # Note 9: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
         if: ${{ steps.release.outputs.release_created }}
 
       - name: Publish to npm
+        # Note 10: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
         if: ${{ steps.release.outputs.release_created }}
         run: |
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           npm ci
           npm publish
         env:

@@ -18,7 +18,7 @@ COPY . .
 RUN npm run build
 
 # Use Google distroless — no shell, no package manager, minimal CVE surface
-FROM gcr.io/distroless/nodejs20-debian12 AS runtime
+FROM gcr.io/distroless/nodejs22-debian12 AS runtime
 WORKDIR /app
 
 # Copy only what is needed

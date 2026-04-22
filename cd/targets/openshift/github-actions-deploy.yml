@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to Red Hat OpenShift
 # WHEN TO USE: Deploying to OpenShift via service account token
 # PREREQUISITES: OpenShift cluster, service account with deploy permissions
@@ -8,35 +8,48 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to OpenShift
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_run:
     workflows: ["CI"]
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     types: [completed]
     branches: [main]
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
   OPENSHIFT_NAMESPACE: production
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   APP_NAME: my-app
   IMAGE: image-registry.openshift-image-registry.svc:5000/production/my-app
 
+# Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
+    # Note 7: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     permissions:
       id-token: write
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       contents: read
 
     steps:
+      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Log in to OpenShift
+        # Note 11: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: redhat-actions/oc-login@v1
         with:
+          # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           insecure_skip_tls_verify: false
 
       - name: Set project

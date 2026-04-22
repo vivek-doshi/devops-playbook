@@ -8,38 +8,51 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Angular Build & Test
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main, develop]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   build-test:
+    # Note 5: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Build & Test
     runs-on: ubuntu-latest
 
+    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Node.js
         uses: actions/setup-node@v4
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           node-version: "20"
+          # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cache: "npm"
 
       - name: Install dependencies
+        # Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: npm ci
 
       - name: Lint
+        # Note 11: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: npm run lint
 
       - name: Test
+        # Note 12: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
 
       - name: Build
+        # Note 13: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: npm run build -- --configuration production
 
       - name: Upload build artifact

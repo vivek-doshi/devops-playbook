@@ -9,25 +9,34 @@
 # ============================================================
 
 # Azure Pipelines — Test Template
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 parameters:
   - name: testProjects
+    # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     type: string
     default: "**/*Tests/*.csproj"
 
+# Note 3: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 steps:
   - task: DotNetCoreCLI@2
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: Run tests
     inputs:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       command: test
       projects: ${{ parameters.testProjects }}
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       arguments: --logger trx --collect:"XPlat Code Coverage"
 
   - task: PublishTestResults@2
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     condition: always()
     inputs:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       testResultsFormat: VSTest
       testResultsFiles: "**/*.trx"
 
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - task: PublishCodeCoverageResults@2
     inputs:
       summaryFileLocation: "**/coverage.cobertura.xml"

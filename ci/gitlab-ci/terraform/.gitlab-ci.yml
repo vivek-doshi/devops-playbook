@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitLab CI — Terraform Plan / Apply
 # WHEN TO USE: Automating Terraform workflows with MR-based plan review
 # PREREQUISITES: Cloud credentials configured as CI/CD variables
@@ -8,12 +8,15 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 variables:
   TF_VERSION: "1.7.0"                            # <-- CHANGE THIS: pin to your version
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   TF_ROOT: "${CI_PROJECT_DIR}/terraform/azure-aks" # <-- CHANGE THIS: path to root module
   TF_VAR_FILE: ""                                  # <-- CHANGE THIS: e.g., "environments/prod.tfvars"
 
   # Terraform settings
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
 
@@ -32,85 +35,117 @@ variables:
   # GOOGLE_CREDENTIALS: ""          # JSON service account key or use Workload Identity
   # GOOGLE_PROJECT: ""
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 image:
   name: hashicorp/terraform:$TF_VERSION
+  # Note 5: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
   entrypoint: [""]
 
 stages:
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - validate
   - plan
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - apply
 
 # Only run on changes to Terraform files
 workflow:
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   rules:
     - changes:
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - "terraform/**"        # <-- CHANGE THIS: match your TF_ROOT path
     - if: $CI_PIPELINE_SOURCE == "web"  # Allow manual triggers
 
 # Cache Terraform plugins across jobs
+# Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 cache:
   key: terraform-plugins
+  # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   paths:
     - ${TF_ROOT}/.terraform/providers/
 
 # =============================================
 # VALIDATE — format check + validation
 # =============================================
+# Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 validate:
   stage: validate
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - cd ${TF_ROOT}
+    # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - terraform init -backend=false
     - terraform fmt -check -diff
+    # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - terraform validate -no-color
   rules:
+    # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # =============================================
 # PLAN — runs on every MR
 # =============================================
+# Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 plan:
   stage: plan
+  # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - cd ${TF_ROOT}
+    # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - terraform init -input=false
     - |
+      # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       PLAN_ARGS="-input=false -no-color -out=tfplan"
       if [ -n "${TF_VAR_FILE}" ]; then
+        # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         PLAN_ARGS="${PLAN_ARGS} -var-file=${TF_VAR_FILE}"
       fi
+      # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       terraform plan ${PLAN_ARGS}
     - terraform show -no-color tfplan > plan_output.txt
+  # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   artifacts:
     paths:
+      # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - ${TF_ROOT}/tfplan
       - ${TF_ROOT}/plan_output.txt
+    # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     reports:
       terraform: ${TF_ROOT}/plan_output.txt   # Shows plan in MR widget
+    # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     expire_in: 7 days
   rules:
+    # Note 27: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # =============================================
 # APPLY — runs only on default branch (after MR merge)
 # =============================================
+# Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 apply:
   stage: apply
+  # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - cd ${TF_ROOT}
+    # Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - terraform init -input=false
     - |
+      # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       APPLY_ARGS="-input=false -auto-approve"
       if [ -n "${TF_VAR_FILE}" ]; then
+        # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         APPLY_ARGS="${APPLY_ARGS} -var-file=${TF_VAR_FILE}"
       fi
+      # Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       terraform apply ${APPLY_ARGS}
   dependencies:
+    # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - plan
   rules:
+    # Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual                   # Require manual click to apply
   environment:

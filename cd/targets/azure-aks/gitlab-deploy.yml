@@ -9,12 +9,19 @@
 # ============================================================
 
 # GitLab CI — Deploy to Azure AKS
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 deploy-aks:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   stage: deploy
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image: mcr.microsoft.com/azure-cli:latest
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   environment:
+    # Note 5: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: production
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     url: https://app.example.com
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
     - az aks get-credentials --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME

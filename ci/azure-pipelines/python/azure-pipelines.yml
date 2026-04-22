@@ -9,37 +9,50 @@
 # ============================================================
 
 # Azure Pipelines — Python Build & Test
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 trigger:
   branches:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     include: [main, develop]
 
 pool:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   vmImage: ubuntu-latest
 
 strategy:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   matrix:
     Python311:
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       python.version: "3.11"
     Python312:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       python.version: "3.12"
 
 steps:
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - task: UsePythonVersion@0
     inputs:
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       versionSpec: $(python.version)
 
   - script: |
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       pip install --upgrade pip
       pip install -r requirements.txt -r requirements-dev.txt
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: Install dependencies
 
   - script: ruff check . && black --check .
+    # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: Lint & Format check
 
   - script: |
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       pytest --junitxml=test-results.xml --cov=. --cov-report=xml
     displayName: Test
 
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - task: PublishTestResults@2
     condition: always()
     inputs:

@@ -9,22 +9,30 @@
 # ============================================================
 
 # Dynamic Pipeline — generate child pipeline YAML at runtime
+# Note 1: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
   - generate
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - trigger
 
 generate-pipeline:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   stage: generate
   image: python:3.12-slim
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   script:
     - python scripts/generate-pipeline.py > generated-pipeline.yml
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   artifacts:
     paths:
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - generated-pipeline.yml
 
 trigger-generated:
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   stage: trigger
   trigger:
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     include:
       - artifact: generated-pipeline.yml
         job: generate-pipeline

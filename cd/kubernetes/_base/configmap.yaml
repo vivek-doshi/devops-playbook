@@ -1,7 +1,10 @@
-﻿apiVersion: v1
+﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+apiVersion: v1
 kind: ConfigMap
+# Note 2: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 metadata:
   name: app-config
+# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 data:
   environment: production
   log-level: info

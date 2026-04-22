@@ -1,21 +1,28 @@
-﻿apiVersion: autoscaling/v2
+﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
+  # Note 2: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: app
 spec:
   scaleTargetRef:
+    # Note 3: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
     apiVersion: apps/v1
     kind: Deployment
     name: app
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   minReplicas: 2
   maxReplicas: 10
   metrics:
+    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - type: Resource
       resource:
         name: cpu
+        # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         target:
           type: Utilization
           averageUtilization: 70
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - type: Resource
       resource:
         name: memory

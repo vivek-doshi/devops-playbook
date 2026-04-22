@@ -9,27 +9,37 @@
 # ============================================================
 
 # Flux Kustomization — reconcile Kubernetes manifests from Git
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
+# Note 2: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 metadata:
   name: my-app
+  # Note 3: Resource identity and metadata drive automation, selectors, and operational traceability.
   namespace: flux-system
 spec:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   interval: 5m      # Reconcile every 5 minutes
   path: ./cd/kubernetes/_overlays/prod
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   prune: true       # Remove resources deleted from Git
   sourceRef:
+    # Note 6: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
     kind: GitRepository
     name: my-app-repo
 
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   healthChecks:
     - apiVersion: apps/v1
+      # Note 8: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
       kind: Deployment
       name: app
+      # Note 9: Resource identity and metadata drive automation, selectors, and operational traceability.
       namespace: production
 
   # Post-build variable substitution
   postBuild:
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     substituteFrom:
       - kind: ConfigMap
         name: flux-vars

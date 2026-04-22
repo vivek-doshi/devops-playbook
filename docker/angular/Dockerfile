@@ -10,28 +10,40 @@
 # ============================================================
 
 # ── Stage 1: Build ───────────────────────────────────────────────────────────
+# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS build
+# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
+# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY package*.json ./
+# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm ci --ignore-scripts
 
+# Note 5: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY . .
+# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm run build -- --configuration production
 
 # ── Stage 2: Serve with nginx ─────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+# Note 7: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
+FROM nginx:1.28-alpine AS runtime
 
 # Remove default nginx config and copy custom
+# Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN rm /etc/nginx/conf.d/default.conf
+# Note 9: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy Angular build output
 # Angular 17+ outputs to dist/<project-name>/browser
-COPY --from=build /app/dist/my-app/browser /usr/share/nginx/html   # <-- CHANGE THIS: your Angular project name
+# Note 10: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
+# <-- CHANGE THIS: your Angular project name
+COPY --from=build /app/dist/my-app/browser /usr/share/nginx/html
 
 # Security: run nginx as non-root
 # nginx 1.25+ supports running as non-root out of the box
+# Note 11: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \

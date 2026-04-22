@@ -10,38 +10,53 @@
 
 # .NET GitLab CI Pipeline
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 include:
   - local: ci/gitlab-ci/_includes/.docker-build.yml
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - local: ci/gitlab-ci/_includes/.sast-scan.yml
 
 variables:
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   DOTNET_VERSION: "8.0"
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
 
+# Note 4: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 stages:
   - build
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - test
   - scan
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - package
   - deploy
 
+# Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 build:
   stage: build
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image: mcr.microsoft.com/dotnet/sdk:8.0
   script:
+    # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - dotnet restore
     - dotnet build --no-restore --configuration Release
+  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   cache:
     key: $CI_COMMIT_REF_SLUG
+    # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     paths:
       - .nuget/
 
+# Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 test:
   stage: test
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image: mcr.microsoft.com/dotnet/sdk:8.0
   script:
+    # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - dotnet test --configuration Release
       --logger "junit;LogFilePath=test-results.xml"
+      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       --collect:"XPlat Code Coverage"
   artifacts:
     when: always

@@ -10,60 +10,78 @@
 
 # Python API + PostgreSQL + Redis — Local Dev Stack
 
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 services:
   api:
     build:
+      # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       context: ../../
       dockerfile: docker/python/Dockerfile.fastapi
     ports:
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/appdb
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
+        # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     volumes:
       - ./app:/app   # hot reload in dev
     networks:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - app-net
 
   postgres:
     image: postgres:16-alpine
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     environment:
       - POSTGRES_DB=appdb
       - POSTGRES_USER=postgres
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-devpassword}
     ports:
       - "5432:5432"
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
+      # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       retries: 5
     networks:
       - app-net
 
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   redis:
     image: redis:7-alpine
     ports:
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - "6379:6379"
     volumes:
       - redis-data:/data
+    # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
+      # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       timeout: 5s
       retries: 3
     networks:
+      # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - app-net
 
 volumes:
   postgres-data:
+  # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   redis-data:
 
 networks:

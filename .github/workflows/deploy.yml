@@ -1,64 +1,82 @@
+﻿# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy Code Browser
 
 on:
   push:
+    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     branches: [main]
     paths:
       - 'docker/**'
+      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - 'ci/**'
       - 'kubernetes/**'
       - 'cd/**'
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - 'compose/**'
       - 'terraform/**'
       - 'scripts/**'
+      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - 'security/**'
       - 'quality/**'
       - 'notifications/**'
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - 'website/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
+# Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 permissions:
   contents: read
   pages: write
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   id-token: write
 
 concurrency:
   group: pages
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   cancel-in-progress: false
 
 jobs:
   build:
+    # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
+          # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: website/package-lock.json
 
+      # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Install dependencies
         working-directory: website
         run: npm ci
 
+      # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Generate file index
         working-directory: website
         run: npm run index
 
+      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Build
         working-directory: website
         run: npm run build
 
+      # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload artifacts
         uses: actions/upload-pages-artifact@v3
         with:
+          # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           path: website/dist
 
   deploy:
     environment:
+      # Note 18: Resource identity and metadata drive automation, selectors, and operational traceability.
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest

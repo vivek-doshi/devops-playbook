@@ -8,28 +8,38 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Snyk Security Scan
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
 
 jobs:
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   snyk:
     runs-on: ubuntu-latest
+    # Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run Snyk Code (SAST)
         uses: snyk/actions/node@master                       # Snyk does not publish versioned tags
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           command: code test
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         continue-on-error: true
 
       - name: Run Snyk Open Source (dependencies)
+        # Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: snyk/actions/node@master                       # <-- CHANGE THIS: use /python, /dotnet, etc.
         with:
           command: test --severity-threshold=high

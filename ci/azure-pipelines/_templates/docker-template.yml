@@ -9,21 +9,29 @@
 # ============================================================
 
 # Azure Pipelines — Docker Build Template
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 parameters:
   - name: imageName
+    # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     type: string
   - name: dockerfilePath
+    # Note 3: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
     type: string
     default: Dockerfile
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - name: containerRegistry
     type: string
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 steps:
   - task: Docker@2
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     displayName: Build and push Docker image
     inputs:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       command: buildAndPush
       repository: ${{ parameters.imageName }}
+      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       dockerfile: ${{ parameters.dockerfilePath }}
       containerRegistry: ${{ parameters.containerRegistry }}
       tags: |

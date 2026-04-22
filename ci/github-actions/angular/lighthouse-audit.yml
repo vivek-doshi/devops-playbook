@@ -8,33 +8,44 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Lighthouse Audit
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 3: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   lighthouse:
+    # Note 4: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Lighthouse CI
     runs-on: ubuntu-latest
 
+    # Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Node.js
         uses: actions/setup-node@v4
+        # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           node-version: "20"
+          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cache: "npm"
 
       - name: Install dependencies
+        # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: npm ci
 
       - name: Build
+        # Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: npm run build -- --configuration production
 
       - name: Run Lighthouse CI
+        # Note 11: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: treosh/lighthouse-ci-action@v11
         with:
           uploadArtifacts: true

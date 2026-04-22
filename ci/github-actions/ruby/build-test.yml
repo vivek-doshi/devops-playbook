@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # TEMPLATE: GitHub Actions — Ruby on Rails Build & Test
 # WHEN TO USE: Any Rails 7+ project
 # PREREQUISITES: Gemfile, Gemfile.lock, database.yml with test config
@@ -8,83 +8,115 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Rails Build & Test
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main, develop]
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
     branches: [main]
 
+# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
   RAILS_ENV: test
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   build-test:
+    # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Build & Test
     runs-on: ubuntu-latest
 
+    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     strategy:
       matrix:
-        ruby-version: ["3.2", "3.3"]             # <-- CHANGE THIS: your supported Ruby versions
+        # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+        ruby-version: ["3.3", "3.4"]             # <-- CHANGE THIS: your supported Ruby versions
 
     services:
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       postgres:                                   # <-- CHANGE THIS: remove if using SQLite
         image: postgres:16-alpine
+        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         env:
           POSTGRES_USER: test
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           POSTGRES_PASSWORD: test
           POSTGRES_DB: app_test
+        # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         ports:
           - 5432:5432
+        # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         options: >-
           --health-cmd pg_isready
+          # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           --health-interval 10s
           --health-timeout 5s
+          # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           --health-retries 5
 
       redis:                                      # <-- CHANGE THIS: remove if not using Redis
+        # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         image: redis:7-alpine
         ports:
+          # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           - 6379:6379
         options: >-
+          # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           --health-cmd "redis-cli ping"
           --health-interval 10s
+          # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           --health-timeout 5s
           --health-retries 5
 
+    # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     env:
       DATABASE_URL: postgres://test:test@localhost:5432/app_test  # <-- CHANGE THIS: match postgres service
+      # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       REDIS_URL: redis://localhost:6379/0
 
     steps:
+      # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Set up Ruby ${{ matrix.ruby-version }}
+        # Note 23: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: ruby/setup-ruby@v1
         with:
+          # Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true                     # Caches gems automatically
 
+      # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Set up Node.js (for asset pipeline)
         uses: actions/setup-node@v4
+        # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           node-version: "22"                     # <-- CHANGE THIS: remove if API-only
+          # Note 27: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cache: yarn                            # <-- CHANGE THIS: use npm if not using Yarn
 
       - name: Install JS dependencies
+        # Note 28: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: yarn install --frozen-lockfile       # <-- CHANGE THIS: remove if API-only
 
       - name: Set up database
+        # Note 29: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           bundle exec rails db:schema:load
 
+      # Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Lint with RuboCop
         run: bundle exec rubocop --parallel
 
+      # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Security audit with Brakeman
         run: bundle exec brakeman --no-pager --quiet
 
+      # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run tests
         run: |
           bundle exec rails test                 # <-- CHANGE THIS: use `bundle exec rspec` for RSpec

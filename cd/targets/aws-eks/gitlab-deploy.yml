@@ -9,15 +9,21 @@
 # ============================================================
 
 # GitLab CI — Deploy to AWS EKS
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 deploy-eks:
   stage: deploy
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image: amazon/aws-cli:latest
   script:
+    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
     - kubectl apply -k cd/kubernetes/_overlays/prod
+    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     - kubectl rollout status deployment/app -n production
   environment:
+    # Note 5: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: production
     url: https://app.example.com
+  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   only:
     - main

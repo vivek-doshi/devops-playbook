@@ -8,34 +8,46 @@
 # MATURITY: Stable
 # ============================================================
 
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to GCP GKE
 
 on:
+  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
 
+# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
   PROJECT_ID: my-gcp-project
+  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   GKE_CLUSTER: my-gke-cluster
   GKE_ZONE: us-central1-a
 
+# Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
+    # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     permissions:
+      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       id-token: write
       contents: read
 
+    # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
+      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
+        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Get GKE credentials
+        # Note 12: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: ${{ env.GKE_CLUSTER }}

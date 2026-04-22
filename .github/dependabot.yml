@@ -1,0 +1,151 @@
+# ============================================================
+# Dependabot configuration
+# Keeps GitHub Actions and Docker base images up to date
+# automatically by opening PRs for version bumps.
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# ============================================================
+
+version: 2
+
+updates:
+  # ── GitHub Actions ──────────────────────────────────────────
+  # Scans every workflow file under .github/workflows/ and
+  # opens a PR whenever an action has a newer pinned version.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci(deps)"
+    # Group all Actions updates into one PR per week to reduce noise.
+    groups:
+      github-actions-all:
+        patterns:
+          - "*"
+
+  # ── Docker base images ──────────────────────────────────────
+  # Each Dockerfile directory needs its own entry.
+  # Dependabot checks the FROM lines and opens PRs for new digests.
+
+  - package-ecosystem: "docker"
+    directory: "/docker/angular"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/dotnet"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/go"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/java"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/node"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/python"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/react"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/ruby"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/_base"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build(deps)"
