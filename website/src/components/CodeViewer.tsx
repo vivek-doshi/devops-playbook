@@ -53,7 +53,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const gitHubUrl = `https://vivek-doshi.github.io/devops-playbook/blob/main/${file.path}`;
+  const gitHubUrl = `https://github.com/vivek-doshi/devops-playbook/blob/main/${file.path}`;
 
   return (
     <div className="code-viewer">
