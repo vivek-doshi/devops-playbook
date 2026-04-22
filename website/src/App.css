@@ -1,171 +1,133 @@
-﻿/* Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
-:root {
+﻿:root {
   --bg: #f2f6f7;
   --bg-soft: #e8eff0;
-  /* Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   --surface: #fcfdfd;
   --surface-2: #f7fbfb;
   --ink: #12343b;
-  /* Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   --ink-muted: #4f6b72;
   --teal-700: #1b6b72;
   --teal-600: #24828b;
-  /* Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   --teal-500: #2f9ea9;
   --mint-300: #8ed8cd;
   --amber-300: #ffd28a;
-  /* Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   --line: #d1e0e3;
   --line-strong: #aac7cc;
 }
 
-/* Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 .app {
   position: relative;
   width: 100vw;
-  /* Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   height: 100vh;
   display: flex;
   overflow: hidden;
-  /* Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   background: radial-gradient(circle at 12% 8%, #ffffff 0%, var(--bg) 34%, var(--bg-soft) 100%);
   color: var(--ink);
   font-family: 'Sora', 'Segoe UI', Tahoma, sans-serif;
-  /* Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.35s ease;
-/* Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 .app::before,
 .app::after {
-  /* Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   content: '';
   position: absolute;
   pointer-events: none;
-  /* Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   filter: blur(40px);
 }
 
 .app::before {
-  /* Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   width: 320px;
   height: 320px;
   top: -120px;
-  /* Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   left: -80px;
   background: radial-gradient(circle, rgba(142, 216, 205, 0.52) 0%, rgba(142, 216, 205, 0) 75%);
 }
 
-/* Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 .app::after {
   width: 360px;
   height: 360px;
-  /* Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   right: -120px;
   bottom: -120px;
   background: radial-gradient(circle, rgba(255, 210, 138, 0.48) 0%, rgba(255, 210, 138, 0) 75%);
-/* Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 .app[data-theme='paper'] {
   background: radial-gradient(circle at 14% 12%, #fffefb 0%, #f8efe1 40%, #f0dfc7 100%);
-/* Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 .app[data-theme='paper']::before {
   background: radial-gradient(circle, rgba(244, 178, 107, 0.38) 0%, rgba(244, 178, 107, 0) 75%);
-/* Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 .app[data-theme='paper']::after {
   background: radial-gradient(circle, rgba(223, 178, 126, 0.42) 0%, rgba(223, 178, 126, 0) 75%);
-/* Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 .app.loading,
 .app.error {
-  /* Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   height: 100vh;
 }
 
 .loading-spinner {
-  /* Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   font-size: 16px;
   color: var(--ink-muted);
 }
 
-/* Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 .error-message {
   text-align: center;
   max-width: 500px;
-  /* Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   padding: 40px;
   background: rgba(252, 253, 253, 0.95);
   border: 1px solid var(--line);
-  /* Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   border-radius: 16px;
   box-shadow: 0 24px 52px rgba(18, 52, 59, 0.14);
 }
 
-/* Note 27: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 .error-message h2 {
   margin: 0 0 12px 0;
   font-size: 20px;
-/* Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 .error-message p {
   margin: 0 0 8px 0;
-  /* Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   color: var(--ink-muted);
   font-size: 14px;
   line-height: 1.5;
-/* Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 .error-message code {
   background: var(--surface-2);
-  /* Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   padding: 2px 6px;
   border-radius: 6px;
   font-family: 'JetBrains Mono', 'Consolas', monospace;
-  /* Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   color: var(--teal-700);
 }
 
 /* Reset default styles */
 * {
   box-sizing: border-box;
-/* Note 33: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 html,
 body {
-  /* Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   margin: 0;
   padding: 0;
   background: var(--bg);
-/* Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 }
 
 #root {
   width: 100%;
-  /* Note 36: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   height: 100%;
 }
 
 .sidebar,
-/* Note 37: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
 .code-viewer {
   position: relative;
   z-index: 1;
-  /* Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. */
   animation: riseIn 0.45s ease-out;
 }
 
