@@ -57,7 +57,7 @@
 ## 📁 Repository Structure
 
 ```
-cicd-reference/
+devops-playbook/
 ├── docker/               # Dockerfiles for every major stack
 ├── compose/              # Docker Compose for local dev environments
 ├── ci/                   # CI pipeline templates (GitHub, GitLab, Azure, Jenkins)
