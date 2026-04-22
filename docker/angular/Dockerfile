@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — Angular (Multi-stage: Node build → nginx serve)
 # WHEN TO USE: Any Angular 17+ application
@@ -27,7 +27,7 @@ RUN npm run build -- --configuration production
 
 # ── Stage 2: Serve with nginx ─────────────────────────────────────────────────
 # Note 7: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM nginx:1.28-alpine AS runtime
+FROM nginx:1.29-alpine AS runtime
 
 # Remove default nginx config and copy custom
 # Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
