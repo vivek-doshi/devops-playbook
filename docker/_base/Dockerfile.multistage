@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Annotated Multi-stage Dockerfile — Teaching Example
 # WHEN TO USE: Learning reference for multi-stage Docker builds
@@ -14,7 +14,7 @@
 # ── Stage 1: Dependencies ────────────────────────────────────────────────────
 # Use a full SDK image for building — this stage will NOT be shipped
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM node:22-alpine AS deps
+FROM node:25-alpine AS deps
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
@@ -27,7 +27,7 @@ RUN npm ci --ignore-scripts   # --ignore-scripts prevents malicious postinstall
 
 # ── Stage 2: Builder ─────────────────────────────────────────────────────────
 # Note 5: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 # Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
@@ -46,7 +46,7 @@ RUN npm run build
 # ── Stage 3: Runtime ─────────────────────────────────────────────────────────
 # Minimal base — no build tools, smaller attack surface
 # Note 10: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM node:22-alpine AS runtime
+FROM node:25-alpine AS runtime
 # Note 11: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
