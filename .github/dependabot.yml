@@ -3,6 +3,14 @@
 # Keeps GitHub Actions and Docker base images up to date
 # automatically by opening PRs for version bumps.
 # Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Behaviour summary:
+#   - GitHub Actions  : all updates grouped into ONE PR per week.
+#   - Docker images   : all directories grouped into ONE PR per week.
+#   - Major versions  : ignored for .NET, Java (temurin/gradle), Ruby
+#                       and Node so breaking upgrades need an explicit opt-in.
+#   - Auto-merge      : a separate workflow (.github/workflows/dependabot-automerge.yml)
+#                       automatically merges patch-level Docker and Actions PRs.
 # ============================================================
 
 version: 2
@@ -23,15 +31,16 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "ci(deps)"
-    # Group all Actions updates into one PR per week to reduce noise.
+    # All Actions bumps batched into one PR per week.
     groups:
       github-actions-all:
         patterns:
           - "*"
 
   # ── Docker base images ──────────────────────────────────────
-  # Each Dockerfile directory needs its own entry.
-  # Dependabot checks the FROM lines and opens PRs for new digests.
+  # All Dockerfile directories are grouped into a single weekly PR.
+  # Major-version jumps for runtimes that require code changes are
+  # ignored so they never appear without an explicit decision.
 
   - package-ecosystem: "docker"
     directory: "/docker/angular"
@@ -45,6 +54,10 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/docker/dotnet"
@@ -58,6 +71,19 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
+    # .NET major upgrades (e.g. 8 -> 9 -> 10) require retargeting the
+    # project. Pin to the current major and bump manually when ready.
+    ignore:
+      - dependency-name: "mcr.microsoft.com/dotnet/sdk"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mcr.microsoft.com/dotnet/aspnet"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mcr.microsoft.com/dotnet/runtime"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/docker/go"
@@ -71,6 +97,10 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/docker/java"
@@ -84,6 +114,19 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
+    # Gradle 9 has breaking DSL changes; eclipse-temurin LTS cadence is
+    # every 3 years. Block major bumps until explicitly reviewed.
+    ignore:
+      - dependency-name: "gradle"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "maven"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/docker/node"
@@ -97,6 +140,15 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
+    # Only track Active LTS Node releases (even major numbers).
+    # Odd-numbered releases (23, 25 ...) are short-lived Current releases.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/docker/python"
@@ -110,6 +162,10 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/docker/react"
@@ -123,6 +179,10 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/docker/ruby"
@@ -136,6 +196,14 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"
+    # Ruby 4.0 is brand-new; gem compatibility needs explicit testing.
+    ignore:
+      - dependency-name: "ruby"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/docker/_base"
@@ -149,3 +217,7 @@ updates:
       - "docker"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      docker-all:
+        patterns:
+          - "*"

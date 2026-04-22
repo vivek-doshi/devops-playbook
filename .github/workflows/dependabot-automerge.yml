@@ -1,0 +1,55 @@
+# ============================================================
+# Dependabot Auto-merge
+# Automatically approves and merges Dependabot PRs that are
+# patch-level updates only — no human review needed for those.
+#
+# Major and minor bumps are left open for manual review because
+# they can carry breaking changes (see dependabot.yml ignore rules).
+#
+# Required repo settings:
+#   - Settings > General > Allow auto-merge  (must be ON)
+#   - Branch protection rule on `main` with "Require status checks"
+#     so auto-merge only completes after CI passes.
+# ============================================================
+
+name: Dependabot Auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge patch updates
+    runs-on: ubuntu-latest
+    # Only run for PRs opened by Dependabot itself.
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Auto-approve + merge ONLY when the update is patch-level.
+      # Semver: patch = third digit (1.2.X), minor = second (1.X.0).
+      # For Docker image tags the same logic applies because
+      # dependabot/fetch-metadata classifies them correctly.
+      - name: Approve patch update
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for patch update
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
