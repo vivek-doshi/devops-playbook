@@ -52,16 +52,16 @@
   background: radial-gradient(circle, rgba(255, 210, 138, 0.48) 0%, rgba(255, 210, 138, 0) 75%);
 }
 
-.app[data-theme='paper'] {
-  background: radial-gradient(circle at 14% 12%, #fffefb 0%, #f8efe1 40%, #f0dfc7 100%);
+.app[data-theme='midnight'] {
+  background: radial-gradient(circle at 14% 12%, #1a1a2e 0%, #12121f 50%, #0d0d18 100%);
 }
 
-.app[data-theme='paper']::before {
-  background: radial-gradient(circle, rgba(244, 178, 107, 0.38) 0%, rgba(244, 178, 107, 0) 75%);
+.app[data-theme='midnight']::before {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0) 75%);
 }
 
-.app[data-theme='paper']::after {
-  background: radial-gradient(circle, rgba(223, 178, 126, 0.42) 0%, rgba(223, 178, 126, 0) 75%);
+.app[data-theme='midnight']::after {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0) 75%);
 }
 
 .app.loading,

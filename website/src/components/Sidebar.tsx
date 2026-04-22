@@ -17,8 +17,8 @@ interface SidebarProps {
   onFileSelect: (file: FileItem) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  theme: 'ocean' | 'paper';
-  onThemeChange: (theme: 'ocean' | 'paper') => void;
+  theme: 'ocean' | 'midnight';
+  onThemeChange: (theme: 'ocean' | 'midnight') => void;
 }
 
 interface TreeNode {
@@ -188,11 +188,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Ocean Ops
           </button>
           <button
-            className={`theme-btn ${theme === 'paper' ? 'active' : ''}`}
-            onClick={() => onThemeChange('paper')}
+            className={`theme-btn ${theme === 'midnight' ? 'active' : ''}`}
+            onClick={() => onThemeChange('midnight')}
             type="button"
           >
-            Paper Terminal
+            Midnight
           </button>
         </div>
       </div>
