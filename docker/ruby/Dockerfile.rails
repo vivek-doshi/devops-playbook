@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — Ruby on Rails Application
 # WHEN TO USE: Any Rails 7+ application (API or full-stack)
@@ -11,7 +11,7 @@
 
 # ── Stage 1: Build (install gems + precompile assets) ────────────────────────
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM ruby:3.4-slim AS build
+FROM ruby:4.0-slim AS build
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
@@ -49,7 +49,7 @@ RUN SECRET_KEY_BASE=placeholder \
     bundle exec rails assets:precompile
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
-FROM ruby:3.4-slim AS runtime
+FROM ruby:4.0-slim AS runtime
 WORKDIR /app
 
 # Install runtime-only dependencies
