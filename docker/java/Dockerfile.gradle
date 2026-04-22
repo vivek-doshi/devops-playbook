@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — Spring Boot (Gradle)
 # WHEN TO USE: Spring Boot applications built with Gradle
@@ -11,7 +11,7 @@
 
 # ── Stage 1: Build ───────────────────────────────────────────────────────────
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM gradle:8.13-jdk21 AS build
+FROM gradle:9.4-jdk21 AS build
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
