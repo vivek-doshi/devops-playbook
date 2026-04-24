@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" font-family="ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,sans-serif">
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="420" fill="#f8fafc" rx="12"/>
+
+  <!-- Title -->
+  <text x="480" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#0f172a">CI/CD Pipeline Stages</text>
+  <text x="480" y="55" text-anchor="middle" font-size="11" fill="#64748b">Consistent stages across GitHub Actions · Azure Pipelines · GitLab CI · Jenkins</text>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ROW 1 — 4 stages: Source · Build · Test · Quality
+       Box width=160, gap=28 → total=4×160+3×28=724, start=(960-724)/2=118
+       Box y=80, h=115, center-y=137
+       Centers: 118+80=198, 118+188+80=386, 118+376+80=574, 118+564+80=762
+  ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Stage 1: Source -->
+  <rect x="118" y="80" width="160" height="115" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="198" y="102" text-anchor="middle" font-size="13" font-weight="700" fill="#6d28d9">Source</text>
+  <line x1="128" y1="110" x2="268" y2="110" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="198" y="126" text-anchor="middle" font-size="10" fill="#5b21b6">GitHub / GitLab</text>
+  <text x="198" y="142" text-anchor="middle" font-size="10" fill="#5b21b6">Branch protection</text>
+  <text x="198" y="158" text-anchor="middle" font-size="10" fill="#5b21b6">PR / Code review</text>
+  <text x="198" y="174" text-anchor="middle" font-size="10" fill="#5b21b6">CODEOWNERS</text>
+
+  <!-- → Build -->
+  <line x1="278" y1="137" x2="305" y2="137" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Stage 2: Build -->
+  <rect x="306" y="80" width="160" height="115" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <text x="386" y="102" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">Build</text>
+  <line x1="316" y1="110" x2="456" y2="110" stroke="#fcd34d" stroke-width="1"/>
+  <text x="386" y="126" text-anchor="middle" font-size="10" fill="#78350f">.NET / Java / Python</text>
+  <text x="386" y="142" text-anchor="middle" font-size="10" fill="#78350f">Node.js / Go / Ruby</text>
+  <text x="386" y="158" text-anchor="middle" font-size="10" fill="#78350f">Multi-stage Docker</text>
+  <text x="386" y="174" text-anchor="middle" font-size="10" fill="#78350f">Cache layers</text>
+
+  <!-- → Test -->
+  <line x1="466" y1="137" x2="493" y2="137" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Stage 3: Test -->
+  <rect x="494" y="80" width="160" height="115" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="574" y="102" text-anchor="middle" font-size="13" font-weight="700" fill="#15803d">Test</text>
+  <line x1="504" y1="110" x2="644" y2="110" stroke="#86efac" stroke-width="1"/>
+  <text x="574" y="126" text-anchor="middle" font-size="10" fill="#166534">Unit &amp; integration</text>
+  <text x="574" y="142" text-anchor="middle" font-size="10" fill="#166534">Coverage threshold</text>
+  <text x="574" y="158" text-anchor="middle" font-size="10" fill="#166534">pytest / JUnit / xUnit</text>
+  <text x="574" y="174" text-anchor="middle" font-size="10" fill="#166534">Playwright (E2E)</text>
+
+  <!-- → Quality -->
+  <line x1="654" y1="137" x2="681" y2="137" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Stage 4: Quality Gate -->
+  <rect x="682" y="80" width="160" height="115" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="762" y="102" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">Quality Gate</text>
+  <line x1="692" y1="110" x2="832" y2="110" stroke="#93c5fd" stroke-width="1"/>
+  <text x="762" y="126" text-anchor="middle" font-size="10" fill="#1e40af">SonarQube</text>
+  <text x="762" y="142" text-anchor="middle" font-size="10" fill="#1e40af">Ruff / ESLint</text>
+  <text x="762" y="158" text-anchor="middle" font-size="10" fill="#1e40af">Type checking</text>
+  <text x="762" y="174" text-anchor="middle" font-size="10" fill="#1e40af">Conftest / OPA</text>
+
+  <!-- ─── Elbow connector: Row 1 end → Row 2 start ─────── -->
+  <!-- From Quality bottom-right (762, 195) → down → left → Security top -->
+  <polyline points="762,195 762,230 280,230 280,260" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ROW 2 — 3 stages: Security · Package · Deploy
+       Box width=160, gap=40 → total=3×160+2×40=560, start=(960-560)/2=200
+       Box y=260, h=115, center-y=317
+       Centers: 200+80=280, 200+200+80=480, 200+400+80=680
+  ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Stage 5: Security Scan -->
+  <rect x="200" y="260" width="160" height="115" rx="8" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+  <text x="280" y="282" text-anchor="middle" font-size="13" font-weight="700" fill="#be123c">Security Scan</text>
+  <line x1="210" y1="290" x2="350" y2="290" stroke="#fda4af" stroke-width="1"/>
+  <text x="280" y="306" text-anchor="middle" font-size="10" fill="#9f1239">Trivy (containers)</text>
+  <text x="280" y="322" text-anchor="middle" font-size="10" fill="#9f1239">Checkov (IaC)</text>
+  <text x="280" y="338" text-anchor="middle" font-size="10" fill="#9f1239">Gitleaks (secrets)</text>
+  <text x="280" y="354" text-anchor="middle" font-size="10" fill="#9f1239">SAST / hadolint</text>
+
+  <!-- → Package -->
+  <line x1="360" y1="317" x2="388" y2="317" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Stage 6: Package -->
+  <rect x="390" y="260" width="160" height="115" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="470" y="282" text-anchor="middle" font-size="13" font-weight="700" fill="#6d28d9">Package</text>
+  <line x1="400" y1="290" x2="540" y2="290" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="470" y="306" text-anchor="middle" font-size="10" fill="#5b21b6">Docker build &amp; push</text>
+  <text x="470" y="322" text-anchor="middle" font-size="10" fill="#5b21b6">Semver image tag</text>
+  <text x="470" y="338" text-anchor="middle" font-size="10" fill="#5b21b6">Helm chart package</text>
+  <text x="470" y="354" text-anchor="middle" font-size="10" fill="#5b21b6">SBOM generation</text>
+
+  <!-- → Deploy -->
+  <line x1="550" y1="317" x2="578" y2="317" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Stage 7: Deploy -->
+  <rect x="580" y="260" width="160" height="115" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+  <text x="660" y="282" text-anchor="middle" font-size="13" font-weight="700" fill="#047857">Deploy</text>
+  <line x1="590" y1="290" x2="730" y2="290" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="660" y="306" text-anchor="middle" font-size="10" fill="#065f46">Helm / Kustomize</text>
+  <text x="660" y="322" text-anchor="middle" font-size="10" fill="#065f46">ArgoCD / Flux</text>
+  <text x="660" y="338" text-anchor="middle" font-size="10" fill="#065f46">dev → staging → prod</text>
+  <text x="660" y="354" text-anchor="middle" font-size="10" fill="#065f46">Kyverno admission</text>
+
+  <!-- ── Footer ─────────────────────────────────────────── -->
+  <text x="480" y="402" text-anchor="middle" font-size="10" fill="#94a3b8">Templates: ci/github-actions · ci/azure-pipelines · ci/gitlab-ci · ci/jenkins</text>
+</svg>
