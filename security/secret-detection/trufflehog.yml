@@ -1,0 +1,134 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — TruffleHog Verified Secret Detection
+# WHEN TO USE: Deep pull request secret scanning with live credential verification
+# PREREQUISITES: Pull requests opened from branches with accessible base and head commits
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Pull request branch filters, TruffleHog CLI version, and summary detail level
+# RELATED FILES: security/secret-detection/gitleaks.yml, security/README.md
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
+name: TruffleHog Verified Secret Detection
+
+on:
+  # Note 2: PR-only is intentional here because deep history and verification are more expensive than fast push-time pattern scans.
+  pull_request:
+    branches: [main]  # <-- CHANGE THIS: match your protected review branch
+
+# Note 3: Comment updates need issue or PR write access; checkout only needs contents read.
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  # Note 4: Keep TruffleHog separate from Gitleaks so teams can tune expensive verified scanning independently.
+  trufflehog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # Note 5: Base and head SHAs may sit outside a shallow clone, so full history avoids false negatives on PR diffs.
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog enforcement scan
+        # Note 6: Pinning a security action to a full SHA prevents an upstream branch move from silently changing scanner behaviour.
+        uses: trufflesecurity/trufflehog@5474feb15b332595dd00d83b71f4689ab1860a1d
+        with:
+          path: ./
+          # Note 7: The action maps base/head to --since-commit and --branch so only the PR diff is scanned instead of full history.
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          version: v3.95.2  # <-- CHANGE THIS: pin the TruffleHog CLI version instead of relying on latest
+          # IMPORTANT: --only-verified reduces false positives, but it can miss secrets that cannot be live-verified such as internal APIs.
+          extra_args: --only-verified  # Pair with Gitleaks for broader pattern coverage across unverifiable secret types.
+
+      - name: Build job summary
+        # Note 8: Re-running the same bounded diff in JSON mode gives reviewers a concise summary without re-scanning full repository history.
+        if: always()
+        id: summary
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          results_file="$(mktemp)"
+          summary_file="$(mktemp)"
+
+          docker run --rm -v "$PWD:/tmp" -w /tmp \
+            ghcr.io/trufflesecurity/trufflehog:v3.95.2 \
+            git file:///tmp/ \
+            --since-commit "$BASE_SHA" \
+            --branch "$HEAD_SHA" \
+            --only-verified \
+            --json \
+            --no-update > "$results_file" || true
+
+          finding_count="$(jq -s 'length' "$results_file")"
+
+          {
+            echo "## TruffleHog PR Secret Scan"
+            echo
+            echo "- Base commit: \`$BASE_SHA\`"
+            echo "- Head commit: \`$HEAD_SHA\`"
+            echo "- Verified findings: **$finding_count**"
+            echo
+
+            if [ "$finding_count" -gt 0 ]; then
+              echo "| Detector | Location |"
+              echo "|---|---|"
+              jq -r '[.DetectorName // "unknown", .SourceMetadata.Data.Git.file // .SourceMetadata.Data.Filesystem.file // .SourceMetadata.Data.Git.path // "unknown"] | @tsv' "$results_file" \
+                | sort -u \
+                | head -n 20 \
+                | while IFS=$'\t' read -r detector location; do
+                    printf '| %s | %s |\n' "$detector" "$location"
+                  done
+              echo
+              echo "Verified secrets were detected in the PR diff. Review the workflow logs for the full scanner output and rotate any exposed credentials immediately."
+            else
+              echo "No verified secrets were found in the pull request diff."
+            fi
+          } | tee "$summary_file" >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo "comment_body<<EOF"
+            cat "$summary_file"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Comment on pull request
+        # Note 9: Reusing the same markdown in the PR comment and job summary keeps reviewer context consistent.
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        env:
+          COMMENT_BODY: ${{ steps.summary.outputs.comment_body }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = '<!-- trufflehog-pr-scan -->';
+            const body = `${marker}\n${process.env.COMMENT_BODY}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+            });
+            const existing = comments.find((comment) => comment.user.type === 'Bot' && comment.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

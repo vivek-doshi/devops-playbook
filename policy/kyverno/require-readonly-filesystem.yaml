@@ -1,0 +1,73 @@
+# Warns when containers do not use a read-only root filesystem.
+#
+# This policy uses 'warn' rather than 'enforce' because:
+#   1. Some applications write to paths like /tmp, /var/run, or /app/cache at runtime.
+#      These are legitimate write requirements that cannot always be eliminated immediately.
+#   2. The correct migration path is to add an emptyDir volume for each writable path
+#      (see the exception pattern in the message below), not to disable the policy.
+#   3. Teams should migrate progressively: audit first, add emptyDir mounts, then
+#      graduate to enforce once all workloads in the namespace are compliant.
+#
+# The reference deployment already uses this pattern correctly:
+#   cd/kubernetes/_base/deployment.yaml — readOnlyRootFilesystem: true with /tmp emptyDir
+#   cd/helm/webapp/templates/deployment.yaml — same pattern for Helm-deployed workloads
+#
+# Monitor warnings with: kubectl get policyreport -A
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-readonly-filesystem
+  annotations:
+    policies.kyverno.io/title: Require Read-Only Root Filesystem
+    policies.kyverno.io/category: Pod Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Containers should set securityContext.readOnlyRootFilesystem: true to prevent
+      attackers from writing malicious files to the container's root filesystem.
+      Applications that need writable directories (e.g. /tmp) should mount emptyDir
+      volumes instead of relying on a writable root filesystem. This policy is in
+      warn mode to allow progressive adoption — violations are logged but not blocked.
+      Monitor with: kubectl get policyreport -A
+spec:
+  # Warn — not Enforce. Violations are recorded in PolicyReports and surfaced in
+  # the Kyverno admission webhook response as warnings, but the resource is admitted.
+  # Change to Enforce once all workloads in a namespace are compliant.
+  validationFailureAction: Warn
+  background: true
+  rules:
+    - name: check-readonly-root-filesystem
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - monitoring
+      validate:
+        message: >-
+          Container '{{ request.object.metadata.name }}' should set
+          securityContext.readOnlyRootFilesystem: true.
+          A writable root filesystem allows attackers to modify binaries and write
+          persistence mechanisms if the container is compromised.
+          If your application writes to /tmp or another path at runtime, mount an
+          emptyDir volume instead of keeping the root filesystem writable:
+            containers:
+              - name: app
+                securityContext:
+                  readOnlyRootFilesystem: true
+                volumeMounts:
+                  - name: tmp
+                    mountPath: /tmp
+            volumes:
+              - name: tmp
+                emptyDir: {}
+          Reference pattern: cd/kubernetes/_base/deployment.yaml
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  readOnlyRootFilesystem: true

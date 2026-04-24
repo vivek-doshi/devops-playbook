@@ -1,0 +1,116 @@
+# Audit only — enforcing would break many legacy workloads. Review violations in the
+# Kyverno policy report before considering graduation to enforce mode.
+#
+# This policy targets Deployments with more than 1 replica because:
+#   - Single-replica workloads (batch jobs, dev instances) have lower availability
+#     requirements and may not yet have health endpoints.
+#   - Multi-replica workloads are load-balanced; without a readinessProbe, a
+#     restarting or slow-to-start container will receive traffic before it is ready,
+#     causing errors for end users. Without a livenessProbe, a deadlocked container
+#     will never be restarted automatically.
+#
+# Reference pattern: cd/kubernetes/_base/deployment.yaml
+#   readinessProbe — httpGet /health/ready:8080, periodSeconds: 10
+#   livenessProbe  — httpGet /health/live:8080,  periodSeconds: 20
+#
+# Monitor audit violations with: kubectl get policyreport -A
+# View details: kubectl describe polr -n <namespace> | grep -A 10 "require-liveness"
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-liveness-readiness
+  annotations:
+    policies.kyverno.io/title: Require Liveness and Readiness Probes for Multi-Replica Deployments
+    policies.kyverno.io/category: Reliability
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Deployments with more than 1 replica must define both a livenessProbe and a
+      readinessProbe on every container. Without a readinessProbe, Kubernetes routes
+      traffic to containers before they are ready. Without a livenessProbe, deadlocked
+      containers run indefinitely without being restarted. This policy is in audit mode
+      to avoid blocking legacy workloads — review violations with:
+        kubectl get policyreport -A
+spec:
+  # Audit only — see comment at the top of this file.
+  validationFailureAction: Audit
+  background: true
+  rules:
+    # ── Rule 1: containers must have a readinessProbe ────────────────────────
+    - name: check-readiness-probe
+      match:
+        any:
+          - resources:
+              kinds: [Deployment]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+      # Only apply to Deployments whose replica count is greater than 1.
+      # Single-replica workloads are excluded to reduce noise for dev/batch workloads.
+      preconditions:
+        any:
+          - key: "{{ request.object.spec.replicas }}"
+            operator: GreaterThan
+            value: 1
+      validate:
+        message: >-
+          Deployment '{{ request.object.metadata.name }}' has {{ request.object.spec.replicas }}
+          replicas but at least one container is missing a readinessProbe.
+          Without a readinessProbe, Kubernetes sends traffic to containers before they
+          are ready, causing errors for clients during rolling updates.
+          Add a readinessProbe to every container. Example (adjust path and port):
+            readinessProbe:
+              httpGet:
+                path: /health/ready
+                port: 8080
+              initialDelaySeconds: 5
+              periodSeconds: 10
+          Reference pattern: cd/kubernetes/_base/deployment.yaml
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - readinessProbe:
+                      (httpGet | tcpSocket | exec): "?*"
+
+    # ── Rule 2: containers must have a livenessProbe ─────────────────────────
+    - name: check-liveness-probe
+      match:
+        any:
+          - resources:
+              kinds: [Deployment]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+      preconditions:
+        any:
+          - key: "{{ request.object.spec.replicas }}"
+            operator: GreaterThan
+            value: 1
+      validate:
+        message: >-
+          Deployment '{{ request.object.metadata.name }}' has {{ request.object.spec.replicas }}
+          replicas but at least one container is missing a livenessProbe.
+          Without a livenessProbe, a deadlocked or crashed container will not be
+          automatically restarted, causing silent degradation in a multi-replica service.
+          Add a livenessProbe to every container. Example (adjust path and port):
+            livenessProbe:
+              httpGet:
+                path: /health/live
+                port: 8080
+              initialDelaySeconds: 15
+              periodSeconds: 20
+          Reference pattern: cd/kubernetes/_base/deployment.yaml
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - livenessProbe:
+                      (httpGet | tcpSocket | exec): "?*"

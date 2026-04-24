@@ -1,0 +1,248 @@
+# loki-stack chart values (grafana/loki-stack 2.10.x)
+# Installs both Loki and Promtail from a single values file.
+#
+# Install:
+#   helm repo add grafana https://grafana.github.io/helm-charts
+#   helm install loki grafana/loki-stack --version 2.10.2 -n monitoring -f values.yaml
+#
+# Single binary (monolithic) mode is used here.  It runs all Loki components in one process
+# and is appropriate for clusters producing up to roughly 200 GB of logs per day.
+# For higher volumes, use the standalone loki chart in distributed mode:
+# https://grafana.com/docs/loki/latest/setup/install/helm/
+
+# ─── Loki ────────────────────────────────────────────────────────────────────
+
+loki:
+  enabled: true
+
+  config:
+    auth_enabled: false # Single-tenant mode. Set true and pass X-Scope-OrgID headers for multi-tenancy.
+
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9095
+
+    common:
+      path_prefix: /var/loki
+      replication_factor: 1 # Single-binary needs only one replica; raise for HA deployments.
+      storage:
+        # Filesystem storage is simple and requires no external dependencies.
+        # For production durability, switch to an object storage backend:
+        #   S3:    type: s3    — add bucketnames, region, endpoint
+        #   GCS:   type: gcs   — add bucket_name
+        #   Azure: type: azure — add account_name, account_key, container
+        # <-- CHANGE THIS to object storage before running in production
+        filesystem:
+          chunks_directory: /var/loki/chunks
+          rules_directory: /var/loki/rules
+
+    schema_config:
+      configs:
+        - from: "2024-01-01"
+          store: tsdb           # TSDB is the recommended index type for Loki 2.8+.
+          object_store: filesystem # <-- CHANGE THIS to match your storage backend.
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+
+    ingester:
+      # WAL persists un-flushed chunks to disk so in-flight data survives a pod restart.
+      wal:
+        enabled: true
+        dir: /var/loki/wal
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+      chunk_encoding: snappy    # Snappy gives fast compression with moderate ratio — good default.
+      chunk_target_size: 1048576 # 1 MiB target keeps chunks predictably sized for filesystem storage.
+      chunk_idle_period: 30m    # Flush idle chunks after 30 minutes to bound in-memory usage.
+      max_chunk_age: 1h         # Force-flush any chunk older than 1 hour regardless of idle state.
+
+    compactor:
+      working_directory: /var/loki/compactor
+      # retention_enabled must be true in the compactor to honour retention_period below.
+      retention_enabled: true
+      retention_delete_delay: 2h    # Wait 2 hours after the retention window before deleting chunks.
+      retention_delete_worker_count: 150
+
+    limits_config:
+      # 30-day retention matches the Prometheus retention set in observability/prometheus/values.yaml
+      # so incident timelines stay consistent across metrics and logs.
+      retention_period: 720h         # 720h = exactly 30 days.
+      ingestion_rate_mb: 16          # Per-tenant ingestion ceiling in MB/s.
+      ingestion_burst_size_mb: 32    # Burst allowance above the sustained rate.
+      # max_query_length adds a 1-hour buffer beyond the 30-day retention window so range
+      # queries ending exactly at "now - 30d" do not hit the boundary mid-request.
+      max_query_length: 721h
+      max_streams_per_user: 10000    # Prevents a noisy namespace from exhausting the ingester.
+      per_stream_rate_limit: 3MB
+      per_stream_rate_limit_burst: 15MB
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h # Drop lines older than 7 days at ingest time.
+
+    query_range:
+      split_queries_by_interval: 24h # Split long queries into 1-day chunks to bound fan-out.
+      cache_results: true
+
+    storage_config:
+      tsdb_shipper:
+        active_index_directory: /var/loki/index
+        cache_location: /var/loki/index_cache
+        cache_ttl: 24h
+
+    chunk_store_config:
+      chunk_cache_config:
+        embedded_cache:
+          enabled: true
+          max_size_mb: 500 # In-process cache reduces repeated storage reads under normal query load.
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi # 4 GiB ceiling absorbs query spikes without OOM-killing on a mid-size cluster.
+
+  persistence:
+    enabled: true
+    size: 50Gi # Sized to hold 30 days of compressed logs for a cluster with moderate log volume.
+    # storageClassName: "" # <-- CHANGE THIS to an SSD-backed storage class in production
+
+  podLabels:
+    app: loki
+    monitoring: "true" # Opt in to the additionalScrapeConfigs job in prometheus/values.yaml.
+
+# ─── Promtail ─────────────────────────────────────────────────────────────────
+
+promtail:
+  enabled: true
+
+  # Promtail runs as a DaemonSet (one pod per node). Requests are intentionally low because
+  # Promtail spends most of its time blocked on inotify file events rather than doing CPU work.
+  resources:
+    requests:
+      cpu: 50m    # Minimal CPU; file-tail work is almost entirely I/O-wait, not CPU.
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi # Cap memory so Promtail cannot crowd out application pods on a busy node.
+
+  config:
+    clients:
+      - url: http://loki:3100/loki/api/v1/push # Points to the Loki service in the same namespace.
+
+    snippets:
+      # extraScrapeConfigs appends to the default Kubernetes pod scrape job rather than replacing
+      # it, so the default CRI log format stage and label relabelling are preserved.
+      extraScrapeConfigs: |
+        # Collect system logs from each node (/var/log/*.log covers kubelet, kernel, systemd).
+        - job_name: system
+          static_configs:
+            - targets:
+                - localhost
+              labels:
+                job: varlogs
+                __path__: /var/log/*.log
+          pipeline_stages:
+            - regex:
+                # Parse syslog-style "Mon DD HH:MM:SS host process: message" lines.
+                expression: '^(?P<timestamp>\w+\s+\d+ \d+:\d+:\d+) (?P<host>\S+) (?P<process>\S+): (?P<message>.*)$'
+            - labels:
+                host:
+                process:
+
+      pipelineStages:
+        # Stage 1: strip the CRI prefix (timestamp, stream, flags) added by containerd/CRI-O.
+        - cri: {}
+
+        # Stage 2: try to parse the log line as JSON.
+        # Covers FastAPI / uvicorn structured logs and any Python app using python-json-logger or structlog.
+        # Fields that do not exist in a line are silently ignored, so this stage is safe to run globally.
+        - json:
+            expressions:
+              level: level       # Severity used by structlog, python-json-logger, and the OTel SDK.
+              time: time         # ISO-8601 timestamp emitted by uvicorn's JSON access log formatter.
+              message: message   # Primary log message body.
+              trace_id: trace_id # OTel trace correlation ID (populated when the OTel sidecar is running).
+              logger: logger     # Logger name, useful for filtering by component within an application.
+
+        # Stage 3: for plain-text log lines (no JSON), extract level via regex.
+        # Handles .NET (ASPNETCORE_ENVIRONMENT), Java (Logback/Log4j), and generic bracketed formats.
+        - match:
+            # Select lines that did not produce a level from the JSON stage above.
+            selector: '{app=~".+"} |~ "^[^{]"'
+            stages:
+              - regex:
+                  # Matches formats:
+                  #   .NET:    "2024-01-01 12:00:00.000 +00:00 [INF] Message"
+                  #   Java:    "2024-01-01 12:00:00.000  INFO --- [main] Message"
+                  #   Generic: "INFO: Message" or "[ERROR] Message"
+                  expression: '(?i)(?:^|\s)\[?(?P<level>TRACE|DEBUG|INFO|WARN(?:ING)?|ERROR|CRITICAL|FATAL)\]?[\s:]'
+              - labels:
+                  level:
+
+        # Stage 4: parse nginx access log format into structured fields.
+        # The selector targets both standalone nginx containers and the ingress-nginx pods.
+        - match:
+            selector: '{app=~"nginx|ingress.*"}'
+            stages:
+              - regex:
+                  expression: >-
+                    ^(?P<remote_addr>\S+) - (?P<remote_user>\S+) \[(?P<time_local>[^\]]+)\]
+                    "(?P<method>\S+) (?P<path>\S+) (?P<protocol>\S+)"
+                    (?P<status>\d+) (?P<body_bytes_sent>\d+)
+                    "(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"
+              - labels:
+                  method:
+                  status:
+
+        # Stage 5: normalise the level label to lowercase so LogQL label matchers work
+        # consistently regardless of whether the app emits "INFO", "Info", or "info".
+        - template:
+            source: level
+            template: '{{ ToLower .Value }}'
+
+        # Stage 6: promote level and trace_id to indexed Loki stream labels.
+        # Keep the label count small — each unique label combination creates a new stream.
+        # namespace, pod, container, and node are added by the default Kubernetes SD relabelling.
+        - labels:
+            level:
+            trace_id: # Promote so log panels can link to Tempo/Jaeger traces via the derived field.
+
+        # Stage 7: drop debug-level lines in production namespaces.
+        # Debug logs are typically 3-5x higher volume than info+warn+error combined, so dropping
+        # them at collection time significantly reduces ingestion cost and storage pressure.
+        - match:
+            selector: '{namespace=~"production|prod"}'
+            stages:
+              - drop:
+                  expression: '(?i)level=debug|"level":"debug"|\[debug\]'
+                  drop_counter_reason: debug_dropped_in_production
+
+  # Mount the node's /var/log directory so Promtail can collect system logs.
+  extraVolumes:
+    - name: varlog
+      hostPath:
+        path: /var/log
+
+  extraVolumeMounts:
+    - name: varlog
+      mountPath: /var/log
+      readOnly: true
+
+  tolerations:
+    # Run Promtail on control-plane nodes too so system logs are never missed.
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+  serviceMonitor:
+    # Expose Promtail's own metrics to Prometheus so scrape lag, drop counts, and
+    # pipeline errors are visible without manual scrape configuration.
+    enabled: true
+    labels:
+      monitoring: "true"

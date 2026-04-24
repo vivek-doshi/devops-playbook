@@ -1,0 +1,112 @@
+# Pre-commit is the first local gate before CI.
+# Heavy repository-wide hooks such as Checkov and mypy are intentionally excluded from the default pre-push stage
+# so final push feedback stays fast; only the lightweight gitleaks secret scan runs at pre-push by default.
+minimum_pre_commit_version: '3.7.0'
+default_install_hook_types:
+  - pre-commit
+  - pre-push
+default_stages:
+  - pre-commit
+
+repos:
+  # ------------------------------------------------------------
+  # Secret detection
+  # Catch credentials before they ever leave a developer machine.
+  # Mirrors the CI gitleaks workflow but runs locally so secrets never leave the machine.
+  # ------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        stages: [pre-push]
+        pass_filenames: false
+
+  # ------------------------------------------------------------
+  # IaC quality
+  # Keep infrastructure syntax and policy checks close to the edit so broken Terraform, weak policies,
+  # and Dockerfile issues are caught before the slower CI security workflows run.
+  # ------------------------------------------------------------
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.3
+    hooks:
+      - id: terraform_fmt
+        files: ^terraform/.*\.tf(vars)?$
+      - id: terraform_validate
+        files: ^terraform/.*\.tf(vars)?$
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: checkov-terraform
+        name: checkov (terraform)
+        entry: checkov --directory terraform --framework terraform --quiet --compact
+        language: python
+        additional_dependencies:
+          - checkov==3.2.72
+        files: ^terraform/.*\.tf(vars)?$
+        pass_filenames: false
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        files: (^|/)([Dd]ockerfile|.*\.Dockerfile)$
+
+  # ------------------------------------------------------------
+  # General code quality
+  # These fast text-level checks enforce the repository's EditorConfig-style whitespace, file endings,
+  # and structured-data hygiene before language-specific linters spend time on deeper analysis.
+  # ------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # ------------------------------------------------------------
+  # Python
+  # Reuse the shared pyproject settings for linting, formatting, and type checks so local edits match CI behaviour
+  # without forcing developers to remember separate command lines.
+  # ------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check --config quality/python/pyproject.toml
+        language: python
+        additional_dependencies:
+          - ruff==0.6.9
+        files: \.py$
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format --config quality/python/pyproject.toml
+        language: python
+        additional_dependencies:
+          - ruff==0.6.9
+        files: \.py$
+      - id: mypy
+        name: mypy
+        entry: mypy --config-file quality/python/pyproject.toml
+        language: python
+        additional_dependencies:
+          - mypy==1.10.0
+        files: \.py$
+        pass_filenames: false
+
+  # ------------------------------------------------------------
+  # Shell scripts
+  # ShellCheck catches quoting, word-splitting, and portability defects early, which matters for the helper scripts
+  # in this repository because they are usually executed in automation after only a light manual review.
+  # ------------------------------------------------------------
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        files: \.sh$
