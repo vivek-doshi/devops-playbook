@@ -8,6 +8,7 @@ const EXCLUDE_PATTERNS = [
   '.github',
   'dist',
   'website',
+  'scripts',  // Internal utility scripts — not part of the public playbook content.
   '.next',
   '__pycache__',
   '.pytest_cache',
