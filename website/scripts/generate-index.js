@@ -8,7 +8,8 @@ const EXCLUDE_PATTERNS = [
   '.github',
   'dist',
   'website',
-  'scripts',  // Internal utility scripts — not part of the public playbook content.
+  'scripts',       // Internal utility scripts — not part of the public playbook content.
+  '.devcontainer', // Local dev environment config — not playbook content.
   '.next',
   '__pycache__',
   '.pytest_cache',
@@ -16,7 +17,7 @@ const EXCLUDE_PATTERNS = [
   '.DS_Store'
 ];
 
-const EXCLUDE_EXTENSIONS = ['.md', '.markdown', '.txt'];
+const EXCLUDE_EXTENSIONS = ['.md', '.markdown', '.txt', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.drawio'];
 const EXCLUDE_FILE_NAMES = ['license', 'readme', 'getting_started'];
 
 function shouldExclude(filePath) {
@@ -58,6 +59,7 @@ function getLanguageFromPath(filePath) {
     '.sh': 'bash',
     '.bash': 'bash',
     '.dockerfile': 'dockerfile',
+    '.svg': 'svg',
     '': 'dockerfile' // Dockerfile without extension
   };
 

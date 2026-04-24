@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 475" font-family="ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,sans-serif">
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="475" fill="#f8fafc" rx="12"/>
+
+  <!-- Title -->
+  <text x="480" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#0f172a">Deployment Flow</text>
+  <text x="480" y="55" text-anchor="middle" font-size="11" fill="#64748b">From code commit to production Kubernetes deployment — DevOps Playbook</text>
+
+  <!-- ── DEVELOPER ──────────────────────────────────────── -->
+  <rect x="20" y="110" width="120" height="60" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="80" y="134" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">Developer</text>
+  <text x="80" y="153" text-anchor="middle" font-size="10" fill="#166534">git push / PR</text>
+
+  <!-- → SOURCE CONTROL -->
+  <line x1="140" y1="140" x2="158" y2="140" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ── SOURCE CONTROL ─────────────────────────────────── -->
+  <rect x="160" y="110" width="130" height="60" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="225" y="134" text-anchor="middle" font-size="12" font-weight="600" fill="#6d28d9">Source Control</text>
+  <text x="225" y="153" text-anchor="middle" font-size="10" fill="#5b21b6">GitHub · GitLab</text>
+
+  <!-- → CI PIPELINE -->
+  <line x1="290" y1="140" x2="308" y2="140" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ── CI PIPELINE (tall box with sub-stages) ──────────── -->
+  <rect x="310" y="85" width="215" height="115" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <text x="417" y="104" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">CI Pipeline</text>
+  <text x="417" y="119" text-anchor="middle" font-size="9" fill="#78350f">GitHub Actions · Azure Pipelines · GitLab CI</text>
+
+  <rect x="323" y="124" width="189" height="22" rx="3" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="417" y="139" text-anchor="middle" font-size="10" fill="#78350f">Build &amp; Test</text>
+
+  <rect x="323" y="150" width="189" height="22" rx="3" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="417" y="165" text-anchor="middle" font-size="10" fill="#78350f">Security Scan (Trivy · Checkov)</text>
+
+  <rect x="323" y="176" width="189" height="22" rx="3" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="417" y="191" text-anchor="middle" font-size="10" fill="#78350f">Quality Gate (SonarQube)</text>
+
+  <!-- → CONTAINER REGISTRY -->
+  <line x1="525" y1="142" x2="548" y2="142" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ── CONTAINER REGISTRY ─────────────────────────────── -->
+  <rect x="550" y="112" width="150" height="60" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <text x="625" y="136" text-anchor="middle" font-size="12" font-weight="600" fill="#7e22ce">Container Registry</text>
+  <text x="625" y="155" text-anchor="middle" font-size="10" fill="#6b21a8">my-app:v1.2.3 (immutable)</text>
+
+  <!-- ↓ elbow to CD box (Registry bottom → left → CD center top) -->
+  <polyline points="625,172 625,205 480,205 480,225" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ── CD / GITOPS ──────────────────────────────────────── -->
+  <rect x="385" y="225" width="190" height="55" rx="8" fill="#cffafe" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="480" y="248" text-anchor="middle" font-size="12" font-weight="600" fill="#0e7490">CD / GitOps</text>
+  <text x="480" y="265" text-anchor="middle" font-size="10" fill="#155e75">Helm · Kustomize · ArgoCD · Flux</text>
+
+  <!-- ↓ trunk + horizontal bus + drops to 3 environments -->
+  <line x1="480" y1="280" x2="480" y2="305" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="290" y1="305" x2="670" y2="305" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="290" y1="305" x2="290" y2="333" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="480" y1="305" x2="480" y2="333" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="670" y1="305" x2="670" y2="333" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ── DEV NAMESPACE ───────────────────────────────────── -->
+  <rect x="210" y="335" width="160" height="70" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="290" y="357" text-anchor="middle" font-size="12" font-weight="700" fill="#15803d">dev</text>
+  <text x="290" y="374" text-anchor="middle" font-size="10" fill="#166534">Kubernetes namespace</text>
+  <text x="290" y="391" text-anchor="middle" font-size="10" fill="#14532d">replicas: 1</text>
+
+  <!-- ── STAGING NAMESPACE ───────────────────────────────── -->
+  <rect x="400" y="335" width="160" height="70" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <text x="480" y="357" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">staging</text>
+  <text x="480" y="374" text-anchor="middle" font-size="10" fill="#78350f">Kubernetes namespace</text>
+  <text x="480" y="391" text-anchor="middle" font-size="10" fill="#78350f">replicas: 2</text>
+
+  <!-- ── PRODUCTION NAMESPACE ───────────────────────────── -->
+  <rect x="590" y="335" width="160" height="70" rx="8" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+  <text x="670" y="357" text-anchor="middle" font-size="12" font-weight="700" fill="#be123c">production</text>
+  <text x="670" y="374" text-anchor="middle" font-size="10" fill="#9f1239">Kubernetes namespace</text>
+  <text x="670" y="391" text-anchor="middle" font-size="10" fill="#881337">replicas: 3 · PDB enabled</text>
+
+  <!-- ── Observability side note (dashed) ───────────────── -->
+  <rect x="760" y="335" width="178" height="70" rx="8" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="849" y="357" text-anchor="middle" font-size="11" font-weight="600" fill="#0369a1">Observability</text>
+  <text x="849" y="373" text-anchor="middle" font-size="10" fill="#0284c7">Prometheus · Loki · Grafana</text>
+  <text x="849" y="389" text-anchor="middle" font-size="10" fill="#0284c7">OTel Collector sidecar</text>
+
+  <!-- Dashed connector from observability to prod env -->
+  <line x1="760" y1="370" x2="752" y2="370" stroke="#0284c7" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#a)"/>
+
+  <!-- ── Footer ─────────────────────────────────────────── -->
+  <text x="480" y="458" text-anchor="middle" font-size="10" fill="#94a3b8">All workloads enforce: non-root · resource limits · read-only filesystem · liveness/readiness probes · image tag pinning</text>
+</svg>

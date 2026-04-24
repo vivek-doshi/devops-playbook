@@ -120,6 +120,23 @@
   height: 100%;
 }
 
+.svg-viewer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px;
+  background: linear-gradient(165deg, #12343b 0%, #173d45 52%, #1a4650 100%);
+  min-height: 100%;
+  overflow: auto;
+}
+
+.svg-viewer img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
 .code-content code {
   color: #eaf6f7;
 }

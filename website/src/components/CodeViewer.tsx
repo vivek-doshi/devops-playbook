@@ -132,11 +132,20 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file }) => {
 
       <div className="code-body">
         <div className="code-content">
-          <pre>
-            <code className={`language-${file.language}`}>
-              {file.content}
-            </code>
-          </pre>
+          {file.language === 'svg' ? (
+            <div className="svg-viewer">
+              <img
+                src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(file.content)}`}
+                alt={file.fileName}
+              />
+            </div>
+          ) : (
+            <pre>
+              <code className={`language-${file.language}`}>
+                {file.content}
+              </code>
+            </pre>
+          )}
         </div>
 
         <aside className="info-panel">
