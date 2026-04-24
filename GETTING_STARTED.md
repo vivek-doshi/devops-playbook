@@ -8,6 +8,12 @@ Use this guide to quickly find the right template for your scenario.
 <!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 ## Scenario Index
 
+### 🔒 Before you commit
+
+| Need | File |
+|------|------|
+| Set up local pre-commit hooks and troubleshooting | [`docs/guides/pre-commit-setup.md`](docs/guides/pre-commit-setup.md) |
+
 ### 🐳 "I need to containerize my app"
 
 | Tech | File |
@@ -44,6 +50,7 @@ Use this guide to quickly find the right template for your scenario.
 | Microservices example | [`compose/microservices-example/docker-compose.yml`](compose/microservices-example/docker-compose.yml) |
 <!-- Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 | Annotated base template | [`compose/_templates/docker-compose.base.yml`](compose/_templates/docker-compose.base.yml) |
+| Test K8s manifests locally before committing | [`local-dev/kind/setup.sh`](local-dev/kind/setup.sh) |
 
 ---
 

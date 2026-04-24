@@ -1,0 +1,62 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: deployment-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: deployment.rules
+      rules:
+        - alert: DeploymentReplicasMismatch
+          # Compare desired replicas to currently available replicas and alert when the gap persists.
+          expr: >-
+            kube_deployment_status_replicas_available{deployment!=""}
+            <
+            kube_deployment_spec_replicas{deployment!=""}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: A deployment has fewer available replicas than it requested.
+            description: Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has had fewer available replicas than desired for more than 10 minutes.
+            runbook_url: https://runbooks.example.com/deploymentreplicasmismatch # <-- CHANGE THIS
+
+        - alert: DeploymentRolloutStuck
+          # Detect deployments that still report unavailable replicas well past the normal rollout window.
+          expr: >-
+            kube_deployment_status_replicas_unavailable{deployment!=""} > 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: A deployment rollout appears stuck because replicas remain unavailable.
+            description: Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} still has unavailable replicas after 15 minutes.
+            runbook_url: https://runbooks.example.com/deploymentrolloutstuck # <-- CHANGE THIS
+
+        - alert: HpaMaxReplicasReached
+          # Flag HPAs that are already at their configured ceiling and may need manual review.
+          expr: >-
+            kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler!=""}
+            >=
+            kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler!=""}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: An HPA has reached its configured maximum replica count.
+            description: HPA {{ $labels.horizontalpodautoscaler }} in namespace {{ $labels.namespace }} has been at max replicas long enough to warrant scaling review.
+            runbook_url: https://runbooks.example.com/hpamaxreplicasreached # <-- CHANGE THIS
+
+        - alert: HpaMetricsMissing
+          # Detect HPAs whose ScalingActive condition is false, which often points to metrics-server or target metric issues.
+          expr: >-
+            max by (namespace, horizontalpodautoscaler) (
+              kube_horizontalpodautoscaler_status_condition{condition="ScalingActive", status="false", horizontalpodautoscaler!=""}
+            ) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: An HPA cannot retrieve the metrics it needs to make scaling decisions.
+            description: HPA {{ $labels.horizontalpodautoscaler }} in namespace {{ $labels.namespace }} cannot read scaling metrics, which often indicates a metrics-server or metric pipeline issue.
+            runbook_url: https://runbooks.example.com/hpametricsmissing # <-- CHANGE THIS

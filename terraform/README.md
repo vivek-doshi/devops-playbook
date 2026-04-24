@@ -9,6 +9,12 @@
 <!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 ---
 
+## Before You Begin
+
+Configure remote state before you use any of the workload modules in this folder. Start with [`_bootstrap/README.md`](./_bootstrap/README.md), create the shared backend for your cloud once with local state, then uncomment the matching backend blocks in the other Terraform modules.
+
+---
+
 ## How to Use
 
 <!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->

@@ -1,0 +1,63 @@
+# Note 1: This Kind cluster is sized for laptops; the setup script reinforces the same 2 CPU / 4Gi target on each node container.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+# Note 2: containerd mirrors localhost:5001 to the registry container on the Kind network so pushed images stay local.
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5001"]
+      endpoint = ["http://kind-registry:5000"]
+
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.29.0 # <-- CHANGE THIS: update this alongside the Kubernetes version defaults in the Terraform modules
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+    extraMounts:
+      - hostPath: ./local-dev/kind/registry
+        containerPath: /var/local-registry
+    kubeadmConfigPatches:
+      # Note 3: autoscaling/v2 is GA in Kubernetes 1.29, and this HPA-related gate keeps local controller-manager behaviour aligned if teams later tune HPA tolerance.
+      - |
+        kind: ClusterConfiguration
+        controllerManager:
+          extraArgs:
+            feature-gates: HPAConfigurableTolerance=true
+      # Note 4: Reserve some node resources for system daemons so local scheduling pressure stays realistic on smaller laptops.
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            system-reserved: cpu=250m,memory=512Mi
+            kube-reserved: cpu=250m,memory=512Mi
+  - role: worker
+    image: kindest/node:v1.29.0 # <-- CHANGE THIS: keep worker nodes on the same Kubernetes version as the control-plane
+    extraMounts:
+      - hostPath: ./local-dev/kind/registry
+        containerPath: /var/local-registry
+    kubeadmConfigPatches:
+      # Note 5: Worker kubelets use the same reservation profile so the cluster behaves consistently under local load.
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            system-reserved: cpu=250m,memory=512Mi
+            kube-reserved: cpu=250m,memory=512Mi
+  - role: worker
+    image: kindest/node:v1.29.0 # <-- CHANGE THIS: keep worker nodes on the same Kubernetes version as the control-plane
+    extraMounts:
+      - hostPath: ./local-dev/kind/registry
+        containerPath: /var/local-registry
+    kubeadmConfigPatches:
+      # Note 6: Matching reservations on the second worker keep local autoscaling tests closer to production scheduling behaviour.
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            system-reserved: cpu=250m,memory=512Mi
+            kube-reserved: cpu=250m,memory=512Mi

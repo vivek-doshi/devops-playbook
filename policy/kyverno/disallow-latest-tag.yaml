@@ -1,0 +1,105 @@
+# Disallows the :latest image tag (or images with no tag) in production namespaces.
+#
+# Production namespaces are identified by the label:  environment: production
+# All other namespaces receive audit-mode warnings rather than hard blocks, because:
+#   - Dev and staging teams may use mutable tags (e.g. :dev, :branch-name) during
+#     active feature development before a release is cut.
+#   - Enforcing in non-production namespaces would block fast-iteration workflows.
+#
+# Why :latest breaks rollback:
+#   The :latest tag is mutable — it can point to a different image digest after every
+#   push. If a bad release is deployed and you roll back to the previous Deployment
+#   revision, Kubernetes will re-pull :latest which may still resolve to the broken
+#   image. Pinning to an immutable digest (sha256:…) or a semantic version tag
+#   (v1.2.3) guarantees that a rollback restores exactly the known-good binary.
+#
+# Reference: cd/kubernetes/_overlays/prod/kustomization.yaml
+#   images:
+#     - name: my-registry/my-app
+#       newTag: v1.0.0   # Pin to immutable tag in production
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow Latest Image Tag
+    policies.kyverno.io/category: Image Management
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Container images must not use the ':latest' tag or omit a tag entirely in
+      production namespaces. The ':latest' tag is mutable and breaks rollback because
+      re-pulling the tag after a bad release may resolve to the same broken image.
+      Pin images to a semantic version tag (e.g. v1.2.3) or an immutable digest
+      (sha256:…). Production enforcement is scoped to namespaces labelled
+      'environment: production'. Dev/staging namespaces receive audit warnings only.
+spec:
+  # Audit everywhere by default.
+  # The validationFailureActionOverrides block below upgrades to Enforce for any
+  # namespace carrying the label  environment: production.
+  validationFailureAction: Audit
+  validationFailureActionOverrides:
+    - action: Enforce
+      namespaceSelector:
+        matchLabels:
+          environment: production
+  background: true
+  rules:
+    # ── Rule 1: main containers ──────────────────────────────────────────────
+    - name: check-container-image-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kyverno
+      validate:
+        message: >-
+          Container '{{ request.object.metadata.name }}' uses image
+          '{{ request.object.spec.containers[*].image }}' which has no tag or uses
+          ':latest'. Mutable tags break rollback: if the tag is re-pushed with a
+          broken image, rolling back the Deployment will re-pull the same broken
+          image. Use a specific semantic version tag or an immutable digest:
+            image: my-registry/my-app:v1.2.3
+            # or
+            image: my-registry/my-app@sha256:<digest>
+          Reference: cd/kubernetes/_overlays/prod/kustomization.yaml
+        pattern:
+          spec:
+            containers:
+              - image: "*:*"
+                (image): "!*:latest"
+
+    # ── Rule 2: init containers ──────────────────────────────────────────────
+    - name: check-init-container-image-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kyverno
+      preconditions:
+        any:
+          - key: "{{ request.object.spec.initContainers[] | length(@) }}"
+            operator: GreaterThanOrEquals
+            value: "1"
+      validate:
+        message: >-
+          Init container image must specify an explicit version tag, not ':latest'
+          or no tag. Pin to a semantic version tag or an immutable digest to ensure
+          rollbacks restore the exact known-good binary.
+            image: my-registry/init-tool:v2.0.1
+        pattern:
+          spec:
+            initContainers:
+              - image: "*:*"
+                (image): "!*:latest"

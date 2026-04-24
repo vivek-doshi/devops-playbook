@@ -1,0 +1,87 @@
+# Enforces the pod-level and container-level security context demonstrated in:
+#   cd/kubernetes/_base/deployment.yaml
+#
+# That file sets:
+#   spec.securityContext.runAsNonRoot: true
+#   spec.containers[].securityContext.allowPrivilegeEscalation: false
+#
+# This policy ensures every Pod in the cluster matches that baseline.
+# Violations are blocked at admission so misconfigured workloads never start.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+  annotations:
+    policies.kyverno.io/title: Require Non-Root Containers
+    policies.kyverno.io/category: Pod Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Pods must run as a non-root user and containers must not allow privilege
+      escalation. Running as root grants unnecessary OS capabilities and makes
+      container escape vulnerabilities significantly more dangerous. Set
+      spec.securityContext.runAsNonRoot: true and
+      spec.containers[].securityContext.allowPrivilegeEscalation: false.
+      See cd/kubernetes/_base/deployment.yaml for the reference pattern.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    # ── Rule 1: pod-level securityContext ────────────────────────────────────
+    - name: check-pod-run-as-non-root
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system   # System components may legitimately run as root.
+                - kube-public   # Public config namespace; not a workload namespace.
+                - monitoring    # kube-prometheus-stack node-exporter requires host access.
+      validate:
+        message: >-
+          Pod '{{ request.object.metadata.name }}' must set
+          spec.securityContext.runAsNonRoot: true.
+          Running as root broadens the blast radius of any container escape.
+          Reference pattern: cd/kubernetes/_base/deployment.yaml
+          Add to your pod spec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000   # any non-zero UID
+              fsGroup: 2000
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+
+    # ── Rule 2: container-level allowPrivilegeEscalation ─────────────────────
+    - name: check-container-no-privilege-escalation
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - monitoring
+      validate:
+        message: >-
+          All containers in Pod '{{ request.object.metadata.name }}' must set
+          securityContext.allowPrivilegeEscalation: false.
+          This prevents a process inside the container from gaining more privileges
+          than its parent, limiting the impact of exploited vulnerabilities.
+          Reference pattern: cd/kubernetes/_base/deployment.yaml
+          Add to every container:
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  allowPrivilegeEscalation: false

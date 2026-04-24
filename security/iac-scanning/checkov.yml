@@ -1,0 +1,72 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Checkov IaC Security Scan
+# WHEN TO USE: Advisory scanning across Terraform, Kubernetes, Helm, Compose, and Docker assets
+# PREREQUISITES: Infrastructure-as-code files committed in the scanned directories
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Trigger branches, scan directories, and soft-fail behaviour
+# RELATED FILES: security/iac-scanning/tfsec.yml, security/iac-scanning/README.md
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
+name: Checkov IaC Security Scan
+
+on:
+  # Note 2: Push scans keep the default branch's security signal current.
+  push:
+    branches: [main]  # <-- CHANGE THIS: scan your protected branch
+  # Note 3: Pull request scans surface findings before infrastructure changes merge.
+  pull_request:
+    branches: [main]  # <-- CHANGE THIS: match your review branch policy
+  # Note 4: Scheduled scans catch drift when templates are not changing daily.
+  schedule:
+    - cron: "0 8 * * 1"  # <-- CHANGE THIS: weekly Monday 08:00 UTC
+
+# Note 5: SARIF upload requires security-events; contents: read is enough for checkout.
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # Note 6: Matrix execution scans each IaC surface independently so one parser error does not hide unrelated findings.
+  checkov:
+    name: Checkov (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # Keep all scan roots reporting even if one directory is malformed.
+      matrix:
+        include:  # <-- CHANGE THIS: add or remove IaC roots for your repository
+          - label: terraform
+            directory: terraform
+            category: terraform
+          - label: kubernetes
+            directory: cd/kubernetes
+            category: kubernetes
+          - label: helm
+            directory: cd/helm
+            category: helm
+          - label: compose
+            directory: compose
+            category: compose
+          - label: docker
+            directory: docker
+            category: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Checkov
+        # Note 7: Checkov gives broad policy coverage across Terraform, Kubernetes, Helm, Compose, and Docker definitions.
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ${{ matrix.directory }}
+          output_format: sarif  # SARIF is required for GitHub code scanning ingestion.
+          output_file_path: checkov-results.sarif  # Write a predictable artifact name for the upload step.
+          soft_fail: true  # <-- CHANGE THIS: set false to make findings block merges
+
+      - name: Upload SARIF
+        # Note 8: Always upload the report so advisory findings still reach the Security tab.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results.sarif
+          category: checkov-${{ matrix.category }}  # Split alert streams by IaC surface in the Security tab.

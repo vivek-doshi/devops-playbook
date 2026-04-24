@@ -1,0 +1,108 @@
+{
+  "name": "DevOps Playbook",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
+  "remoteUser": "vscode",
+  "forwardPorts": [3000, 8000, 8080, 9090, 3100, 16686],
+  "portsAttributes": {
+    "3000": {
+      "label": "Web UI"
+    },
+    "8000": {
+      "label": "Python API"
+    },
+    "8080": {
+      "label": "Application HTTP"
+    },
+    "9090": {
+      "label": "Prometheus"
+    },
+    "3100": {
+      "label": "Loki"
+    },
+    "16686": {
+      "label": "Jaeger"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Terraform HCL authoring, validation, and fmt support for the repository's IaC templates.
+        "hashicorp.terraform",
+        // Kubernetes manifest, Helm, and cluster management support for the cd/ folder.
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        // YAML schema validation and formatting for pipelines, manifests, and Helm values files.
+        "redhat.vscode-yaml",
+        // Dockerfile authoring and container workflow integration across docker/ and compose/.
+        "ms-azuretools.vscode-docker",
+        // Inline AI assistance for adapting templates to project-specific needs.
+        "github.copilot",
+        // Chat-driven repository assistance for DevOps workflows and troubleshooting.
+        "github.copilot-chat",
+        // ShellCheck diagnostics for the shell scripts and local tooling in scripts/ and .devcontainer/.
+        "timonwong.shellcheck",
+        // Shell formatting support for bash scripts maintained in this repository.
+        "foxundermoon.shell-format",
+        // Python language tooling for scripts, quality config, and automation helpers.
+        "ms-python.python",
+        // Ruff linting and formatting integration aligned with quality/python/pyproject.toml.
+        "charliermarsh.ruff",
+        // Prettier formatting for JSON, Markdown, and frontend assets in website/.
+        "esbenp.prettier-vscode",
+        // ESLint integration for JavaScript and TypeScript content in website/ and examples.
+        "dbaeumer.vscode-eslint",
+        // Git history and blame visibility for template evolution and repository learning.
+        "eamodio.gitlens",
+        // Commit graph visualization for release, branching, and automation workflows.
+        "mhutchie.git-graph"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.rulers": [100],
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash"
+          },
+          "zsh": {
+            "path": "/usr/bin/zsh"
+          }
+        },
+        "[dockerfile]": {
+          "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[markdown]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+        "[terraform]": {
+          "editor.defaultFormatter": "hashicorp.terraform"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "redhat.vscode-yaml"
+        }
+      }
+    }
+  }
+}

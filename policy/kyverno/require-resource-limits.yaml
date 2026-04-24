@@ -1,0 +1,102 @@
+# Enforces the resource requests and limits demonstrated in:
+#   cd/kubernetes/_base/deployment.yaml
+#
+# That file sets:
+#   resources.requests:  cpu: "100m",  memory: "128Mi"
+#   resources.limits:    cpu: "500m",  memory: "512Mi"
+#
+# Use those values as a starting point; adjust per workload profile.
+# Without limits, a runaway container can exhaust node resources and evict neighbours.
+# Without requests, the scheduler cannot make accurate placement decisions.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Require Container Resource Requests and Limits
+    policies.kyverno.io/category: Resource Management
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      All containers must declare CPU and memory requests and limits.
+      Requests allow the scheduler to make accurate placement decisions;
+      limits protect nodes from runaway processes. The reference values in
+      cd/kubernetes/_base/deployment.yaml (requests: 100m/128Mi,
+      limits: 500m/512Mi) are a reasonable starting point — tune to your
+      workload's actual profile using VPA recommendations or load-test data.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    # ── Rule 1: main containers — full requests + limits ─────────────────────
+    - name: check-container-resource-requests-and-limits
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system   # System DaemonSets and static pods have varied requirements.
+      validate:
+        message: >-
+          Container '{{ request.object.metadata.name }}' is missing resource requests
+          or limits. Without them the scheduler cannot place the Pod accurately and
+          a runaway process can evict neighbours on the same node.
+          Add to every container in your Pod spec (adjust values to your workload):
+            resources:
+              requests:
+                cpu: "100m"
+                memory: "128Mi"
+              limits:
+                cpu: "500m"
+                memory: "512Mi"
+          Reference pattern: cd/kubernetes/_base/deployment.yaml
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    memory: "?*"
+                    cpu: "?*"
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"
+
+    # ── Rule 2: init containers — memory limits required, CPU limits optional ─
+    #
+    # CPU limits are intentionally excluded for init containers. An init container
+    # runs to completion before the main container starts; if it is CPU-throttled
+    # it can dramatically slow pod start-up (e.g. database migrations, key generation).
+    # Memory limits are still required to prevent OOM conditions at init time.
+    - name: check-init-container-memory-requests-and-limits
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+      preconditions:
+        any:
+          - key: "{{ request.object.spec.initContainers[] | length(@) }}"
+            operator: GreaterThanOrEquals
+            value: "1"
+      validate:
+        message: >-
+          Init container '{{ request.object.metadata.name }}' must set
+          resources.requests.memory, resources.requests.cpu, and
+          resources.limits.memory. CPU limits are not required for init containers
+          (throttling would unnecessarily slow pod start-up), but memory limits
+          are mandatory to prevent OOM at initialisation time.
+        pattern:
+          spec:
+            initContainers:
+              - resources:
+                  requests:
+                    memory: "?*"
+                    cpu: "?*"
+                  limits:
+                    memory: "?*"

@@ -1,0 +1,65 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — tfsec Terraform Security Scan
+# WHEN TO USE: Provider-aware Terraform misconfiguration scanning for cloud infrastructure modules
+# PREREQUISITES: Terraform root modules under terraform/
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Trigger branches and Terraform directories in the matrix
+# RELATED FILES: security/iac-scanning/checkov.yml, security/iac-scanning/README.md
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
+name: tfsec Terraform Security Scan
+
+on:
+  # Note 2: Restricting by path avoids scanning when non-IaC changes land in the repository.
+  push:
+    branches: [main]  # <-- CHANGE THIS: scan your protected branch
+    paths:
+      - "terraform/**"  # <-- CHANGE THIS: path to your Terraform configs
+  # Note 3: Matching PR paths keeps review noise focused on Terraform changes only.
+  pull_request:
+    branches: [main]  # <-- CHANGE THIS: match your review branch policy
+    paths:
+      - "terraform/**"  # <-- CHANGE THIS: keep in sync with push paths
+
+# Note 4: GitHub code scanning uploads require security-events write permission.
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # Note 5: Matrix execution scans each Terraform root independently so one slow provider does not serialize the rest.
+  tfsec:
+    name: tfsec (${{ matrix.directory }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # Keep the full finding set even if one module has syntax issues.
+      matrix:
+        directory:  # <-- CHANGE THIS: list your Terraform root modules
+          - aws-ecs
+          - aws-eks
+          - aws-lambda
+          - azure-aks
+          - azure-app-service
+          - gcp-gke
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tfsec
+        # Note 6: tfsec adds Terraform-specific checks for provider defaults, IAM posture, and cloud-service hardening.
+        # It is especially useful for cloud-provider-specific issues such as encryption defaults, public exposure, and managed-service settings.
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          # Note 7: Scan one Terraform root per matrix job so SARIF results stay attributable to a module.
+          working_directory: terraform/${{ matrix.directory }}
+          format: sarif  # SARIF lets GitHub show findings in the Security tab.
+          additional_args: --out tfsec-results --force-all-dirs  # Name the report and keep nested module checks enabled.
+
+      - name: Upload SARIF
+        # Note 8: Always upload the SARIF output so each module's advisory findings appear in GitHub Security.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: terraform/${{ matrix.directory }}/tfsec-results.sarif
+          category: tfsec-${{ matrix.directory }}  # Keep one code scanning category per Terraform root.

@@ -1,0 +1,120 @@
+# Add this sidecar to any Deployment that needs distributed tracing.
+#
+# This is a strategic merge patch. Apply it to an existing Deployment with:
+#
+#   kubectl patch deployment <name> -n <namespace> \
+#     --patch-file observability/opentelemetry/collector-sidecar.yaml
+#
+# Or add it as a Kustomize patchesStrategicMerge entry:
+#
+#   patchesStrategicMerge:
+#     - ../../observability/opentelemetry/collector-sidecar.yaml
+#
+# The patch merges by container name ("otel-collector"), so it is safe to apply
+# repeatedly and will not duplicate the sidecar on subsequent patches.
+#
+# PREREQUISITES:
+#   1. Apply the collector ConfigMap first:
+#        kubectl apply -f observability/opentelemetry/collector-config.yaml
+#   2. Set TEMPO_ENDPOINT and PROMETHEUS_REMOTE_WRITE_URL in the ConfigMap or
+#      as Kubernetes Secret values before the pod starts.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app  # <-- CHANGE THIS to match the target Deployment name
+spec:
+  template:
+    spec:
+      containers:
+        - name: otel-collector
+          # Pin to a specific version. The -contrib image includes all receiver/exporter
+          # plugins including the Kubernetes attributes and Prometheus remote-write exporters.
+          # Check https://github.com/open-telemetry/opentelemetry-collector-releases for updates.
+          # Review and bump this version quarterly to pick up security patches and new features.
+          image: otel/opentelemetry-collector-contrib:0.91.0
+          args:
+            - "--config=/etc/otel/config.yaml"
+          ports:
+            # OTLP gRPC — the preferred transport for SDK-to-collector communication.
+            # Lower overhead than HTTP for high-throughput trace export.
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            # OTLP HTTP — used by SDKs or proxies that cannot speak gRPC (e.g. browser agents).
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            # Collector self-metrics scraped by Prometheus via the monitoring: "true" label.
+            - name: metrics
+              containerPort: 8888
+              protocol: TCP
+            # Health check extension — used by the readiness probe below.
+            - name: health
+              containerPort: 13133
+              protocol: TCP
+          env:
+            # Downward API values injected so the resource processor can stamp every span
+            # and metric with the pod's own namespace and name without hard-coding them.
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            # Tempo endpoint — inject via a Kubernetes Secret or ConfigMap.
+            # See docs/guides/secrets-management.md for the recommended approach.
+            - name: TEMPO_ENDPOINT
+              value: "http://tempo:4317"  # <-- CHANGE THIS
+            # Prometheus remote-write URL — set to the in-cluster Prometheus endpoint.
+            - name: PROMETHEUS_REMOTE_WRITE_URL
+              value: "http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/write"  # <-- CHANGE THIS
+          readinessProbe:
+            # The health check extension exposes /ready on port 13133.
+            # Kubernetes waits for this before routing traffic or marking the pod Ready,
+            # which prevents the app container from sending spans before the collector is up.
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              # 100m CPU is enough for the collector's normal serialisation and batching work
+              # on a pod producing a few hundred spans per second.
+              cpu: 100m
+              # 128Mi covers the batch processor's in-memory queue at the default 1000-item limit.
+              memory: 128Mi
+            limits:
+              # 500m CPU headroom absorbs bursts when many spans arrive simultaneously.
+              cpu: 500m
+              # 512Mi limit is the ceiling the memory_limiter processor is tuned to (80% = 409Mi).
+              # If the collector is regularly hitting this, increase both the limit and memory_limiter.
+              memory: 512Mi
+          securityContext:
+            # Mirror the base deployment's security posture so the sidecar does not weaken
+            # the pod's overall security profile.
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001  # otel-collector-contrib uses UID 10001 in its official image
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: otel-collector-config
+              mountPath: /etc/otel
+              readOnly: true
+            # Writable temp space so the collector can buffer spans during transient export failures.
+            - name: otel-tmp
+              mountPath: /tmp
+      volumes:
+        - name: otel-collector-config
+          configMap:
+            name: otel-collector-config  # Created by collector-config.yaml in this directory.
+        - name: otel-tmp
+          emptyDir: {}

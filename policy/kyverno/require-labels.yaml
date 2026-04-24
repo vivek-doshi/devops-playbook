@@ -1,0 +1,117 @@
+# Start in audit mode to identify existing violations before enforcing.
+#
+# Switching to enforce without auditing first will block all Deployments, Services,
+# and Namespaces that are missing the required labels — including system resources
+# created by operators. Run `kubectl get policyreport -A` after deploying in audit
+# mode and remediate violations before changing validationFailureAction to Enforce.
+#
+# Labels are required because:
+#   - Prometheus ServiceMonitor selectors use `app` to discover scrape targets
+#   - Grafana dashboards use `version` / `app.kubernetes.io/version` to filter by release
+#   - The `environment` namespace label is used by Kyverno's own namespace selectors
+#     (e.g. disallow-latest-tag.yaml) to apply stricter rules in production
+#
+# Reference: cd/kubernetes/_base/deployment.yaml (Deployment labels)
+#            docs/decisions/ADR-001-folder-structure.md (organisational standards)
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-labels
+  annotations:
+    policies.kyverno.io/title: Require Standard Labels on Deployments, Services, and Namespaces
+    policies.kyverno.io/category: Metadata
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/description: >-
+      Deployments must carry 'app' and 'version' (or 'app.kubernetes.io/version') labels.
+      Services must carry an 'app' label. Namespaces must carry an 'environment' label
+      with a value of dev, staging, or production. These labels power Prometheus
+      ServiceMonitor discovery, Grafana dashboard variable filtering, and Kyverno
+      namespace-scoped policy overrides. Monitor violations with:
+        kubectl get policyreport -A
+spec:
+  # Audit — not Enforce — so existing workloads are not blocked during roll-out.
+  # Graduate to Enforce once `kubectl get policyreport -A` shows zero violations.
+  validationFailureAction: Audit
+  background: true
+  rules:
+    # ── Rule 1: Deployments must have app + version labels ───────────────────
+    - name: check-deployment-labels
+      match:
+        any:
+          - resources:
+              kinds: [Deployment]
+      validate:
+        message: >-
+          Deployment '{{ request.object.metadata.name }}' is missing required labels.
+          Labels are used by Prometheus ServiceMonitor selectors and Grafana dashboards
+          to identify and filter workloads by name and release version.
+          Add to metadata.labels:
+            app: <service-name>
+            version: "1.0.0"            # or app.kubernetes.io/version: "1.0.0"
+          Reference pattern: cd/kubernetes/_base/deployment.yaml
+        anyPattern:
+          # Accept either the short 'version' key or the fully-qualified k8s label convention.
+          - metadata:
+              labels:
+                app: "?*"
+                version: "?*"
+          - metadata:
+              labels:
+                app: "?*"
+                app.kubernetes.io/version: "?*"
+
+    # ── Rule 2: Namespaces must have an environment label ────────────────────
+    - name: check-namespace-environment-label
+      match:
+        any:
+          - resources:
+              kinds: [Namespace]
+      exclude:
+        any:
+          - resources:
+              names:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - kyverno
+                - monitoring
+                - default
+      validate:
+        message: >-
+          Namespace '{{ request.object.metadata.name }}' must have an
+          'environment' label with value 'dev', 'staging', or 'production'.
+          This label is used by Kyverno policies (e.g. disallow-latest-tag.yaml)
+          to apply stricter admission controls in production namespaces, and by
+          Grafana dashboards to filter metrics by environment.
+          Add to metadata.labels:
+            environment: production   # or: dev | staging
+        pattern:
+          metadata:
+            labels:
+              environment: "dev | staging | production"
+
+    # ── Rule 3: Services must have an app label ──────────────────────────────
+    - name: check-service-app-label
+      match:
+        any:
+          - resources:
+              kinds: [Service]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - monitoring
+      validate:
+        message: >-
+          Service '{{ request.object.metadata.name }}' must have an 'app' label.
+          Prometheus ServiceMonitor resources use label selectors to discover Services
+          to scrape. Without the 'app' label, metrics collection will silently break
+          when a ServiceMonitor is added later.
+          Add to metadata.labels:
+            app: <service-name>
+        pattern:
+          metadata:
+            labels:
+              app: "?*"
