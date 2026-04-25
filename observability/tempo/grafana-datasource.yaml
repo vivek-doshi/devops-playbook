@@ -1,0 +1,104 @@
+# Grafana datasource ConfigMap for Tempo.
+# The Grafana datasource sidecar picks this up automatically via the grafana_datasource: "1" label.
+#
+# PREREQUISITE: The Grafana Helm release must have the datasource sidecar enabled.
+# Add the following to observability/prometheus/values.yaml under grafana: and then upgrade:
+#
+#   grafana:
+#     sidecar:
+#       datasources:
+#         enabled: true
+#         searchNamespace: ALL
+#         label: grafana_datasource
+#         labelValue: "1"
+#
+# This file also configures trace-to-logs correlation: clicking a trace span in Grafana
+# Explore navigates directly to the correlated log lines in Loki using the trace_id field.
+# The Loki datasource ConfigMap in observability/loki/grafana-datasource.yaml performs
+# the reverse link (log line → trace), so both directions work out of the box.
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-grafana-datasource
+  namespace: monitoring
+  labels:
+    # Tells the Grafana datasource sidecar to load this as a provisioned datasource.
+    grafana_datasource: "1"
+data:
+  tempo-datasource.yaml: |-
+    apiVersion: 1
+    datasources:
+      - name: Tempo
+        type: tempo
+        access: proxy
+        # Points to the Tempo service installed by the Helm chart in the same namespace.
+        url: http://tempo:3200
+        uid: tempo   # Stable UID referenced by the Loki datasource for trace-to-logs linking.
+        isDefault: false   # Prometheus is the default for alerting panels.
+        version: 1
+        editable: false    # Prevent UI drift from the provisioned config.
+        jsonData:
+          # ── TraceQL / Search ───────────────────────────────────────────────
+          httpMethod: GET   # Tempo query API uses GET for search and trace fetch.
+
+          # ── Service Graph ──────────────────────────────────────────────────
+          # When metricsGenerator is enabled in values.yaml, Tempo writes span-derived
+          # service graph metrics to Prometheus. Point the serviceMap datasource at
+          # the same Prometheus instance that receives those remote_write metrics.
+          serviceMap:
+            datasourceUid: prometheus   # Must match the uid of your Prometheus datasource.
+
+          # ── Node Graph ─────────────────────────────────────────────────────
+          nodeGraph:
+            enabled: true   # Renders a service dependency graph for a selected trace.
+
+          # ── Trace to Logs (Tempo → Loki) ───────────────────────────────────
+          # When a user opens a trace in Grafana Explore, clicking any span shows a
+          # "Logs for this span" button. This config routes that click to Loki.
+          tracesToLogsV2:
+            # <-- CHANGE THIS: set to the uid of your Loki datasource
+            datasourceUid: loki
+            # Span start/end window expanded by ±1 s to capture log lines emitted
+            # in the same millisecond but with slight clock skew.
+            spanStartTimeShift: "-1s"
+            spanEndTimeShift: "1s"
+            # Filter Loki log lines to those carrying the trace_id extracted from the span.
+            filterByTraceID: true
+            filterBySpanID: false   # Span-level filtering is too narrow; trace-level is more useful.
+            customQuery: false      # Use the auto-generated query rather than a custom LogQL expression.
+            tags:
+              # Map OTel span attributes to Loki label matchers.
+              # These must match the labels Promtail promotes in observability/loki/values.yaml.
+              - key: service.name
+                value: app   # The Loki label that Promtail sets from the pod app= label.
+              - key: k8s.namespace.name
+                value: namespace
+
+          # ── Trace to Metrics (Tempo → Prometheus) ──────────────────────────
+          # When metricsGenerator is enabled, clicking a span can show the corresponding
+          # Prometheus RED metrics for that service in the same time window.
+          tracesToMetrics:
+            datasourceUid: prometheus
+            spanStartTimeShift: "-2m"
+            spanEndTimeShift: "2m"
+            tags:
+              - key: service.name
+                value: job   # The Prometheus job label derived from the service name.
+            queries:
+              - name: "Request rate"
+                query: "rate(traces_spanmetrics_calls_total{$$__tags}[5m])"
+              - name: "Error rate"
+                query: "rate(traces_spanmetrics_calls_total{$$__tags,status_code=\"STATUS_CODE_ERROR\"}[5m])"
+              - name: "P99 latency"
+                query: "histogram_quantile(0.99, sum(rate(traces_spanmetrics_duration_milliseconds_bucket{$$__tags}[5m])) by (le))"
+
+          # ── Loki Search (Logs → Traces) ────────────────────────────────────
+          # When a user navigates from a Loki log line that contains a trace_id,
+          # this maps the trace_id back to Tempo for the reverse correlation.
+          lokiSearch:
+            datasourceUid: loki
+
+          # ── Search (TraceQL query editor) ──────────────────────────────────
+          search:
+            hide: false   # Show the TraceQL search tab in Explore.

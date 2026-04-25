@@ -1,0 +1,21 @@
+# ============================================================
+# TEMPLATE: cert-manager Namespace
+# WHEN TO USE: Always apply this first — it creates the cert-manager
+#   namespace before Helm installs the controller into it.
+#   Keep this in source control to ensure the namespace label
+#   (disable-validation) is always present.
+#
+# PREREQUISITES: kubectl
+# RELATED FILES: cd/kubernetes/cert-manager/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    # Note 1: This label tells cert-manager's own webhook to skip validation
+    # of resources in this namespace, preventing a chicken-and-egg problem
+    # where the webhook itself cannot start because certs don't exist yet.
+    cert-manager.io/disable-validation: "true"

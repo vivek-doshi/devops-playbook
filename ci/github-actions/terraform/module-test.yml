@@ -1,0 +1,138 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Terraform Module Tests
+# WHEN TO USE: Run native `terraform test` on every PR that touches
+#   Terraform code. Fast plan-only tests run on PR; integration
+#   tests (apply) are gated on manual trigger.
+# PREREQUISITES:
+#   - Terraform >= 1.6 (native test framework)
+#   - test files in terraform/aws-eks/tests/*.tftest.hcl
+#   - For integration tests: cloud credentials as Actions secrets
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   terraform/aws-eks/tests/unit.tftest.hcl
+#   terraform/_testing/terratest/aws_eks_test.go
+#   ci/github-actions/terraform/plan-apply.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Terraform Module Tests
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform-module-test.yml"
+  # Note 1: workflow_dispatch lets you trigger integration tests on demand
+  # without waiting for a PR. Pass integration_test=true to run apply tests.
+  workflow_dispatch:
+    inputs:
+      integration_test:
+        description: "Run integration tests (creates real cloud resources)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+env:
+  TF_VERSION: "1.10.0"         # <-- CHANGE THIS: keep in sync with plan-apply.yml
+  GO_VERSION:  "1.22"          # <-- CHANGE THIS: Go version for Terratest
+
+jobs:
+  # =============================================
+  # UNIT TESTS — native terraform test, no cloud creds needed
+  # =============================================
+  terraform-unit-test:
+    name: Terraform Unit Tests (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Note 2: Add one entry per module that has a tests/ directory.
+        # Each entry maps to a subdirectory under terraform/
+        module:
+          - aws-eks        # <-- CHANGE THIS: list your modules
+          # - azure-aks
+          # - gcp-gke
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init — ${{ matrix.module }}
+        working-directory: terraform/${{ matrix.module }}
+        run: terraform init -input=false
+
+      - name: Terraform Test (unit) — ${{ matrix.module }}
+        working-directory: terraform/${{ matrix.module }}
+        # Note 3: `terraform test` discovers all *.tftest.hcl files in the
+        # tests/ directory automatically. The -filter flag can target one file.
+        run: terraform test
+        env:
+          # Note 4: mock_provider handles auth for unit tests, but some modules
+          # still need these env vars to initialise remote state backends.
+          TF_CLI_ARGS_init: "-backend=false"
+
+  # =============================================
+  # INTEGRATION TESTS — Terratest + Go, creates real resources
+  # Only on workflow_dispatch with integration_test=true
+  # =============================================
+  terratest-integration:
+    name: Terratest Integration Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.integration_test == 'true'
+    environment: test-account   # <-- CHANGE THIS: GitHub environment for cloud test credentials
+    permissions:
+      id-token: write   # OIDC
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Note 5: Uncomment ONE cloud auth block — same pattern as plan-apply.yml.
+      # - name: AWS Login (OIDC)
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_TEST_ROLE_ARN }}   # <-- CHANGE THIS
+      #     aws-region: us-east-1                              # <-- CHANGE THIS
+
+      # - name: Azure Login (OIDC)
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id:       ${{ secrets.AZURE_CLIENT_ID }}
+      #     tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: terraform/_testing/terratest/go.sum
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false  # Note 6: Must be false for Terratest to capture output
+
+      - name: Run Terratest
+        working-directory: terraform/_testing/terratest
+        # Note 7: -timeout 60m keeps the job alive during the ~25 min cluster creation.
+        # -run selects only the integration tests (not the fast plan-only ones).
+        run: go test -v -timeout 60m -run TestEKSCluster ./...
+        env:
+          AWS_DEFAULT_REGION: us-east-1   # <-- CHANGE THIS
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terratest-results
+          path: terraform/_testing/terratest/test-results.xml
+          retention-days: 30
+          if-no-files-found: ignore

@@ -1,0 +1,163 @@
+# ============================================================
+# TEMPLATE: Kubernetes NetworkPolicy — default-deny + allow rules
+# WHEN TO USE: Restrict pod-to-pod and pod-to-external traffic.
+#   Apply in any namespace that requires network isolation.
+#   Start with default-deny-all, then add targeted allow rules.
+# PREREQUISITES:
+#   - A CNI plugin that enforces NetworkPolicy:
+#     Calico, Cilium, Weave Net, Antrea, or AWS VPC CNI (with policy enabled)
+#   - Flannel does NOT enforce NetworkPolicy — install Calico on top of it
+#   - Verify support: kubectl get networkpolicies -A (should not error)
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   cd/kubernetes/_base/deployment.yaml
+#   cd/kubernetes/_base/service.yaml
+# MATURITY: Stable
+# ============================================================
+
+# ── Policy 1: Default deny all ingress and egress ────────────────────────
+# Note 1: Apply this policy FIRST before any allow rules. It creates a
+# "zero trust" baseline: nothing is allowed unless explicitly permitted below.
+# The empty podSelector ({}) matches ALL pods in the namespace.
+# The empty ingress/egress arrays mean: no traffic is allowed at all.
+#
+# Apply order matters: if a pod matches multiple NetworkPolicy objects,
+# Kubernetes takes the UNION of all matching rules. A deny policy with no
+# rules and an allow policy with rules = traffic is allowed (allow wins).
+# This "default deny" only works because it has no ingress/egress rules.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: default    # <-- CHANGE THIS: apply to each namespace that needs isolation
+spec:
+  podSelector: {}   # matches all pods in the namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  # Note 2: No ingress: or egress: keys = deny all. Adding an empty array
+  # (ingress: []) has the same effect and is more explicit.
+
+---
+# ── Policy 2: Allow ingress from pods in the SAME namespace ──────────────
+# Note 3: This lets services within the same namespace talk to each other
+# (e.g., a web pod calling an api pod). Remove this if you want per-service
+# isolation and instead add more specific policies below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-same-namespace
+  namespace: default    # <-- CHANGE THIS
+spec:
+  podSelector: {}   # applies to all pods in the namespace
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}   # any pod in THIS namespace (namespaceSelector not needed here)
+
+---
+# ── Policy 3: Allow ingress from the ingress controller ──────────────────
+# Note 4: The ingress-nginx controller lives in the ingress-nginx namespace.
+# Without this rule, external HTTP/S traffic routed by ingress.yaml will be
+# blocked at the pod level even though the Ingress object exists.
+# Adjust namespaceSelector.matchLabels to match your ingress controller namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-ingress-controller
+  namespace: default    # <-- CHANGE THIS
+spec:
+  podSelector:
+    matchLabels:
+      app: app            # <-- CHANGE THIS: only allow traffic to the app pods (not all pods)
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        # Note 5: Namespace must be labelled for the selector to work. Verify with:
+        #   kubectl get namespace ingress-nginx --show-labels
+        # Label it if missing:
+        #   kubectl label namespace ingress-nginx kubernetes.io/metadata.name=ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx   # <-- CHANGE THIS: your ingress namespace
+      ports:
+        - protocol: TCP
+          port: 8080    # <-- CHANGE THIS: your container port
+
+---
+# ── Policy 4: Allow egress to kube-dns (required for DNS resolution) ─────
+# Note 6: Without this rule, pods cannot resolve any DNS name, breaking
+# almost all outbound connections. This is almost always needed when using
+# default-deny-all. kube-dns runs in kube-system on port 53 (UDP + TCP).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-kube-dns
+  namespace: default    # <-- CHANGE THIS
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53     # Note 7: TCP fallback for large DNS responses (>512 bytes)
+
+---
+# ── Policy 5: Allow egress to pods in the SAME namespace ─────────────────
+# Note 8: Required for any service-to-service calls within the namespace
+# (e.g., app → database, app → cache). Pair with Policy 2 (allow ingress
+# from same namespace) so both sides of the connection are permitted.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-same-namespace
+  namespace: default    # <-- CHANGE THIS
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector: {}   # any pod in THIS namespace
+
+---
+# ── Policy 6: Allow egress to specific external endpoint (optional) ───────
+# Note 9: Use ipBlock to allow egress to an external IP range that is not
+# inside the cluster — e.g., a managed database, an external API, or a
+# monitoring endpoint. Remove this policy if you don't need external egress.
+#
+# Example: allow only the app pods to reach an external DB on port 5432.
+# Replace the CIDR and port with your actual values.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-external-db
+  namespace: default    # <-- CHANGE THIS
+spec:
+  podSelector:
+    matchLabels:
+      app: app          # <-- CHANGE THIS: restrict to pods that actually need DB access
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/24     # <-- CHANGE THIS: your external DB / service CIDR
+            except:
+              - 10.0.0.0/28       # <-- CHANGE THIS: exclude any subnets within the CIDR if needed (or remove)
+      ports:
+        - protocol: TCP
+          port: 5432              # <-- CHANGE THIS: your service port

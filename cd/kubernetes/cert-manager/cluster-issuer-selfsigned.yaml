@@ -1,0 +1,59 @@
+# ============================================================
+# TEMPLATE: ClusterIssuer — Self-Signed (local dev / internal services)
+# WHEN TO USE: Local development clusters (kind, minikube), internal
+#   services that only need TLS-in-transit without browser trust, or
+#   as a CA bootstrapper (issue a self-signed CA cert then reference
+#   it as a CA issuer for all internal services).
+#
+# NOT FOR PRODUCTION: Self-signed certificates are not trusted by
+#   browsers. Use letsencrypt-prod for any internet-facing service.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/cert-manager/cluster-issuer-staging.yaml
+#                local-dev/kind/
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: The selfsigned issuer simply signs certificate requests with
+# the key that cert-manager generates for the Certificate resource itself.
+# There is no external ACME server or CA involved.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+
+---
+# Note 2: A common pattern for local dev is to create a self-signed CA cert
+# first (using the selfsigned issuer above), then create a separate CA issuer
+# that references that cert. All app certificates are then signed by this local
+# CA, and you only need to trust one root cert in your browser/OS.
+
+# Step 1: Self-signed root CA certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: local-root-ca
+  secretName: local-root-ca-tls
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+
+---
+# Step 2: A CA issuer that uses the self-signed root CA above
+# Reference this issuer in app Certificate resources for local dev.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: local-ca                      # <-- CHANGE THIS: rename to match your dev workflow
+spec:
+  ca:
+    secretName: local-root-ca-tls     # Must match the Certificate.spec.secretName above

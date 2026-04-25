@@ -1,0 +1,96 @@
+name: Bug Report
+description: Report broken CI/CD template, Dockerfile, Kubernetes manifest, or Terraform module
+labels: ["bug", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Fill in as many fields as possible — it helps us reproduce and fix faster.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is broken? What did you expect to happen?
+      placeholder: "The Terraform plan-apply workflow exits with code 1 on PRs even when there are no changes..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps to trigger the bug.
+      placeholder: |
+        1. Copy ci/github-actions/terraform/plan-apply.yml to .github/workflows/
+        2. Open a PR with no Terraform changes
+        3. Observe the 'plan' job fails with exit code 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behaviour
+      placeholder: "The plan job should exit 0 when there are no changes."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behaviour
+      placeholder: "The plan job exits 1 and marks the PR as failed."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      description: Which part of the repo does this affect?
+      options:
+        - "CI — GitHub Actions"
+        - "CI — Azure Pipelines"
+        - "CI — GitLab CI"
+        - "CI — Jenkins"
+        - "CD — Kubernetes manifests"
+        - "CD — Helm charts"
+        - "CD — GitOps (ArgoCD/Flux)"
+        - "Terraform / IaC"
+        - "Docker"
+        - "Security scanning"
+        - "Observability"
+        - "Local dev (kind / Docker Compose)"
+        - "Documentation"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: file
+    attributes:
+      label: Affected File(s)
+      placeholder: "ci/github-actions/terraform/plan-apply.yml"
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Relevant runtime details.
+      placeholder: |
+        - Cloud: AWS / Azure / GCP / Local
+        - Kubernetes version: 1.31
+        - Terraform version: 1.10.0
+        - GitHub Actions runner: ubuntu-latest
+        - Helm version: 3.14
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Error Output
+      render: shell
+      placeholder: "Paste relevant CI/CD job output, kubectl errors, or terraform error messages here."

@@ -1,0 +1,464 @@
+# =============================================================================
+# SLO Recording Rules and Multi-Window Multi-Burn-Rate Alerts
+# =============================================================================
+#
+# TEMPLATE: WHEN TO USE
+#   Copy this file for each service you want to hold to an SLO. Replace the
+#   metric names, SLO targets, and labels marked # <-- CHANGE THIS.
+#   Apply with: kubectl apply -f slo-rules.yaml
+#
+# APPROACH — Multi-Window Multi-Burn-Rate (Google SRE Workbook, Chapter 5)
+#   Rather than alerting when errors exceed a simple threshold, these rules
+#   track how quickly you are burning through your monthly error budget.
+#   A burn rate of 1× means you will exhaust the budget in exactly 30 days.
+#   A burn rate of 14.4× means you burn the full month's budget in 2 hours.
+#
+#   Each alert fires when BOTH a long window (trend) AND a short window
+#   (confirmation) exceed the same burn-rate threshold. The dual window
+#   suppresses false pages from momentary spikes and ensures slow-burn
+#   degradation is caught before it silently drains the budget.
+#
+#   Threshold and window pairs used here (for a 99.9% availability SLO):
+#   ┌───────────────┬───────────────┬──────────────┬────────────┬────────────┐
+#   │ Alert name    │ Long window   │ Short window │ Burn rate  │ Severity   │
+#   ├───────────────┼───────────────┼──────────────┼────────────┼────────────┤
+#   │ SloFastBurn   │ 1h            │ 5m           │ 14.4×      │ critical   │
+#   │ SloFastBurn   │ 6h            │ 30m          │ 6×         │ critical   │
+#   │ SloSlowBurn   │ 1d            │ 2h           │ 3×         │ warning    │
+#   │ SloSlowBurn   │ 3d            │ 6h           │ 1×         │ warning    │
+#   └───────────────┴───────────────┴──────────────┴────────────┴────────────┘
+#
+# SLOTH / PYRRA COMPATIBILITY
+#   If you adopt Sloth (https://sloth.dev) or Pyrra (https://github.com/pyrra-dev/pyrra)
+#   to auto-generate these rules from a declarative SLO spec, you can delete this file
+#   and replace it with a SLO Custom Resource. The recording rule naming used here
+#   matches the Sloth output convention so migration is drop-in.
+#
+#   Example Sloth SLO spec (for reference — not applied by this file):
+#
+#     apiVersion: sloth.slok.dev/v1
+#     kind: PrometheusServiceLevel
+#     metadata:
+#       name: my-service-availability
+#       namespace: monitoring
+#     spec:
+#       service: "my-service"                     # <-- CHANGE THIS
+#       slos:
+#         - name: "requests-availability"
+#           objective: 99.9                        # <-- CHANGE THIS
+#           sli:
+#             events:
+#               errorQuery: >-
+#                 sum(rate(http_requests_total{job="my-service",code=~"5.."}[{{.window}}]))
+#               totalQuery: >-
+#                 sum(rate(http_requests_total{job="my-service"}[{{.window}}]))
+#           alerting:
+#             name: MyServiceAvailability
+#             annotations:
+#               runbook_url: https://runbooks.example.com/myserviceavailability
+#
+# WHAT TO CHANGE:
+#   1. Replace every `job="my-service"` with your actual Prometheus job label.
+#   2. Replace `http_requests_total` with your service's request-counter metric.
+#   3. Replace `code=~"5.."` with the error-selector for your metric.
+#   4. Adjust the `slo_target` annotation on every alert (0.999 = 99.9%).
+#   5. Update runbook_url to your real runbook location.
+#   6. Clone the entire file for each additional service.
+#
+# PREREQUISITES:
+#   - kube-prometheus-stack installed (observability/prometheus/values.yaml)
+#   - Your service exposes a request counter with an error dimension
+#     (e.g. http_requests_total{code=~"5.."} for HTTP, or a custom metric)
+# =============================================================================
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Part 1 — Availability SLO: 99.9% of requests succeed
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Error ratio = error requests / total requests.
+# We record it at seven window widths because Prometheus cannot evaluate a
+# rule like `rate(metric[6h])` inside a recording rule defined in the same group.
+# Pre-computing these ratios makes the alert expressions instantaneous lookups.
+#
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-availability-my-service           # <-- CHANGE THIS
+  namespace: monitoring
+  labels:
+    # This label makes kube-prometheus-stack pick up this PrometheusRule automatically
+    # (matches ruleSelector in observability/prometheus/values.yaml).
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+spec:
+  groups:
+
+    # ── Recording rules — error ratios over multiple windows ──────────────
+    - name: slo:my-service:availability:ratio_rate  # <-- CHANGE THIS (service name)
+      interval: 30s
+      rules:
+
+        # Note 1: The 5m and 30m windows are the "short" confirmation windows.
+        # They are evaluated frequently (every 30s) to detect the start of a burn quickly.
+        - record: slo:service_errors_total:ratio_rate5m
+          expr: >-
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[5m]))  # <-- CHANGE THIS
+            /
+            sum(rate(http_requests_total{job="my-service"}[5m]))               # <-- CHANGE THIS
+          labels:
+            service: my-service   # <-- CHANGE THIS: matches the job label above
+
+        - record: slo:service_errors_total:ratio_rate30m
+          expr: >-
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[30m]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[30m]))
+          labels:
+            service: my-service   # <-- CHANGE THIS
+
+        # Note 2: The 1h and 6h windows are the primary "long" windows for fast burn detection.
+        # 1h × 14.4× burn = 100% error budget consumed in 2 hours (page immediately).
+        # 6h × 6× burn = budget consumed in 5 hours (page before half-day milestone).
+        - record: slo:service_errors_total:ratio_rate1h
+          expr: >-
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[1h]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[1h]))
+          labels:
+            service: my-service   # <-- CHANGE THIS
+
+        - record: slo:service_errors_total:ratio_rate6h
+          expr: >-
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[6h]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[6h]))
+          labels:
+            service: my-service   # <-- CHANGE THIS
+
+        # Note 3: 2h and 1d windows drive the "warning" slow-burn alerts.
+        # 1d × 3× burn = budget consumed in 10 days (ticket + investigate).
+        - record: slo:service_errors_total:ratio_rate2h
+          expr: >-
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[2h]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[2h]))
+          labels:
+            service: my-service   # <-- CHANGE THIS
+
+        - record: slo:service_errors_total:ratio_rate1d
+          expr: >-
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[1d]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[1d]))
+          labels:
+            service: my-service   # <-- CHANGE THIS
+
+        # Note 4: The 3d window is the lowest-sensitivity check.
+        # 3d × 1× burn = the service is right on the 30-day SLO boundary — ticket before it tips.
+        - record: slo:service_errors_total:ratio_rate3d
+          expr: >-
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[3d]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[3d]))
+          labels:
+            service: my-service   # <-- CHANGE THIS
+
+    # ── Burn-rate alerts — four pairs covering the full burn-rate ladder ───
+    - name: slo:my-service:availability:burnrate  # <-- CHANGE THIS
+      rules:
+
+        # ── CRITICAL: fast burn (14.4× over 1h, confirmed by 5m) ──────────
+        # Note 5: This alert fires when the 1-hour error rate exceeds 14.4× the error budget.
+        # For a 99.9% SLO: error_budget = 0.001; threshold = 14.4 × 0.001 = 0.0144.
+        # It self-resets (no for: clause) because a 14.4× burn that stops is resolved.
+        # The `and` operator requires BOTH windows to be over threshold — the 5m window
+        # confirms the burn is ongoing and not a leftover artefact of a resolved spike.
+        - alert: SloFastBurn
+          expr: >-
+            (
+              slo:service_errors_total:ratio_rate1h{service="my-service"}  # <-- CHANGE THIS
+              > (14.4 * (1 - 0.999))                                       # <-- CHANGE THIS: 1 - slo_target
+            )
+            and
+            (
+              slo:service_errors_total:ratio_rate5m{service="my-service"}  # <-- CHANGE THIS
+              > (14.4 * (1 - 0.999))
+            )
+          labels:
+            severity: critical
+            service: my-service   # <-- CHANGE THIS
+            slo: availability
+          annotations:
+            summary: "{{ $labels.service }}: high error rate burning budget at 14.4× (SLO: 99.9%)"
+            description: >-
+              The 1-hour error ratio for {{ $labels.service }} is {{ $value | humanizePercentage }},
+              which exceeds 14.4× the allowed error budget. At this rate the full monthly error budget
+              will be consumed in approximately 2 hours.
+            slo_target: "0.999"                                                       # <-- CHANGE THIS
+            burn_rate: "14.4"
+            runbook_url: https://runbooks.example.com/slofastburn                     # <-- CHANGE THIS
+
+        # ── CRITICAL: fast burn (6× over 6h, confirmed by 30m) ───────────
+        # Note 6: This pair catches burns that started several hours ago but weren't caught
+        # by the 14.4× threshold (e.g. a 7× burn that oscillates below 14.4×).
+        # For a 99.9% SLO: threshold = 6 × 0.001 = 0.006.
+        - alert: SloFastBurn
+          expr: >-
+            (
+              slo:service_errors_total:ratio_rate6h{service="my-service"}  # <-- CHANGE THIS
+              > (6 * (1 - 0.999))
+            )
+            and
+            (
+              slo:service_errors_total:ratio_rate30m{service="my-service"} # <-- CHANGE THIS
+              > (6 * (1 - 0.999))
+            )
+          labels:
+            severity: critical
+            service: my-service   # <-- CHANGE THIS
+            slo: availability
+          annotations:
+            summary: "{{ $labels.service }}: sustained error rate burning budget at 6× (SLO: 99.9%)"
+            description: >-
+              The 6-hour error ratio for {{ $labels.service }} is {{ $value | humanizePercentage }},
+              exceeding 6× the allowed error budget. At this rate the monthly budget will be exhausted
+              in approximately 5 hours.
+            slo_target: "0.999"
+            burn_rate: "6"
+            runbook_url: https://runbooks.example.com/slofastburn   # <-- CHANGE THIS
+
+        # ── WARNING: slow burn (3× over 1d, confirmed by 2h) ─────────────
+        # Note 7: 3× burn does not warrant an immediate page but should generate a ticket.
+        # At 3×, the budget is consumed in 10 days — enough time to schedule a fix,
+        # but not enough to ignore until the next sprint cycle.
+        - alert: SloSlowBurn
+          expr: >-
+            (
+              slo:service_errors_total:ratio_rate1d{service="my-service"}  # <-- CHANGE THIS
+              > (3 * (1 - 0.999))
+            )
+            and
+            (
+              slo:service_errors_total:ratio_rate2h{service="my-service"}  # <-- CHANGE THIS
+              > (3 * (1 - 0.999))
+            )
+          labels:
+            severity: warning
+            service: my-service   # <-- CHANGE THIS
+            slo: availability
+          annotations:
+            summary: "{{ $labels.service }}: error rate burning budget at 3× — create a ticket (SLO: 99.9%)"
+            description: >-
+              The 1-day error ratio for {{ $labels.service }} is {{ $value | humanizePercentage }},
+              which is 3× the allowed error budget. If this rate persists the monthly budget will be
+              fully consumed in approximately 10 days.
+            slo_target: "0.999"
+            burn_rate: "3"
+            runbook_url: https://runbooks.example.com/sloslowburn   # <-- CHANGE THIS
+
+        # ── WARNING: slow burn (1× over 3d, confirmed by 6h) ─────────────
+        # Note 8: 1× burn means the service is exactly on the boundary of meeting its SLO.
+        # Three days of sustained 1× burn consumes 10% of the monthly budget — still recoverable
+        # but a signal that something in the environment needs attention.
+        - alert: SloSlowBurn
+          expr: >-
+            (
+              slo:service_errors_total:ratio_rate3d{service="my-service"}  # <-- CHANGE THIS
+              > (1 * (1 - 0.999))
+            )
+            and
+            (
+              slo:service_errors_total:ratio_rate6h{service="my-service"}  # <-- CHANGE THIS
+              > (1 * (1 - 0.999))
+            )
+          labels:
+            severity: warning
+            service: my-service   # <-- CHANGE THIS
+            slo: availability
+          annotations:
+            summary: "{{ $labels.service }}: error rate matches budget burn rate exactly — review soon (SLO: 99.9%)"
+            description: >-
+              The 3-day error ratio for {{ $labels.service }} is {{ $value | humanizePercentage }},
+              which is at the boundary of the allowed error budget. If unchanged over 30 days the
+              SLO will be exactly missed.
+            slo_target: "0.999"
+            burn_rate: "1"
+            runbook_url: https://runbooks.example.com/sloslowburn   # <-- CHANGE THIS
+
+---
+# =============================================================================
+# Part 2 — Latency SLO: 99% of requests complete in under 500 ms
+# =============================================================================
+#
+# Latency SLOs require a histogram metric (native histogram or classic _bucket).
+# The error ratio here is: requests that exceeded the latency target / total requests.
+# Replace `http_request_duration_seconds` with your histogram metric name.
+# Replace `0.5` (500 ms) with your latency target in seconds.
+#
+# <-- CHANGE THIS: if your service does not expose a request-duration histogram,
+# this entire section can be removed. Latency SLOs require histogram metrics.
+#
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-latency-my-service   # <-- CHANGE THIS
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+spec:
+  groups:
+
+    # ── Recording rules — latency "error" ratios (requests > target) ──────
+    - name: slo:my-service:latency:ratio_rate   # <-- CHANGE THIS
+      interval: 30s
+      rules:
+
+        # Note 9: For latency SLOs the "error" is a request that missed the target.
+        # We compute: (requests exceeding the threshold) / (total requests).
+        # With a classic histogram: requests that DID meet the target are in the ≤ bucket;
+        # requests that missed are total minus that bucket.
+        - record: slo:service_latency:ratio_rate5m
+          expr: >-
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[5m]))  # <-- CHANGE THIS
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[5m]))             # <-- CHANGE THIS
+            )
+          labels:
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+
+        - record: slo:service_latency:ratio_rate30m
+          expr: >-
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[30m]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[30m]))
+            )
+          labels:
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+
+        - record: slo:service_latency:ratio_rate1h
+          expr: >-
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[1h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[1h]))
+            )
+          labels:
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+
+        - record: slo:service_latency:ratio_rate6h
+          expr: >-
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[6h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[6h]))
+            )
+          labels:
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+
+        - record: slo:service_latency:ratio_rate1d
+          expr: >-
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[1d]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[1d]))
+            )
+          labels:
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+
+        - record: slo:service_latency:ratio_rate3d
+          expr: >-
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[3d]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[3d]))
+            )
+          labels:
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+
+    # ── Burn-rate alerts (99% latency SLO, error budget = 1%) ────────────
+    - name: slo:my-service:latency:burnrate   # <-- CHANGE THIS
+      rules:
+
+        - alert: SloLatencyFastBurn
+          # Note 10: Same multi-window logic as availability but targeting the latency ratio.
+          # For a 99% SLO: error_budget = 0.01; 14.4× threshold = 0.144.
+          expr: >-
+            (
+              slo:service_latency:ratio_rate1h{service="my-service", slo="latency"}   # <-- CHANGE THIS
+              > (14.4 * (1 - 0.99))
+            )
+            and
+            (
+              slo:service_latency:ratio_rate5m{service="my-service", slo="latency"}   # <-- CHANGE THIS
+              > (14.4 * (1 - 0.99))
+            )
+          labels:
+            severity: critical
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+          annotations:
+            summary: "{{ $labels.service }}: high latency burning budget at 14.4× (SLO: 99% < 500ms)"
+            description: >-
+              The 1-hour slow-request ratio for {{ $labels.service }} is {{ $value | humanizePercentage }},
+              exceeding 14.4× the allowed latency budget. At this rate the monthly budget will be
+              consumed in approximately 2 hours.
+            slo_target: "0.99"     # <-- CHANGE THIS
+            burn_rate: "14.4"
+            runbook_url: https://runbooks.example.com/slolatencyfastburn   # <-- CHANGE THIS
+
+        - alert: SloLatencyFastBurn
+          expr: >-
+            (
+              slo:service_latency:ratio_rate6h{service="my-service", slo="latency"}   # <-- CHANGE THIS
+              > (6 * (1 - 0.99))
+            )
+            and
+            (
+              slo:service_latency:ratio_rate30m{service="my-service", slo="latency"}  # <-- CHANGE THIS
+              > (6 * (1 - 0.99))
+            )
+          labels:
+            severity: critical
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+          annotations:
+            summary: "{{ $labels.service }}: sustained latency burning budget at 6× (SLO: 99% < 500ms)"
+            description: >-
+              The 6-hour slow-request ratio for {{ $labels.service }} is {{ $value | humanizePercentage }},
+              exceeding 6× the allowed latency budget.
+            slo_target: "0.99"     # <-- CHANGE THIS
+            burn_rate: "6"
+            runbook_url: https://runbooks.example.com/slolatencyfastburn   # <-- CHANGE THIS
+
+        - alert: SloLatencySlowBurn
+          expr: >-
+            (
+              slo:service_latency:ratio_rate1d{service="my-service", slo="latency"}   # <-- CHANGE THIS
+              > (3 * (1 - 0.99))
+            )
+            and
+            (
+              slo:service_latency:ratio_rate2h
+              > (3 * (1 - 0.99))
+            )
+          labels:
+            severity: warning
+            service: my-service   # <-- CHANGE THIS
+            slo: latency
+          annotations:
+            summary: "{{ $labels.service }}: latency burning budget at 3× — create a ticket (SLO: 99% < 500ms)"
+            description: >-
+              The 1-day slow-request ratio for {{ $labels.service }} is {{ $value | humanizePercentage }}.
+              If this rate persists the monthly latency budget will be consumed in approximately 10 days.
+            slo_target: "0.99"     # <-- CHANGE THIS
+            burn_rate: "3"
+            runbook_url: https://runbooks.example.com/slolatencyslowburn   # <-- CHANGE THIS

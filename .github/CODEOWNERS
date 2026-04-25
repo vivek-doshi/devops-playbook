@@ -1,0 +1,53 @@
+# CODEOWNERS — code review routing for cicd-reference
+#
+# Syntax: <pattern> <owner> [<owner> ...]
+# Rules are evaluated last-to-first; the last matching rule wins.
+# Teams must exist in your GitHub org before being used here.
+# Individual fallback: add @github-username for contributors without a team.
+#
+# Replace team slugs below with your actual GitHub org/team names.
+# Format: @org-name/team-slug   or   @github-username
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ── Default fallback ──────────────────────────────────────────────────────────
+# Catches anything not matched by a more specific rule below.
+*                               @your-org/platform-team                 # <-- CHANGE THIS
+
+# ── CI Pipelines ──────────────────────────────────────────────────────────────
+# Platform / DevOps team owns all CI definitions.
+ci/                             @your-org/platform-team                 # <-- CHANGE THIS
+.github/workflows/              @your-org/platform-team                 # <-- CHANGE THIS
+
+# ── CD / Deployment ───────────────────────────────────────────────────────────
+cd/                             @your-org/platform-team                 # <-- CHANGE THIS
+cd/kubernetes/                  @your-org/platform-team                 # <-- CHANGE THIS
+
+# ── Terraform / Infrastructure ────────────────────────────────────────────────
+# Infrastructure team owns all IaC. Platform team is secondary reviewer.
+terraform/                      @your-org/infra-team                    # <-- CHANGE THIS
+cd/pulumi/                      @your-org/infra-team                    # <-- CHANGE THIS
+
+# ── Security ─────────────────────────────────────────────────────────────────
+# Security team must review any change to scanning configs or policies.
+security/                       @your-org/security-team                 # <-- CHANGE THIS
+policy/                         @your-org/security-team                 # <-- CHANGE THIS
+docker/_base/security-hardened.Dockerfile @your-org/security-team      # <-- CHANGE THIS
+
+# ── Application Dockerfiles ───────────────────────────────────────────────────
+# App team owns stack-specific Dockerfiles; platform team reviews base images.
+docker/                         @your-org/app-team                      # <-- CHANGE THIS
+docker/_base/                   @your-org/platform-team                 # <-- CHANGE THIS
+
+# ── Observability ─────────────────────────────────────────────────────────────
+observability/                  @your-org/platform-team                 # <-- CHANGE THIS
+notifications/                  @your-org/platform-team                 # <-- CHANGE THIS
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+# Docs are open contribution — only require platform team for structural guides.
+docs/                           @your-org/platform-team                 # <-- CHANGE THIS
+*.md                            @your-org/platform-team                 # <-- CHANGE THIS
+
+# ── GitHub config files ───────────────────────────────────────────────────────
+# Changes to repo config require platform team sign-off.
+.github/                        @your-org/platform-team                 # <-- CHANGE THIS

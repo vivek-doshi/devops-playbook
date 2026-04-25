@@ -1,0 +1,160 @@
+# grafana/tempo chart values (grafana/tempo 1.9.x — monolithic / single-binary mode)
+#
+# Install:
+#   helm repo add grafana https://grafana.github.io/helm-charts
+#   helm install tempo grafana/tempo --version 1.9.0 -n monitoring -f values.yaml
+#
+# Monolithic mode runs all Tempo components (distributor, ingester, querier, compactor,
+# query-frontend) in a single process. This is the right starting point for:
+#   - clusters generating up to ~10 000 spans/second
+#   - teams without object storage set up yet
+# For higher volumes, switch to the grafana/tempo-distributed chart:
+# https://grafana.com/docs/tempo/latest/setup/helm-chart/
+#
+# WHAT TO CHANGE when adapting this file:
+#   block_retention      — how long to keep trace data (default 72 h; increase for compliance)
+#   storage.trace.backend — switch from local to s3/gcs/azure before running in production
+#   resources            — raise limits as ingestion volume grows
+#   metricsGenerator     — enable if you want span-derived RED metrics in Prometheus
+
+# =============================================================================
+# Tempo configuration (written to /conf/tempo.yaml inside the container)
+# =============================================================================
+
+tempo:
+  # Google's anonymous feature-usage reporting. Disable in air-gapped or regulated environments.
+  reportingEnabled: false
+
+  server:
+    http_listen_port: 3200   # Query API and Grafana datasource target.
+    grpc_listen_port: 9095   # Used by intra-component communication when running distributed.
+    log_level: warn          # warn keeps logs quiet in production; change to info when debugging.
+
+  # ─── Storage ──────────────────────────────────────────────────────────────
+  storage:
+    trace:
+      # Filesystem storage is the simplest option and requires no external dependencies.
+      # For production durability, switch to an object storage backend:
+      #   S3:     backend: s3    — add s3.bucket, s3.region, s3.access_key, s3.secret_key
+      #   GCS:    backend: gcs   — add gcs.bucket_name
+      #   Azure:  backend: azure — add azure.container_name, azure.account_name, azure.account_key
+      # <-- CHANGE THIS to object storage before running in production
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        # The write-ahead log persists un-flushed blocks so that an in-flight trace
+        # survives a pod restart without being lost entirely.
+        path: /var/tempo/wal
+
+  # ─── Compactor ────────────────────────────────────────────────────────────
+  compactor:
+    compaction:
+      # block_retention controls how long trace data is kept.
+      # 72 h (3 days) balances storage cost against incident response time.
+      # Postmortem workflows that require longer windows should raise this.
+      # <-- CHANGE THIS: increase (e.g. 168h = 7d) for regulated environments
+      block_retention: 72h
+      # Compact blocks smaller than 100 MiB into larger ones to reduce object-store operations
+      # and improve query fan-out performance.
+      max_block_bytes: 104857600   # 100 MiB
+      max_compaction_objects: 6000000
+
+  # ─── Ingester ─────────────────────────────────────────────────────────────
+  ingester:
+    # Flush a block to storage after 5 minutes of inactivity rather than holding it
+    # in memory indefinitely. Shorter values use less memory but increase write amplification.
+    trace_idle_period: 10s
+    max_block_duration: 5m
+    max_block_bytes: 104857600   # 100 MiB — flush early if a block grows to 100 MiB
+
+  # ─── Querier ──────────────────────────────────────────────────────────────
+  querier:
+    max_concurrent_queries: 20   # Limit parallel backend reads to prevent storage saturation.
+    frontend_worker:
+      # Single-binary: the frontend and querier live in the same process, so point at localhost.
+      frontend_address: tempo:9095
+
+  # ─── Query Frontend ───────────────────────────────────────────────────────
+  query_frontend:
+    search:
+      # 0 = no duration cap on search queries. Apply a cap in multi-tenant setups to bound cost.
+      max_duration: 0             # <-- CHANGE THIS: set e.g. 168h in shared tenancy deployments
+      default_result_limit: 20   # Default page size for trace-search API calls.
+      max_result_limit: 0        # 0 = no cap; the frontend enforces pagination client-side.
+
+  # ─── Distributor / Receivers ──────────────────────────────────────────────
+  # Configure the protocols Tempo accepts. OTLP gRPC (4317) and HTTP (4318) are the
+  # standard ports used by the OTel collector sidecar in observability/opentelemetry/
+  # and by all OTel SDK language integrations.
+  distributor:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            # Matches the otlp/tempo exporter endpoint in observability/opentelemetry/collector-config.yaml.
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      # Uncomment if you also receive Jaeger-format traces (e.g. from legacy services):
+      # jaeger:
+      #   protocols:
+      #     thrift_http:
+      #       endpoint: 0.0.0.0:14268
+      #     grpc:
+      #       endpoint: 0.0.0.0:14250
+
+  # ─── Metrics Generator (span → RED metrics) ───────────────────────────────
+  # Disabled by default to keep storage and CPU cost predictable.
+  # Enable to derive request rate, error rate, and duration percentiles directly
+  # from spans — useful when your services do not yet expose Prometheus metrics.
+  #
+  # Enabling requires a remote_write target (Prometheus or Thanos).
+  metricsGenerator:
+    enabled: false    # <-- CHANGE THIS to true to activate span-derived metrics
+    remoteWrite:
+      []
+      # - url: http://kube-prometheus-stack-prometheus:9090/api/v1/write  # <-- CHANGE THIS
+
+# =============================================================================
+# Kubernetes resource settings (outside the tempo config block)
+# =============================================================================
+
+# Persistent volume for WAL and local trace storage.
+# In production on object storage, this can be sized smaller (WAL only ~ 2 Gi).
+persistence:
+  enabled: true
+  size: 10Gi   # <-- CHANGE THIS: increase to 50+ Gi if retention is >3 days on filesystem
+  # storageClassName: ""  # <-- CHANGE THIS to an SSD-backed class in production
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi   # Raise to 4+ Gi for high-cardinality trace workloads (>5 000 spans/s)
+
+# Label this pod so the additionalScrapeConfigs job in prometheus/values.yaml picks it up.
+podLabels:
+  app: tempo
+  monitoring: "true"
+
+# ─── Service Monitor ──────────────────────────────────────────────────────────
+# Let kube-prometheus-stack scrape Tempo's own metrics from :3200/metrics.
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  additionalLabels: {}
+
+# ─── Tempo Gateway (optional) ────────────────────────────────────────────────
+# The gateway exposes a single entry-point for both reads and writes over HTTPS
+# with basic auth. Disable in dev/test where mTLS is not required.
+gateway:
+  enabled: false   # <-- CHANGE THIS to true if you want multi-tenant basic-auth ingress
+
+# ─── Multi-tenancy ────────────────────────────────────────────────────────────
+# Disabled here for single-tenant operation (no X-Scope-OrgID header required).
+# In multi-tenant setups (multiple teams sharing one Tempo instance) each request
+# must carry an X-Scope-OrgID header and auth_enabled must be set to true.
+# See https://grafana.com/docs/tempo/latest/operations/multitenancy/

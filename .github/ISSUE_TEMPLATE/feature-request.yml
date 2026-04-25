@@ -1,0 +1,87 @@
+name: Feature Request
+description: Suggest a new template, pattern, or improvement to the reference kit
+labels: ["enhancement", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a pattern, template, or workflow that would make this reference kit more useful? Propose it here.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What gap or pain point does this address?
+      placeholder: "There's no example of a multi-environment GitOps promotion workflow using Flux. Teams using Flux have to figure it out from scratch..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: What would you like added or changed?
+      placeholder: |
+        Add a Flux-based promotion pipeline under cd/gitops/flux/ that:
+        - Uses HelmRelease objects for each environment
+        - Shows image automation for dev, manual PR promotion for staging → prod
+        - Includes a GitRepository source pointing to the app repo
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      description: Which part of the repo would this touch?
+      options:
+        - "CI — GitHub Actions"
+        - "CI — Azure Pipelines"
+        - "CI — GitLab CI"
+        - "CI — Jenkins"
+        - "CD — Kubernetes manifests"
+        - "CD — Helm charts"
+        - "CD — GitOps (ArgoCD/Flux)"
+        - "Terraform / IaC"
+        - "Docker"
+        - "Security scanning"
+        - "Observability"
+        - "Local dev (kind / Docker Compose)"
+        - "Documentation"
+        - "New area (describe below)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (from your perspective)
+      options:
+        - "Nice to have"
+        - "Would unblock a real project"
+        - "Blocking adoption of this reference kit"
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What workarounds or existing resources have you tried?
+      placeholder: "Looked at the existing ArgoCD example but Flux uses a fundamentally different model so it can't be adapted easily."
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References / Prior Art
+      placeholder: |
+        - https://fluxcd.io/flux/guides/helmreleases/
+        - Similar pattern in projectX: <link>
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to open a PR implementing this

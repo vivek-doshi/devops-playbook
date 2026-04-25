@@ -1,0 +1,178 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Reusable Artifact Attestation
+#   Provides SLSA provenance + SBOM + cosign image signing
+#   for any container image built in this repo.
+#
+# WHEN TO USE: Call from any workflow that builds and pushes
+#   a Docker image. Replaces the inline SBOM step that only
+#   some workflows had, giving consistent coverage everywhere.
+#
+# WHAT THIS PROVIDES:
+#   1. SBOM (SPDX-JSON) — attached as OCI referrer and uploaded
+#      as a workflow artifact. Satisfies supply-chain audit requirements.
+#   2. SLSA provenance attestation — signed by GitHub's OIDC token
+#      via actions/attest-build-provenance. Meets SLSA Build L2.
+#   3. cosign keyless signing — signs the image digest in Sigstore's
+#      transparency log (Rekor). Verifiable without managing keys.
+#
+# SLSA levels in this template:
+#   L1: Provenance exists (attestation written)
+#   L2: Provenance is signed (GitHub OIDC token, Sigstore Rekor)
+#   L3: Requires hermetic builds on GitHub-hosted runners with no
+#       network access — not covered here; needs slsa-framework/slsa-github-generator
+#
+# PREREQUISITES:
+#   - Image already built and pushed (pass the digest as input)
+#   - Calling job needs: id-token: write, attestations: write, packages: write
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   - ci/github-actions/dotnet/docker-publish.yml
+#   - ci/github-actions/_shared/reusable-docker-build.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Reusable Artifact Attestation
+
+on:
+  workflow_call:
+    inputs:
+      image-ref:
+        description: "Full image reference including digest, e.g. ghcr.io/org/app@sha256:abc123"
+        required: true
+        type: string
+      image-digest:
+        description: "Image digest (sha256:...) returned by docker/build-push-action"
+        required: true
+        type: string
+      sbom-artifact-name:
+        description: "Name for the uploaded SBOM artifact"
+        required: false
+        type: string
+        default: sbom-${{ github.sha }}.spdx.json
+    secrets:
+      registry-token:
+        description: "Token with push access to the registry (for cosign)"
+        required: true
+
+jobs:
+  attest:
+    name: Sign & Attest
+    runs-on: ubuntu-latest
+
+    # Note 1: These three permissions are ALL required.
+    # id-token: write   — lets cosign get an OIDC token from GitHub, no keys needed
+    # attestations: write — lets actions/attest-build-provenance write attestations
+    # packages: write   — lets cosign push the signature/attestation to GHCR
+    permissions:
+      id-token: write
+      attestations: write
+      packages: write
+
+    steps:
+      # ── SBOM ──────────────────────────────────────────────────────────────
+      # Note 2: anchore/sbom-action scans the image layers and produces an SPDX
+      # JSON SBOM. It attaches it to the image as an OCI referrer (so it stays
+      # with the image in the registry) AND uploads it as a workflow artifact.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image:         ${{ inputs.image-ref }}
+          format:        spdx-json
+          output-file:   sbom.spdx.json
+          upload-artifact: true
+          artifact-name: ${{ inputs.sbom-artifact-name }}
+
+      # ── SLSA provenance attestation ────────────────────────────────────────
+      # Note 3: actions/attest-build-provenance writes a signed SLSA provenance
+      # attestation that records: the workflow that triggered the build, the
+      # git ref + SHA, the repository, and the build runner. It is signed using
+      # the job's OIDC token so no secrets are needed.
+      # Verify with: gh attestation verify <image> --repo <owner/repo>
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name:   ${{ inputs.image-ref }}
+          subject-digest: ${{ inputs.image-digest }}
+          push-to-registry: true  # attaches attestation as OCI referrer in registry
+
+      # ── cosign keyless image signing ────────────────────────────────────────
+      # Note 4: cosign signs the image digest using Sigstore's keyless flow:
+      #   1. Gets an OIDC token from GitHub (the job's id-token)
+      #   2. Exchanges it for a short-lived certificate from Fulcio (Sigstore CA)
+      #   3. Creates a signature and records it in Rekor (public transparency log)
+      # No private keys are stored anywhere. The identity claim in the cert is
+      # the GitHub Actions workflow URL, making it auditable.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Log in to registry for cosign
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io                         # <-- CHANGE THIS if using ACR/ECR/Artifact Registry
+          username: ${{ github.actor }}
+          password: ${{ secrets.registry-token }}
+
+      - name: Sign image with cosign (keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"   # enables keyless (OIDC) signing
+        run: |
+          cosign sign --yes \
+            ${{ inputs.image-ref }}
+
+          echo ""
+          echo "Image signed. To verify on any machine:"
+          echo "  cosign verify \\"
+          echo "    --certificate-identity-regexp 'https://github.com/${{ github.repository }}' \\"
+          echo "    --certificate-oidc-issuer     'https://token.actions.githubusercontent.com' \\"
+          echo "    ${{ inputs.image-ref }}"
+
+      # ── Verify (self-check) ────────────────────────────────────────────────
+      # Note 5: Verify the signature immediately after signing as a sanity check.
+      # This catches registry connectivity issues and misconfigured OIDC issuers
+      # before the image is deployed.
+      - name: Verify cosign signature
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign verify \
+            --certificate-identity-regexp "https://github.com/${{ github.repository }}" \
+            --certificate-oidc-issuer     "https://token.actions.githubusercontent.com" \
+            ${{ inputs.image-ref }}
+
+# ============================================================
+# HOW TO CALL THIS WORKFLOW
+# ============================================================
+# In your docker-publish.yml, add this job after the build job:
+#
+#   attest:
+#     needs: docker
+#     uses: ./.github/workflows/reusable-attest.yml   # <-- CHANGE THIS to match your path
+#     permissions:
+#       id-token:     write
+#       attestations: write
+#       packages:     write
+#     with:
+#       image-ref:    ghcr.io/${{ github.repository }}@${{ needs.docker.outputs.image-digest }}
+#       image-digest: ${{ needs.docker.outputs.image-digest }}
+#     secrets:
+#       registry-token: ${{ secrets.GITHUB_TOKEN }}
+#
+# And in your build job, add this output:
+#
+#   jobs:
+#     docker:
+#       outputs:
+#         image-digest: ${{ steps.build-push.outputs.digest }}
+#
+# ============================================================
+# HOW TO VERIFY OFFLINE (no GitHub CLI)
+# ============================================================
+# cosign verify \
+#   --certificate-identity-regexp 'https://github.com/ORG/REPO/.github/workflows/' \
+#   --certificate-oidc-issuer     'https://token.actions.githubusercontent.com' \
+#   ghcr.io/ORG/REPO@sha256:DIGEST
+#
+# gh attestation verify \
+#   oci://ghcr.io/ORG/REPO@sha256:DIGEST \
+#   --repo ORG/REPO
+# ============================================================

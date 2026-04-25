@@ -1,0 +1,51 @@
+# ============================================================
+# TEMPLATE: Velero On-Demand Namespace Backup
+# WHEN TO USE: Before a risky change (major upgrade, data migration,
+#   infra rebuild) or to capture a named restore point that
+#   falls outside the scheduled backup window.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: backup/velero/schedule.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  # Note 1: Give the backup a descriptive name that includes the reason and date,
+  # so the team can identify it without looking at metadata.
+  name: pre-upgrade-2024-01-15                # <-- CHANGE THIS: use format pre-<reason>-<YYYY-MM-DD>
+  namespace: velero
+spec:
+  # Note 2: For on-demand backups before a change, scope to only the affected
+  # namespaces to keep size manageable and restore time short.
+  includedNamespaces:
+    - production                              # <-- CHANGE THIS: namespace(s) to back up
+
+  includeClusterResources: true
+  snapshotVolumes: true
+
+  # Note 3: ttl for on-demand backups. Shorter than scheduled backups because
+  # these are point-in-time snapshots rather than regular retention archives.
+  # 168h = 7 days — enough time to validate the change and roll back if needed.
+  ttl: 168h0m0s                              # <-- CHANGE THIS: 168h = 7 days
+
+  storageLocation: default                   # <-- CHANGE THIS: BackupStorageLocation name
+
+  hooks:
+    resources: []
+
+---
+# Note 4: To restore from this backup:
+#   velero restore create \
+#     --from-backup pre-upgrade-2024-01-15 \
+#     --namespace-mappings production:production-restored  # optional: restore into a different NS
+#
+# To check restore status:
+#   velero restore describe <restore-name> --details
+#
+# To restore a single Deployment:
+#   velero restore create \
+#     --from-backup pre-upgrade-2024-01-15 \
+#     --include-resources deployments \
+#     --selector app=my-app

@@ -16,6 +16,7 @@ Pipeline templates for security scanning across different tool categories.
 <!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 | `dependency-audit/` | npm audit, pip-audit, NuGet | Dependency vulnerability audit |
 | `iac-scanning/` | Checkov, tfsec | Infrastructure-as-code misconfiguration scanning |
+| `secret-rotation/` | AWS Secrets Manager Lambda, Azure Key Vault EventGrid, External Secrets Operator | Automated secret rotation workflows — the complement to detection |
 
 Gitleaks is the fast, pattern-based baseline for every commit; TruffleHog is the deeper, verified pass that fits pull requests rather than every push.
 

@@ -1,0 +1,162 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — semantic-release (non-Node stacks)
+# WHEN TO USE: Automated versioning + changelog for Python, Go,
+#              .NET, Java, or Ruby repos where release-please is
+#              not a natural fit. semantic-release runs on every
+#              push to main and cuts a release directly (no PR).
+# PREREQUISITES:
+#   - Conventional Commits in every commit (see docs/guides/conventional-commits.md)
+#   - .releaserc.json at repo root (example provided below)
+#   - Node.js available in the runner (only for running semantic-release itself)
+# SECRETS NEEDED: GITHUB_TOKEN (automatic), NPM_TOKEN only if publishing to npm
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   - ci/github-actions/_strategies/release-please.yml (alternative)
+#   - ci/github-actions/_shared/pr-conventional-commit.yml (enforcer)
+#   - docs/guides/conventional-commits.md
+# MATURITY: Stable
+# ============================================================
+
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main             # <-- CHANGE THIS: add 'beta' or 'next' for pre-release channels
+
+# Note 1: semantic-release needs write access to push the release commit,
+# create the tag, and post the GitHub Release. id-token is only required
+# if you add an OIDC-based cloud publish step below.
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    name: Cut Release
+    runs-on: ubuntu-latest
+    # Note 2: Concurrency ensures only one release runs at a time on main.
+    # cancel-in-progress: false is intentional — we never want to drop a release mid-flight.
+    concurrency:
+      group: semantic-release
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history needed for changelog generation
+          persist-credentials: false  # use GITHUB_TOKEN from env, not git credential store
+
+      # ── Language-specific build/test step ─────────────────────────────────
+      # Run your existing build before cutting the release so a broken build
+      # cannot produce a new version tag.
+
+      # Python example
+      - name: Set up Python
+        if: false                 # <-- CHANGE THIS: remove this 'if: false' to enable
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"  # <-- CHANGE THIS
+      - name: Python build & test
+        if: false                 # <-- CHANGE THIS
+        run: |
+          pip install -e ".[dev]"
+          pytest --tb=short
+
+      # Go example
+      - name: Set up Go
+        if: false                 # <-- CHANGE THIS: remove this 'if: false' to enable
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"      # <-- CHANGE THIS
+      - name: Go build & test
+        if: false                 # <-- CHANGE THIS
+        run: |
+          go test ./... -race -count=1
+
+      # .NET example
+      - name: Set up .NET
+        if: false                 # <-- CHANGE THIS: remove this 'if: false' to enable
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.x"   # <-- CHANGE THIS
+      - name: .NET build & test
+        if: false                 # <-- CHANGE THIS
+        run: |
+          dotnet build --configuration Release
+          dotnet test --no-build --verbosity normal
+      # ──────────────────────────────────────────────────────────────────────
+
+      # semantic-release is a Node package, but it works for any language repo.
+      # It reads .releaserc.json, parses commits, and creates the GitHub Release.
+      - name: Set up Node (for semantic-release only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install semantic-release
+        run: |
+          npm install --no-save \
+            semantic-release \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator \
+            @semantic-release/changelog \
+            @semantic-release/git \
+            @semantic-release/github
+          # Optional extras:                                  # <-- CHANGE THIS
+          # @semantic-release/exec            — run arbitrary shell commands per lifecycle
+          # @semantic-release/npm             — bump package.json version
+          # semantic-release-pypi             — publish to PyPI
+          # @semantic-release/slack-notify    — post Slack message on release
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # NPM_TOKEN: ${{ secrets.NPM_TOKEN }}              # <-- CHANGE THIS: uncomment for npm publish
+          # PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}            # <-- CHANGE THIS: uncomment for PyPI
+        run: npx semantic-release
+
+# ============================================================
+# .releaserc.json — place this at the repo root
+# ============================================================
+# {
+#   "branches": ["main"],
+#
+#   "Note 1": "commit-analyzer decides the version bump based on commit types",
+#   "plugins": [
+#     ["@semantic-release/commit-analyzer", {
+#       "preset": "conventionalcommits",
+#       "releaseRules": [
+#         { "type": "feat",     "release": "minor" },
+#         { "type": "fix",      "release": "patch" },
+#         { "type": "perf",     "release": "patch" },
+#         { "type": "revert",   "release": "patch" },
+#         { "type": "docs",     "release": false   },
+#         { "type": "style",    "release": false   },
+#         { "type": "refactor", "release": false   },
+#         { "type": "test",     "release": false   },
+#         { "type": "chore",    "release": false   },
+#         { "breaking": true,   "release": "major" }
+#       ]
+#     }],
+#
+#     "Note 2": "release-notes-generator builds the changelog content",
+#     "@semantic-release/release-notes-generator",
+#
+#     "Note 3": "changelog plugin writes CHANGELOG.md",
+#     ["@semantic-release/changelog", {
+#       "changelogFile": "CHANGELOG.md"
+#     }],
+#
+#     "Note 4": "git plugin commits the updated CHANGELOG.md and version file back to main",
+#     ["@semantic-release/git", {
+#       "assets": ["CHANGELOG.md", "pyproject.toml", "package.json"],
+#       "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+#     }],
+#
+#     "Note 5": "github plugin creates the GitHub Release with release notes attached",
+#     "@semantic-release/github"
+#   ]
+# }

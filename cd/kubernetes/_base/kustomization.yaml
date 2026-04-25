@@ -11,6 +11,21 @@ resources:
   # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   - hpa.yaml
   - configmap.yaml
+  # Note 5: pdb.yaml — PodDisruptionBudget. Prevents more than one pod being
+  # evicted at once during node drains and cluster upgrades. Required for HA.
+  # Overlays can patch spec.minAvailable for environment-specific thresholds.
+  - pdb.yaml
+  # Note 6: networkpolicy.yaml — default-deny-all + targeted allow rules.
+  # Requires a CNI that enforces NetworkPolicy (Calico, Cilium, Weave).
+  # Remove this line if your cluster uses Flannel without a network policy add-on.
+  - networkpolicy.yaml
+  # Note 7: rbac.yaml — ServiceAccounts, Roles, and RoleBindings for the
+  # developer, ci-deploy, and ns-admin personas. Scoped to this namespace.
+  - rbac.yaml
+  # Note 8: vpa.yaml — VerticalPodAutoscaler in "Off" (recommendation-only) mode.
+  # Do NOT switch to Auto/Recreate mode if hpa.yaml uses CPU/memory targets —
+  # see the warning comment inside vpa.yaml for the full explanation.
+  - vpa.yaml
 
 commonLabels:
   managed-by: kustomize

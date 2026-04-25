@@ -1,0 +1,50 @@
+# ============================================================
+# TEMPLATE: Kubernetes PodDisruptionBudget
+# WHEN TO USE: Prevent Kubernetes from evicting too many pods at
+#   once during voluntary disruptions (node drain, rolling updates,
+#   cluster upgrades). Apply to any Deployment with >= 2 replicas.
+# PREREQUISITES:
+#   - Deployment with >= 2 replicas (PDB has no effect on 1 replica)
+#   - Label selector must match the Deployment's pod template labels
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   cd/kubernetes/_base/deployment.yaml
+#   cd/kubernetes/_base/hpa.yaml
+#   cd/kubernetes/_overlays/prod/kustomization.yaml
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: PodDisruptionBudget is a policy/v1 resource (GA since k8s 1.21).
+# For clusters < 1.21, use policy/v1beta1 (deprecated and removed in 1.25).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  # Note 2: By convention, name the PDB after the Deployment it protects.
+  name: app-pdb             # <-- CHANGE THIS: e.g., my-service-pdb
+  namespace: default        # <-- CHANGE THIS: must match your Deployment namespace
+spec:
+  # Note 3: Choose EITHER minAvailable OR maxUnavailable — not both.
+  #
+  # minAvailable: N  — at least N pods must remain running during disruption.
+  #   Use this when you need a hard guarantee on running capacity.
+  #   Example: minAvailable: 1  → keep at least 1 pod healthy at all times
+  #   Example: minAvailable: "50%"  → percentage-based (rounds up)
+  #
+  # maxUnavailable: N — at most N pods may be simultaneously unavailable.
+  #   Use this for proportional guarantees that scale with replica count.
+  #   Example: maxUnavailable: 1  → allow 1 pod to be disrupted at a time
+  #   Example: maxUnavailable: "25%"  → allow 25% of pods to be disrupted
+  #
+  # For production with 3 replicas: minAvailable: 2 (or maxUnavailable: 1)
+  # For staging/dev with 2 replicas: minAvailable: 1 (or maxUnavailable: 1)
+  # For HPA-managed Deployments: prefer maxUnavailable so the PDB scales
+  # with the replica count rather than becoming overly restrictive.
+  minAvailable: 1           # <-- CHANGE THIS: see guidance above
+
+  # Note 4: The selector MUST match the pod template labels in your Deployment.
+  # Mismatched labels = PDB silently does nothing. Verify with:
+  #   kubectl get pdb app-pdb -o yaml
+  #   kubectl describe pdb app-pdb    ← shows "Allowed disruptions" count
+  selector:
+    matchLabels:
+      app: app              # <-- CHANGE THIS: match deployment.yaml spec.selector.matchLabels

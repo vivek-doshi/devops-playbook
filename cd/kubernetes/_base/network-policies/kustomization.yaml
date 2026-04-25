@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Note 1: Apply default-deny BEFORE the allow policies.
+# Kustomize applies resources in order; listing default-deny first
+# ensures no window exists where pods are open before the deny rule is in place.
+resources:
+  - default-deny.yaml
+  - allow-egress-to-dns.yaml                         # Required by all pods — DNS resolution
+  - allow-ingress-from-ingress-controller.yaml        # Internet traffic via NGINX/Traefik
+  - allow-egress-to-database.yaml                     # Outbound to PostgreSQL
+  - allow-prometheus-scrape.yaml                      # Inbound from Prometheus

@@ -1,0 +1,74 @@
+# ============================================================
+# TEMPLATE: ClusterIssuer — Let's Encrypt Production
+# WHEN TO USE: Use this issuer for real workloads once the staging
+#   issuer is working correctly. Production certificates are trusted
+#   by all major browsers and operating systems.
+#
+# RATE LIMITS (production):
+#   - 50 certificates per registered domain per week
+#   - 5 duplicate certificates per week
+#   - 5 failed validations per account per hour
+#   See: https://letsencrypt.org/docs/rate-limits/
+#
+# PREREQUISITES:
+#   - Validated the flow with letsencrypt-staging first
+#   - Same ingress prerequisites as staging issuer
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/cert-manager/cluster-issuer-staging.yaml
+#                cd/kubernetes/cert-manager/README.md
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+
+    email: devops@example.com   # <-- CHANGE THIS
+
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+
+    solvers:
+      - http01:
+          ingress:
+            class: nginx          # <-- CHANGE THIS: your IngressClass name
+
+      # Note 1: DNS-01 challenge is required for wildcard certificates
+      # (e.g., *.example.com) or when your ingress is not publicly reachable.
+      # Uncomment and configure one of the DNS provider blocks below.
+      # You cannot use HTTP-01 for wildcard certificates.
+
+      # DNS-01 via AWS Route 53:
+      # - dns01:
+      #     route53:
+      #       region: us-east-1                         # <-- CHANGE THIS
+      #       hostedZoneID: Z1234567890EXAMPLE          # <-- CHANGE THIS
+      #       accessKeyIDSecretRef:
+      #         name: route53-credentials
+      #         key: access-key-id
+      #       secretAccessKeySecretRef:
+      #         name: route53-credentials
+      #         key: secret-access-key
+
+      # DNS-01 via Azure DNS:
+      # - dns01:
+      #     azureDNS:
+      #       subscriptionID: 00000000-0000-0000-0000-000000000000  # <-- CHANGE THIS
+      #       resourceGroupName: my-dns-rg                          # <-- CHANGE THIS
+      #       hostedZoneName: example.com                           # <-- CHANGE THIS
+      #       environment: AzurePublicCloud
+      #       managedIdentity:
+      #         clientID: 00000000-0000-0000-0000-000000000000      # <-- CHANGE THIS
+
+      # DNS-01 via Google Cloud DNS:
+      # - dns01:
+      #     cloudDNS:
+      #       project: my-gcp-project                               # <-- CHANGE THIS
+      #       serviceAccountSecretRef:
+      #         name: clouddns-credentials
+      #         key: service-account.json

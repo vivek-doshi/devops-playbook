@@ -1,0 +1,233 @@
+# ============================================================
+# TEMPLATE: Database Migration via Init Container
+# WHEN TO USE: Short migrations (< 5 minutes) where you want migrations
+#   to run atomically with each pod start — no separate CI step needed.
+#   The pod will not start accepting traffic until migrations succeed.
+#
+# DECISION GUIDE:
+#   - Migration < 5 min AND app cannot start with old schema → use this file
+#   - Migration > 5 min OR migration needs to run once across the cluster → use db-migration-job.yaml
+#   - Migrating via Helm upgrade → use db-migration-hook.yaml
+#
+# TRADEOFF — IMPORTANT:
+#   Init containers run every time a pod starts (including restarts and
+#   scale-out). Your migration tool MUST be idempotent (Flyway, Liquibase,
+#   Alembic, EF Core, golang-migrate all handle this natively by tracking
+#   applied versions in a schema_versions table). If your migration is NOT
+#   idempotent, use the Job pattern instead.
+#
+# ORDERING GUARANTEE:
+#   Kubernetes runs init containers strictly in order. All init containers
+#   must reach Completed status before the main container starts.
+#   The sequence here is:
+#     1. wait-for-db      → confirms DB port is open
+#     2. db-migrate       → applies pending migrations
+#     3. <main container> → starts only when both above succeed
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/_patterns/db-migration-job.yaml (long-running migrations)
+#                cd/kubernetes/_patterns/db-migration-hook.yaml  (Helm pre-upgrade hook)
+#                cd/kubernetes/_base/deployment.yaml             (base deployment pattern)
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app                        # <-- CHANGE THIS
+  namespace: default                  # <-- CHANGE THIS
+  labels:
+    app: my-app                       # <-- CHANGE THIS
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-app                     # <-- CHANGE THIS
+  # Note 1: RollingUpdate ensures pods with the new schema are brought up one at
+  # a time. Because migrations ran in the init container, the new pod already has
+  # the schema the new app version expects — no partial upgrade window.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   # Never take a pod down before the new one is healthy
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: my-app                   # <-- CHANGE THIS
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+
+      initContainers:
+
+        # ── Init 1: wait-for-db ─────────────────────────────────────────
+        # Note 2: This init container spins until the database TCP port is
+        # reachable. Without it, the migration container may fail immediately
+        # if the DB pod restarts (node drain, upgrade, failover) while this
+        # Deployment is being rolled out.
+        # It uses busybox `nc` (netcat) — no extra tools or credentials needed.
+        - name: wait-for-db
+          image: busybox:1.36
+          # Note 3: Run as non-root even for a minimal init container — defence in depth.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534         # nobody
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              echo "[wait-for-db] Waiting for ${DB_HOST}:${DB_PORT}..."
+              until nc -z "${DB_HOST}" "${DB_PORT}"; do
+                echo "[wait-for-db]   not ready — retrying in 3s"
+                sleep 3
+              done
+              echo "[wait-for-db] Database is reachable. Proceeding."
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials  # <-- CHANGE THIS
+                  key: DB_HOST
+            - name: DB_PORT
+              value: "5432"           # <-- CHANGE THIS: 3306=MySQL, 1433=MSSQL, 5984=CouchDB
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"
+
+        # ── Init 2: db-migrate ──────────────────────────────────────────
+        # Note 4: This init container uses the same image as the main application.
+        # That ensures the migration scripts bundled inside the image exactly match
+        # the code that will run — no version skew between migration files and app code.
+        #
+        # activeDeadlineSeconds on the Pod spec (below) acts as a hard timeout for
+        # ALL init containers combined. Set it to a value slightly longer than your
+        # longest expected migration. This prevents a stuck migration from blocking
+        # the rollout indefinitely and holding a PodDisruptionBudget slot.
+        - name: db-migrate
+          image: my-registry/my-app:latest   # <-- CHANGE THIS: same tag as main container
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true      # <-- Set false if your migration tool writes to /tmp
+          # Note 5: Pick ONE command block that matches your migration tool.
+          # All of these tools are idempotent: running them twice leaves the schema unchanged.
+
+          # EF Core (.NET) — requires `dotnet ef` in the image
+          command: ["dotnet", "ef", "database", "update", "--no-build"]
+
+          # Flyway — requires `flyway` in the image
+          # command: ["flyway", "migrate"]
+
+          # Liquibase — requires `liquibase` in the image
+          # command: ["liquibase", "--changelog-file=db/changelog.xml", "update"]
+
+          # Alembic (Python) — requires `alembic` in the image
+          # command: ["alembic", "upgrade", "head"]
+
+          # golang-migrate — requires `migrate` binary in the image
+          # command: ["migrate", "-path", "/migrations", "-database", "$(DATABASE_URL)", "up"]
+
+          # Prisma (Node.js) — requires `npx` in the image
+          # command: ["npx", "prisma", "migrate", "deploy"]
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials  # <-- CHANGE THIS
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_PASSWORD
+            # Note 6: Connection string assembled from individual keys avoids
+            # storing a composed string in Secrets (which must be rotated atomically).
+            # Adjust the format for your driver:
+            #   EF Core / Npgsql:  Host=..;Database=..;Username=..;Password=..
+            #   JDBC:              jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME
+            #   SQLAlchemy:        postgresql+psycopg2://$DB_USER:$DB_PASSWORD@$DB_HOST/$DB_NAME
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=$(DB_HOST);Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"          # <-- CHANGE THIS: Liquibase needs 512Mi-1Gi; Alembic needs ~128Mi
+
+      # Note 7: activeDeadlineSeconds is the wall-clock limit for ALL init containers
+      # combined. If init containers are still running after this many seconds,
+      # Kubernetes kills the pod and marks it Failed.
+      # Set this to (expected_migration_duration_seconds × 2) as a safety margin.
+      # If your migration routinely takes > 5 minutes, switch to db-migration-job.yaml.
+      activeDeadlineSeconds: 300        # <-- CHANGE THIS: 5-minute hard cap
+
+      containers:
+        - name: app
+          image: my-registry/my-app:latest  # <-- CHANGE THIS
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials  # <-- CHANGE THIS
+                  key: DB_HOST
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_PASSWORD
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          readinessProbe:
+            httpGet:
+              path: /healthz       # <-- CHANGE THIS
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz       # <-- CHANGE THIS
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15

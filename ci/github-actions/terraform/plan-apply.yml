@@ -246,3 +246,59 @@ jobs:
             APPLY_ARGS="${APPLY_ARGS} -var-file=${{ env.TF_VAR_FILE }}"
           fi
           terraform apply ${APPLY_ARGS}
+
+  # =============================================
+  # INFRACOST — posts cloud cost diff on every PR
+  # Requires: INFRACOST_API_KEY secret (free at infracost.io)
+  # =============================================
+  infracost:
+    name: Cost Estimation (Infracost)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents:      read
+      pull-requests: write   # Note 1: Required to post the cost comment on the PR
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          # Note 2: Get a free API key at https://www.infracost.io/docs/#2-get-api-key
+          api-key: ${{ secrets.INFRACOST_API_KEY }}   # <-- CHANGE THIS: add to repo secrets
+
+      # Note 3: We generate cost breakdowns for both the base branch and the PR
+      # branch, then diff them so the comment shows only what CHANGED in this PR.
+      - name: Generate cost breakdown — base branch
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout ${{ github.base_ref }}
+          INFRACOST_ARGS="--path ${{ env.TF_WORKING_DIR }} --format json --out-file /tmp/infracost-base.json"
+          if [ -n "${{ env.TF_VAR_FILE }}" ]; then
+            INFRACOST_ARGS="${INFRACOST_ARGS} --terraform-var-file ${{ env.TF_WORKING_DIR }}/${{ env.TF_VAR_FILE }}"
+          fi
+          infracost breakdown ${INFRACOST_ARGS}
+
+      - name: Generate cost breakdown — PR branch
+        run: |
+          git checkout ${{ github.head_ref }}
+          INFRACOST_ARGS="--path ${{ env.TF_WORKING_DIR }} --format json --out-file /tmp/infracost-pr.json"
+          if [ -n "${{ env.TF_VAR_FILE }}" ]; then
+            INFRACOST_ARGS="${INFRACOST_ARGS} --terraform-var-file ${{ env.TF_WORKING_DIR }}/${{ env.TF_VAR_FILE }}"
+          fi
+          infracost breakdown ${INFRACOST_ARGS}
+
+      - name: Post cost diff as PR comment
+        # Note 4: --behavior=update replaces a previous Infracost comment rather than
+        # posting a new one on each commit push, keeping PR threads clean.
+        run: |
+          infracost diff \
+            --path /tmp/infracost-pr.json \
+            --compare-to /tmp/infracost-base.json \
+            --format github-comment \
+            --github-token ${{ secrets.GITHUB_TOKEN }} \
+            --pull-request ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --behavior update

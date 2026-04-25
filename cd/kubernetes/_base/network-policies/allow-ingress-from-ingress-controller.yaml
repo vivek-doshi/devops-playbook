@@ -1,0 +1,44 @@
+# ============================================================
+# TEMPLATE: Allow ingress from the ingress controller
+# WHEN TO USE: Apply this after default-deny to permit HTTP/HTTPS
+#   traffic from the NGINX (or other) ingress controller into
+#   application pods. Without this policy, the ingress controller
+#   cannot forward requests to pods even though an Ingress resource
+#   exists.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: default-deny.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-ingress-controller
+  namespace: default                          # <-- CHANGE THIS: target namespace
+spec:
+  # Note 1: Label-select only the pods that expose an HTTP port.
+  # Adjust the selector to match your application's pod labels.
+  podSelector:
+    matchLabels:
+      app: my-app                             # <-- CHANGE THIS
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        # Note 2: namespaceSelector + podSelector together act as a logical AND —
+        # the source pod must be in the ingress-nginx namespace AND have the
+        # ingress-controller label. This is more specific than allowing the
+        # entire ingress namespace.
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx  # <-- CHANGE THIS: namespace where your ingress controller runs
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx        # <-- CHANGE THIS: label on the ingress controller pod
+
+      ports:
+        - protocol: TCP
+          port: 8080    # <-- CHANGE THIS: port your application container listens on

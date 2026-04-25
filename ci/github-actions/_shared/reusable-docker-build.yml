@@ -36,12 +36,19 @@ on:
       # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       registry-token:
         required: true
+    outputs:
+      # Note 10: Expose the image digest so callers can pass it to the attest
+      # reusable workflow (reusable-attest.yml) for SBOM + cosign signing.
+      image-digest:
+        description: "sha256 digest of the pushed image"
+        value: ${{ jobs.docker-build.outputs.image-digest }}
 
-# Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
+# Note 11: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   docker-build:
-    # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.build-push.outputs.digest }}
     permissions:
       # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       contents: read
@@ -76,6 +83,7 @@ jobs:
             type=ref,event=branch
 
       - name: Build and push
+        id: build-push          # id required so outputs.digest is accessible
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.context }}

@@ -1,0 +1,173 @@
+# ============================================================
+# TEMPLATE: cert-manager Bootstrap — ClusterIssuer + Let's Encrypt
+# WHEN TO USE: First-time cert-manager setup on any Kubernetes cluster.
+#              Provisions TLS certificates automatically via ACME
+#              (Let's Encrypt) for all Ingress resources that reference
+#              the cluster-issuer annotation.
+#
+# INSTALL ORDER:
+#   Step 1 — Install cert-manager CRDs + controller (once per cluster)
+#   Step 2 — Apply this file (ClusterIssuers)
+#   Step 3 — Annotate your Ingress (see _base/ingress.yaml) — done
+#
+# STEP 1 — Install cert-manager via Helm (run once):
+#
+#   helm repo add jetstack https://charts.jetstack.io
+#   helm repo update
+#   helm upgrade --install cert-manager jetstack/cert-manager \
+#     --namespace cert-manager --create-namespace \
+#     --version v1.14.4 \                          # <-- CHANGE THIS: use latest stable
+#     --set crds.enabled=true \
+#     --set global.leaderElection.namespace=cert-manager \
+#     --set prometheus.enabled=true \              # recommended for production
+#     --set webhook.timeoutSeconds=30
+#
+#   # Verify all pods are Running before applying this file:
+#   kubectl get pods -n cert-manager
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/_base/ingress.yaml
+# MATURITY: Stable
+# ============================================================
+
+---
+# ── 1. Staging ClusterIssuer (use FIRST to avoid rate-limit hits) ─────────
+# Let's Encrypt staging has very generous rate limits but produces
+# untrusted certificates.  Use it during initial setup and CI testing.
+#
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: platform@example.com                 # <-- CHANGE THIS: your ops email
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key     # stored in cert-manager namespace
+    solvers:
+      # HTTP-01 challenge: works for any public-facing cluster.
+      # For private clusters or wildcard certs, use DNS-01 (see below).
+      - http01:
+          ingress:
+            ingressClassName: nginx             # <-- CHANGE THIS: match your ingress class
+
+---
+# ── 2. Production ClusterIssuer ──────────────────────────────────────────
+# Only switch to this after staging works — production has strict
+# rate limits (50 certs/domain/week).
+#
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: platform@example.com                 # <-- CHANGE THIS
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx             # <-- CHANGE THIS
+
+---
+# ── 3. DNS-01 ClusterIssuer (for wildcard or private-cluster certs) ───────
+# Uncomment and configure one of the DNS provider blocks.
+# See https://cert-manager.io/docs/configuration/acme/dns01/
+#
+# --- Route53 (AWS) ---
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: letsencrypt-prod-dns
+# spec:
+#   acme:
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     email: platform@example.com
+#     privateKeySecretRef:
+#       name: letsencrypt-prod-dns-key
+#     solvers:
+#       - dns01:
+#           route53:
+#             region: us-east-1               # <-- CHANGE THIS
+#             hostedZoneID: ABCDEF1234567     # <-- CHANGE THIS
+#             role: arn:aws:iam::123456789012:role/cert-manager-route53  # <-- CHANGE THIS (IRSA)
+#
+# --- Azure DNS ---
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: letsencrypt-prod-dns
+# spec:
+#   acme:
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     email: platform@example.com
+#     privateKeySecretRef:
+#       name: letsencrypt-prod-dns-key
+#     solvers:
+#       - dns01:
+#           azureDNS:
+#             subscriptionID: 00000000-0000-0000-0000-000000000000  # <-- CHANGE THIS
+#             resourceGroupName: dns-rg                              # <-- CHANGE THIS
+#             hostedZoneName: example.com                           # <-- CHANGE THIS
+#             environment: AzurePublicCloud
+#             managedIdentity:
+#               clientID: 00000000-0000-0000-0000-000000000000      # <-- CHANGE THIS (workload identity)
+#
+# --- Cloud DNS (GCP) ---
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: letsencrypt-prod-dns
+# spec:
+#   acme:
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     email: platform@example.com
+#     privateKeySecretRef:
+#       name: letsencrypt-prod-dns-key
+#     solvers:
+#       - dns01:
+#           cloudDNS:
+#             project: my-gcp-project         # <-- CHANGE THIS
+#             serviceAccountSecretRef:
+#               name: clouddns-sa-key         # <-- CHANGE THIS: k8s secret holding SA JSON key
+#               key: key.json
+
+---
+# ── 4. Certificate — explicit (optional, Ingress annotation is simpler) ───
+# When you need full control over the Certificate resource, define it
+# explicitly instead of relying on cert-manager's ingress-shim.
+# Most teams just use the annotation on the Ingress and skip this.
+#
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: app-tls
+#   namespace: default               # <-- CHANGE THIS: must match the Ingress namespace
+# spec:
+#   secretName: app-tls              # must match Ingress tls[].secretName
+#   duration: 2160h                  # 90 days (Let's Encrypt default)
+#   renewBefore: 360h                # renew 15 days before expiry
+#   issuerRef:
+#     name: letsencrypt-prod
+#     kind: ClusterIssuer
+#   dnsNames:
+#     - app.example.com              # <-- CHANGE THIS
+#     - "*.app.example.com"          # wildcard — requires DNS-01 issuer above
+
+---
+# ── 5. Ingress reference reminder ────────────────────────────────────────
+# Your Ingress (cd/kubernetes/_base/ingress.yaml) already has:
+#
+#   annotations:
+#     cert-manager.io/cluster-issuer: letsencrypt-prod
+#   spec:
+#     tls:
+#       - hosts: [app.example.com]
+#         secretName: app-tls
+#
+# That is all cert-manager needs to issue and renew the certificate.
+# cert-manager watches for Ingress resources with this annotation and
+# creates a Certificate object automatically (ingress-shim).

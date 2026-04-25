@@ -1,0 +1,39 @@
+# ============================================================
+# TEMPLATE: Allow egress from app pods to the database
+# WHEN TO USE: Apply this to namespaces that run application pods
+#   that connect to a PostgreSQL (or other) database running in a
+#   separate namespace. Allows only the required port; all other
+#   egress remains blocked by default-deny.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: default-deny.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-database
+  namespace: default          # <-- CHANGE THIS: namespace where app pods run
+spec:
+  podSelector:
+    matchLabels:
+      app: my-app             # <-- CHANGE THIS: label that identifies the app pods needing DB access
+
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        # Note 1: namespaceSelector restricts this rule to pods inside the
+        # database namespace. Using both namespaceSelector + podSelector
+        # requires the traffic to originate from a pod matching BOTH selectors.
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: database   # <-- CHANGE THIS: namespace where DB pods run
+          podSelector:
+            matchLabels:
+              app: postgres                           # <-- CHANGE THIS: label on DB pods
+      ports:
+        - protocol: TCP
+          port: 5432    # <-- CHANGE THIS: 5432 = PostgreSQL, 3306 = MySQL, 1433 = MSSQL, 6379 = Redis
