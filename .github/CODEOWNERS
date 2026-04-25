@@ -46,6 +46,8 @@ notifications/                  @vivek-doshi
 # Documentation ownership.
 docs/                           @vivek-doshi
 *.md                            @vivek-doshi
+# Explicitly leave this file unowned.
+SETUP_GITHUB_PAGES.md
 
 # ── GitHub config files ───────────────────────────────────────────────────────
 # GitHub config ownership.

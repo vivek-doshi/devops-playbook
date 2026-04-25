@@ -19,7 +19,7 @@ const EXCLUDE_PATTERNS = [
 
 const EXCLUDE_EXTENSIONS = ['.txt', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.drawio'];
 const BINARY_EXTENSIONS = ['.pdf'];
-const EXCLUDE_FILE_NAMES = ['license', 'readme', 'getting_started'];
+const EXCLUDE_FILE_NAMES = ['license', 'readme', 'getting_started', 'setup_github_pages'];
 
 function shouldExclude(filePath) {
   const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
