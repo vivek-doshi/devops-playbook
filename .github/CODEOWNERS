@@ -2,52 +2,51 @@
 #
 # Syntax: <pattern> <owner> [<owner> ...]
 # Rules are evaluated last-to-first; the last matching rule wins.
-# Teams must exist in your GitHub org before being used here.
-# Individual fallback: add @github-username for contributors without a team.
+# This repository uses an individual owner model.
+# Add additional @github-username entries on a line if you want shared ownership.
 #
-# Replace team slugs below with your actual GitHub org/team names.
-# Format: @org-name/team-slug   or   @github-username
+# Owner format: @github-username
 #
 # Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # ── Default fallback ──────────────────────────────────────────────────────────
 # Catches anything not matched by a more specific rule below.
-*                               @your-org/platform-team                 # <-- CHANGE THIS
+*                               @vivek-doshi
 
 # ── CI Pipelines ──────────────────────────────────────────────────────────────
-# Platform / DevOps team owns all CI definitions.
-ci/                             @your-org/platform-team                 # <-- CHANGE THIS
-.github/workflows/              @your-org/platform-team                 # <-- CHANGE THIS
+# CI ownership.
+ci/                             @vivek-doshi
+.github/workflows/              @vivek-doshi
 
 # ── CD / Deployment ───────────────────────────────────────────────────────────
-cd/                             @your-org/platform-team                 # <-- CHANGE THIS
-cd/kubernetes/                  @your-org/platform-team                 # <-- CHANGE THIS
+cd/                             @vivek-doshi
+cd/kubernetes/                  @vivek-doshi
 
 # ── Terraform / Infrastructure ────────────────────────────────────────────────
-# Infrastructure team owns all IaC. Platform team is secondary reviewer.
-terraform/                      @your-org/infra-team                    # <-- CHANGE THIS
-cd/pulumi/                      @your-org/infra-team                    # <-- CHANGE THIS
+# Infrastructure ownership.
+terraform/                      @vivek-doshi
+cd/pulumi/                      @vivek-doshi
 
 # ── Security ─────────────────────────────────────────────────────────────────
-# Security team must review any change to scanning configs or policies.
-security/                       @your-org/security-team                 # <-- CHANGE THIS
-policy/                         @your-org/security-team                 # <-- CHANGE THIS
-docker/_base/security-hardened.Dockerfile @your-org/security-team      # <-- CHANGE THIS
+# Security ownership.
+security/                       @vivek-doshi
+policy/                         @vivek-doshi
+docker/_base/security-hardened.Dockerfile @vivek-doshi
 
 # ── Application Dockerfiles ───────────────────────────────────────────────────
-# App team owns stack-specific Dockerfiles; platform team reviews base images.
-docker/                         @your-org/app-team                      # <-- CHANGE THIS
-docker/_base/                   @your-org/platform-team                 # <-- CHANGE THIS
+# Application Docker ownership.
+docker/                         @vivek-doshi
+docker/_base/                   @vivek-doshi
 
 # ── Observability ─────────────────────────────────────────────────────────────
-observability/                  @your-org/platform-team                 # <-- CHANGE THIS
-notifications/                  @your-org/platform-team                 # <-- CHANGE THIS
+observability/                  @vivek-doshi
+notifications/                  @vivek-doshi
 
 # ── Documentation ─────────────────────────────────────────────────────────────
-# Docs are open contribution — only require platform team for structural guides.
-docs/                           @your-org/platform-team                 # <-- CHANGE THIS
-*.md                            @your-org/platform-team                 # <-- CHANGE THIS
+# Documentation ownership.
+docs/                           @vivek-doshi
+*.md                            @vivek-doshi
 
 # ── GitHub config files ───────────────────────────────────────────────────────
-# Changes to repo config require platform team sign-off.
-.github/                        @your-org/platform-team                 # <-- CHANGE THIS
+# GitHub config ownership.
+.github/                        @vivek-doshi
