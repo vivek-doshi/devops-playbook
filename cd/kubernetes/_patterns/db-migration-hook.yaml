@@ -1,0 +1,200 @@
+# ============================================================
+# TEMPLATE: Database Migration — Helm Pre-Upgrade Hook
+# WHEN TO USE: When you manage your application with Helm and want
+#   migrations to run automatically before every `helm upgrade`.
+#   The upgrade will block until this Job succeeds or fails.
+#
+# HOW HELM HOOKS WORK:
+#   Helm pauses the upgrade lifecycle at the hook phase, waits for all
+#   pre-upgrade Jobs to complete (exit 0), then proceeds with the chart
+#   upgrade. If the Job fails (non-zero exit), Helm marks the release
+#   FAILED and rolls back to the previous revision automatically.
+#
+# DECISION GUIDE:
+#   - Using Helm charts → use this file
+#   - Not using Helm, migration < 5 min → use db-migration-init-container.yaml
+#   - Not using Helm, migration > 5 min → use db-migration-job.yaml
+#
+# PLACEMENT IN YOUR CHART:
+#   Copy this file to: <chart-root>/templates/db-migration-hook.yaml
+#   The values it references (image.repository, image.tag, etc.) follow
+#   the naming convention in cd/helm/webapp/values.yaml.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/_patterns/db-migration-job.yaml
+#                cd/kubernetes/_patterns/db-migration-init-container.yaml
+#                cd/helm/webapp/templates/deployment.yaml
+#                docs/guides/database-migrations.md
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-db-migrate-{{ .Values.image.tag | replace \".\" \"-\" | trunc 20 }}"   # <-- CHANGE THIS: must be unique per release
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app: "{{ .Release.Name }}"
+    component: db-migrate
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # Note 1: `pre-upgrade,pre-install` runs this Job before both first installs
+    # and all subsequent upgrades. This covers the "brand-new cluster" case
+    # where there is no schema at all.
+    "helm.sh/hook": pre-upgrade,pre-install
+
+    # Note 2: Hook weight controls ordering when multiple pre-upgrade hooks exist.
+    # Lower (more negative) weights run first. Use -10 for infra setup, -5 for migrations,
+    # 0 for seed data. Migrations should always run after schema bootstrapping but before
+    # any seed-data hooks.
+    "helm.sh/hook-weight": "-5"
+
+    # Note 3: `before-hook-creation` deletes any previous Job object with the same
+    # name before creating a new one. Without this, Helm fails if the previous Job
+    # still exists (e.g., a failed migration that was never cleaned up).
+    # Do NOT use `hook-succeeded` here — keep failed Job objects so you can inspect logs.
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  # Note 4: backoffLimit: 0 means the Job will NOT retry a failed pod.
+  # Retrying a partially-applied migration is dangerous unless your migration
+  # tool is strictly idempotent. If you are certain your tool handles retries
+  # (Flyway, Liquibase, EF Core, Alembic all do), increase this to 2 or 3.
+  backoffLimit: 0                     # <-- CHANGE THIS: 0 for non-idempotent tools, 2-3 for idempotent tools
+
+  # Note 5: The Helm upgrade will wait for this Job to finish. If the Job does
+  # not finish (success or failure) within activeDeadlineSeconds, Kubernetes
+  # marks it Failed, which causes Helm to mark the release FAILED and roll back.
+  # Set this to (expected_migration_seconds × 3) to allow for transient DB slowness.
+  activeDeadlineSeconds: 1800         # <-- CHANGE THIS: 30-minute default; adjust for your slowest migration
+
+  # Note 6: Completed Job objects are cleaned up automatically after 1 hour.
+  # Failed Jobs are NOT covered by ttlSecondsAfterFinished — you need to clean them
+  # manually (or inspect them for debugging). This is intentional: failed migrations
+  # should be visible for post-mortem, not silently garbage-collected.
+  ttlSecondsAfterFinished: 3600
+
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}"
+        component: db-migrate
+    spec:
+      restartPolicy: Never           # Note 7: Never — if the container exits non-zero, the Job fails
+                                     # (backoffLimit controls re-creation of pods, not container restarts)
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+
+      serviceAccountName: "{{ .Values.serviceAccount.name | default \"default\" }}"  # <-- CHANGE THIS
+
+      initContainers:
+        # Note 8: Even in the hook Job, we wait for the DB to be reachable.
+        # During a cluster node drain or DB failover, the migration may be
+        # triggered while the DB is temporarily unavailable.
+        - name: wait-for-db
+          image: busybox:1.36
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              echo "[wait-for-db] Waiting for ${DB_HOST}:${DB_PORT}..."
+              until nc -z "${DB_HOST}" "${DB_PORT}"; do
+                echo "[wait-for-db]   not ready — retrying in 3s"
+                sleep 3
+              done
+              echo "[wait-for-db] Database is up. Starting migration."
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secretName | default \"app-db-credentials\" }}"  # <-- CHANGE THIS
+                  key: DB_HOST
+            - name: DB_PORT
+              value: "{{ .Values.db.port | default \"5432\" }}"                          # <-- CHANGE THIS
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"
+
+      containers:
+        - name: db-migrate
+          # Note 9: Use the same image as the main application container to guarantee
+          # that the migration scripts embedded in the image match the code that will
+          # be deployed. The tag comes from .Values.image.tag — the same value used
+          # by the Deployment template — so they always advance together.
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"  # <-- CHANGE THIS
+          imagePullPolicy: "{{ .Values.image.pullPolicy | default \"IfNotPresent\" }}"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true   # <-- Set false if migration tool writes temp files
+
+          # Note 10: Pick ONE command block. Delete the others.
+          # All listed tools are idempotent — running twice is safe.
+
+          # EF Core (.NET)
+          command: ["dotnet", "ef", "database", "update", "--no-build"]
+
+          # Flyway
+          # command: ["flyway", "migrate"]
+
+          # Liquibase
+          # command: ["liquibase", "--changelog-file=db/changelog.xml", "update"]
+
+          # Alembic (Python)
+          # command: ["alembic", "upgrade", "head"]
+
+          # golang-migrate
+          # command: ["migrate", "-path", "/migrations", "-database", "$(DATABASE_URL)", "up"]
+
+          # Prisma (Node.js)
+          # command: ["npx", "prisma", "migrate", "deploy"]
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secretName | default \"app-db-credentials\" }}"  # <-- CHANGE THIS
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secretName | default \"app-db-credentials\" }}"
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secretName | default \"app-db-credentials\" }}"
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secretName | default \"app-db-credentials\" }}"
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secretName | default \"app-db-credentials\" }}"
+                  key: DB_PASSWORD
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=$(DB_HOST);Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)"
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"           # <-- CHANGE THIS: Liquibase/Flyway may need more

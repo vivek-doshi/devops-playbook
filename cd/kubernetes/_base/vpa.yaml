@@ -1,0 +1,90 @@
+# ============================================================
+# TEMPLATE: Kubernetes VerticalPodAutoscaler (VPA)
+# WHEN TO USE: Get CPU/memory request recommendations for pods
+#   that are over- or under-resourced. Start in "Off" mode to
+#   observe recommendations before enabling automatic updates.
+# PREREQUISITES:
+#   - VPA controller installed (see install command below)
+#   - Metrics Server installed (VPA depends on it for recommendations)
+# INSTALL VPA CONTROLLER:
+#   kubectl apply -f https://github.com/kubernetes/autoscaler/releases/latest/download/vertical-pod-autoscaler.yaml
+#   # Or via Helm:
+#   helm repo add fairwinds-stable https://charts.fairwinds.com/stable
+#   helm upgrade --install vpa fairwinds-stable/vpa --namespace vpa --create-namespace
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   cd/kubernetes/_base/deployment.yaml
+#   cd/kubernetes/_base/hpa.yaml
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: VPA update modes explained:
+#   "Off"      — Recommendations only. VPA never modifies pods. Safest starting point.
+#                Read recommendations with: kubectl describe vpa app-vpa
+#   "Initial"  — Sets resources only on pod CREATION. Running pods are not evicted.
+#                Safe for stateful workloads that should not be interrupted.
+#   "Recreate" — Evicts and recreates pods when resources are significantly off.
+#                Use only if your workload tolerates restarts.
+#   "Auto"     — Currently behaves like "Recreate". Future versions may add in-place
+#                resize (in-place resource resize graduated to stable in k8s 1.33).
+#
+# CRITICAL WARNING — VPA + HPA combination rules:
+#   - NEVER run VPA (Recreate/Auto) together with HPA (cpu/memory) targets.
+#     VPA changes resource requests → HPA recalculates CPU utilisation %
+#     against new requests → HPA scales unexpectedly. This creates a fight loop.
+#   - SAFE combinations:
+#     a) VPA (Off) + HPA (cpu/memory) — VPA provides info only, HPA owns scaling
+#     b) VPA (Auto) + HPA (custom metrics: RPS, queue depth) — each owns different axis
+#     c) VPA (Auto) alone — VPA owns vertical scaling, no HPA
+#   - If using HPA with CPU/memory targets (as in hpa.yaml), keep VPA in "Off" mode.
+
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: app-vpa                 # <-- CHANGE THIS: match your deployment name
+  namespace: default            # <-- CHANGE THIS
+spec:
+  targetRef:
+    # Note 2: targetRef points to the workload VPA should manage.
+    # Supported: Deployment, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob.
+    apiVersion: apps/v1
+    kind:       Deployment
+    name:       app             # <-- CHANGE THIS: must match Deployment metadata.name
+
+  updatePolicy:
+    # Note 3: Start with "Off" to collect recommendations without touching pods.
+    # Read current recommendation:
+    #   kubectl describe vpa app-vpa | grep -A 20 "Recommendation:"
+    # Switch to "Initial" after validating recommendations are reasonable.
+    updateMode: "Off"           # <-- CHANGE THIS: Off | Initial | Recreate | Auto
+
+  resourcePolicy:
+    containerPolicies:
+      - containerName: app      # <-- CHANGE THIS: match your container name in deployment.yaml
+        # Note 4: minAllowed prevents VPA from recommending values so low that the
+        # container becomes unstable. Always set a floor for production workloads.
+        minAllowed:
+          cpu:    "50m"         # <-- CHANGE THIS: minimum CPU the container needs
+          memory: "64Mi"        # <-- CHANGE THIS: minimum memory the container needs
+        # Note 5: maxAllowed caps recommendations to prevent VPA from requesting
+        # resources the node cannot provide. Set to ~70-80% of your largest node size.
+        maxAllowed:
+          cpu:    "2"           # <-- CHANGE THIS: maximum CPU this container should use
+          memory: "1Gi"         # <-- CHANGE THIS: maximum memory this container should use
+        # Note 6: controlledResources defaults to [cpu, memory]. Set to ["memory"] only
+        # if you want HPA to manage CPU (and VPA should only manage memory).
+        controlledResources: ["cpu", "memory"]  # <-- CHANGE THIS if using VPA+HPA
+        # Note 7: controlledValues:
+        #   "RequestsAndLimits" — VPA adjusts both requests and limits (maintains ratio)
+        #   "RequestsOnly"      — VPA adjusts requests only, leaves limits unchanged.
+        #                         Preferred when you want predictable limits.
+        controlledValues: RequestsAndLimits
+
+      # Repeat for each container in the pod (init containers, sidecars, etc.)
+      # - containerName: sidecar   # <-- CHANGE THIS
+      #   minAllowed:
+      #     cpu:    "10m"
+      #     memory: "32Mi"
+      #   maxAllowed:
+      #     cpu:    "500m"
+      #     memory: "256Mi"

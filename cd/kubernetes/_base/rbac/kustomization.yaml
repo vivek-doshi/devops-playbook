@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - readonly-developer.yaml   # ClusterRole + ClusterRoleBinding: read-only for all developers
+  - ci-deployer.yaml          # ServiceAccount + Role + RoleBinding: CI/CD pipeline deployer
+  - namespace-admin.yaml      # Role + RoleBinding: full namespace admin for a team

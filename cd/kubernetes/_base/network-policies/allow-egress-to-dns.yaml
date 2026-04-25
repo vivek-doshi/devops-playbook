@@ -1,0 +1,39 @@
+# ============================================================
+# TEMPLATE: Allow egress to CoreDNS (DNS resolution)
+# WHEN TO USE: Apply this after default-deny in every namespace.
+#   Without DNS egress, pods cannot resolve any hostname including
+#   Kubernetes service names, which breaks virtually every workload.
+#   This is almost always the first allow-egress rule you need.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: default-deny.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-dns
+  namespace: default          # <-- CHANGE THIS: apply to each namespace that needs DNS
+spec:
+  podSelector: {}             # Note 1: applies to all pods in the namespace
+
+  policyTypes:
+    - Egress
+
+  egress:
+    # Note 2: CoreDNS runs in kube-system on port 53 (UDP and TCP).
+    # UDP is used for queries that fit in a single packet; TCP is the
+    # fallback for large responses. Both must be allowed.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

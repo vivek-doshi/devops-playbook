@@ -1,0 +1,27 @@
+# ============================================================
+# TEMPLATE: Default Deny — all ingress and egress
+# WHEN TO USE: Apply this first in every namespace before any
+#   allow policies. It establishes a zero-trust baseline: no pod
+#   can receive or send traffic unless explicitly permitted.
+#
+# APPLY ORDER: This policy must be applied BEFORE any allow policies.
+# RELATED FILES: allow-ingress-from-ingress-controller.yaml
+#                allow-egress-to-dns.yaml
+#                allow-egress-to-database.yaml
+#                allow-prometheus-scrape.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: default           # <-- CHANGE THIS: apply to each namespace individually
+spec:
+  podSelector: {}              # Note 1: empty podSelector matches ALL pods in the namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  # Note 2: No ingress/egress rules defined = deny all traffic.
+  # Add allow policies in separate files — one concern per file —
+  # so the intent of each permission is clear and reviewable.

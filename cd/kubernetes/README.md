@@ -7,9 +7,12 @@ Raw K8s manifests using Kustomize for environment promotion.
 ## Structure
 
 - `_base/`: Base configuration applied to all environments
+  - `cert-manager-bootstrap.yaml` — Install cert-manager ClusterIssuers (Let's Encrypt staging + prod). Apply this **before** any Ingress that uses `cert-manager.io/cluster-issuer`.
 <!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - `_overlays/dev|staging|prod`: Environment-specific patches
 - `_patterns/`: Advanced deployment patterns (blue-green, canary)
+  - `db-migration-job.yaml` — Pre-deploy database migration Job with rollback Job. Run before `Deployment` rollout.
+  - `velero-backup.yaml` — Scheduled cluster backups (daily + weekly) and on-demand pre-release snapshots.
 
 <!-- Note 4: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 ## Usage

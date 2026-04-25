@@ -1,0 +1,176 @@
+# ============================================================
+# TEMPLATE: Kubernetes RBAC — ServiceAccounts, Roles, RoleBindings
+# WHEN TO USE: Grant least-privilege access to users, groups, and
+#   workloads within a namespace. Three common personas are included:
+#     1. developer  — read-only access to observe running workloads
+#     2. ci-deploy  — deploy access for CI pipelines (no secret read)
+#     3. ns-admin   — full namespace control for namespace owners
+# PREREQUISITES:
+#   - Kubernetes >= 1.20 (stable RBAC API)
+#   - Namespace must exist before applying RoleBindings
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   cd/kubernetes/_base/deployment.yaml
+#   cd/kubernetes/_base/configmap.yaml
+# MATURITY: Stable
+# ============================================================
+
+# ──────────────────────────────────────────────────────────────────────────
+# PERSONA 1: Developer (read-only)
+# Purpose: Let developers view running resources without modifying anything.
+# Typical subjects: AD groups, individual users, dev-facing service accounts
+# ──────────────────────────────────────────────────────────────────────────
+
+# Note 1: A ServiceAccount is for workloads (pods). For human users, skip the
+# ServiceAccount and set subject.kind: User or Group in the RoleBinding instead.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: developer               # <-- CHANGE THIS: e.g., team-name-developer
+  namespace: default            # <-- CHANGE THIS
+  annotations:
+    # Note 2: Description annotations help future operators understand purpose.
+    description: "Read-only access for developers to observe namespace resources"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer-role
+  namespace: default            # <-- CHANGE THIS
+rules:
+  # Note 3: Principle of least privilege — list only the specific resources
+  # and verbs this persona actually needs. Avoid wildcards (*) in production.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints", "configmaps", "events"]
+    verbs:     ["get", "list", "watch"]
+
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs:     ["get", "list", "watch"]
+
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs:     ["get", "list", "watch"]
+
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs:     ["get", "list", "watch"]
+
+  # Note 4: Developers do NOT get secrets access here. To allow reading
+  # non-sensitive secret metadata (not values), add a separate rule:
+  # - apiGroups: [""] resources: ["secrets"] verbs: ["list"]
+  # Never grant: secrets/get, secrets/watch — these expose secret values.
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-rolebinding
+  namespace: default            # <-- CHANGE THIS
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind:     Role
+  name:     developer-role
+subjects:
+  # Note 5: Bind the Role to a ServiceAccount (for pod workloads) and/or
+  # a Group (for human users authenticated via your IdP/OIDC provider).
+  - kind:      ServiceAccount
+    name:      developer
+    namespace: default          # <-- CHANGE THIS
+  # - kind:  Group
+  #   name:  "team-platform-developers"   # <-- CHANGE THIS: OIDC group claim
+  #   apiGroup: rbac.authorization.k8s.io
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# PERSONA 2: CI/CD Pipeline (deploy access)
+# Purpose: Allow a CI system to deploy workloads without read access to secrets.
+# Typical subjects: GitHub Actions OIDC service account, Jenkins agent SA
+# ──────────────────────────────────────────────────────────────────────────
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-deploy               # <-- CHANGE THIS: e.g., github-actions-deploy
+  namespace: default            # <-- CHANGE THIS
+  annotations:
+    description: "CI/CD pipeline deploy account — least-privilege deployment access"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deploy-role
+  namespace: default            # <-- CHANGE THIS
+rules:
+  # Note 6: CI needs to create and update Deployments, ConfigMaps, and Services.
+  # It does NOT need to delete them (prevents accidental teardown from pipelines).
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs:     ["get", "list", "watch", "create", "update", "patch"]
+
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs:     ["get", "list", "watch", "create", "update", "patch"]
+
+  # Note 7: CI needs to read pod status to verify rollout health
+  # (e.g., kubectl rollout status deployment/app).
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events"]
+    verbs:     ["get", "list", "watch"]
+
+  # Note 8: If your CI creates or rotates Kubernetes Secret objects (e.g., for
+  # image pull secrets), add this. Remove if CI should not touch secrets at all.
+  # - apiGroups: [""] resources: ["secrets"] verbs: ["get", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deploy-rolebinding
+  namespace: default            # <-- CHANGE THIS
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind:     Role
+  name:     ci-deploy-role
+subjects:
+  - kind:      ServiceAccount
+    name:      ci-deploy
+    namespace: default          # <-- CHANGE THIS
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# PERSONA 3: Namespace Admin (full namespace control)
+# Purpose: Allow a team lead or platform engineer to fully manage a namespace.
+# Uses a ClusterRole binding to a namespace (NOT a ClusterRoleBinding).
+# ──────────────────────────────────────────────────────────────────────────
+
+# Note 9: We use the built-in "admin" ClusterRole here rather than a custom one.
+# The "admin" ClusterRole grants full control of namespace-scoped resources
+# but NOT cluster-scoped resources (nodes, namespaces, PVs, ClusterRoles, etc.).
+# This is why we bind it via a RoleBinding (namespace-scoped), not a
+# ClusterRoleBinding (cluster-scoped) — preventing privilege escalation.
+#
+# NEVER use ClusterRoleBinding with "admin" or "cluster-admin" unless the
+# subject genuinely needs cluster-wide access. Prefer RoleBinding always.
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ns-admin-rolebinding
+  namespace: default            # <-- CHANGE THIS
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind:     ClusterRole         # Note 10: Referencing ClusterRole but binding via RoleBinding
+  name:     admin               # built-in k8s ClusterRole — full namespace access
+subjects:
+  - kind:      ServiceAccount
+    name:      ns-admin         # <-- CHANGE THIS: the SA that should have admin access
+    namespace: default          # <-- CHANGE THIS
+  # - kind:  Group
+  #   name:  "team-platform-leads"   # <-- CHANGE THIS: OIDC group claim
+  #   apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,52 @@
+# ============================================================
+# TEMPLATE: ClusterIssuer — Let's Encrypt Staging
+# WHEN TO USE: Use this issuer during initial setup and testing.
+#   Let's Encrypt staging has much higher rate limits and issues
+#   certificates trusted only by its staging root CA (not browsers).
+#   Validate the full flow here before switching to the production issuer.
+#
+# PREREQUISITES:
+#   1. cert-manager installed:
+#        helm repo add jetstack https://charts.jetstack.io
+#        helm install cert-manager jetstack/cert-manager \
+#          --namespace cert-manager \
+#          --create-namespace \
+#          --set crds.enabled=true \
+#          --version v1.14.0        # <-- CHANGE THIS: pin to a version
+#   2. Ingress controller with a publicly reachable IP/hostname
+#      (required for HTTP-01 challenge)
+#   3. DNS A/CNAME record pointing to the ingress IP
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/cert-manager/cluster-issuer-prod.yaml
+#                cd/kubernetes/cert-manager/README.md
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # Note 1: The staging ACME endpoint issues certificates signed by
+    # "Fake LE Root X1". These are NOT trusted by browsers but let you
+    # verify the full certificate issuance flow without hitting production
+    # rate limits (50 certificates/domain/week for prod vs. 30k for staging).
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+
+    email: devops@example.com   # <-- CHANGE THIS: Let's Encrypt will send expiry warnings here
+
+    # Note 2: cert-manager stores the ACME account private key in a Kubernetes
+    # Secret. This is NOT your TLS certificate — it authenticates your account
+    # with Let's Encrypt. Keep it backed up.
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key   # Must be unique per issuer
+
+    solvers:
+      # Note 3: HTTP-01 challenge tells Let's Encrypt to verify domain ownership
+      # by placing a token at http://<domain>/.well-known/acme-challenge/<token>.
+      # Your ingress must allow port 80 traffic (even if you redirect to 443).
+      - http01:
+          ingress:
+            class: nginx                      # <-- CHANGE THIS: your IngressClass name (nginx, traefik, haproxy, etc.)

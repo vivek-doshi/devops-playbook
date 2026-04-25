@@ -1,0 +1,289 @@
+# ============================================================
+# TEMPLATE: Database Migration Job (Kubernetes)
+# WHEN TO USE: Run schema migrations safely before a new app version
+#              is deployed.  Works with any migration tool that runs
+#              as a CLI command (Flyway, Liquibase, EF Core, Alembic,
+#              golang-migrate, Prisma, Rails, etc.).
+#
+# STRATEGY:
+#   1. CI pipeline builds the app image (includes migration tooling).
+#   2. This Job runs first — it is idempotent and uses advisory locks
+#      so only one pod wins even during parallel deploys.
+#   3. The Deployment rollout begins only after the Job succeeds.
+#   4. On failure the Job is retried backoffLimit times, then the
+#      pipeline fails and the Deployment is never updated.
+#
+# ROLLBACK STRATEGY:
+#   - Always write backward-compatible migrations (expand/contract pattern).
+#   - Use a separate "rollback Job" (see bottom of file) rather than
+#     kubectl rollout undo — that only rolls back the app, not the schema.
+#   - Keep N-1 migration rollback scripts tested in CI.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/_patterns/init-containers.yaml (lighter pattern)
+#                cd/kubernetes/_base/deployment.yaml
+# MATURITY: Stable
+# ============================================================
+
+---
+# ── 1. Migration Job ─────────────────────────────────────────────────────
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate-{{ .Release.Name }}-{{ .Values.image.tag | replace "." "-" }}  # <-- CHANGE THIS: unique per release
+  namespace: default                        # <-- CHANGE THIS
+  labels:
+    app: my-app                             # <-- CHANGE THIS
+    component: db-migrate
+    version: "{{ .Values.image.tag }}"      # <-- CHANGE THIS: use your image tag variable
+  annotations:
+    # Helm: run this Job before the Deployment upgrade
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  # Retry up to 3 times before marking the Job Failed.
+  # Each attempt runs a fresh Pod — connection drops and transient DB
+  # errors are retried without re-running succeeded migrations (idempotent).
+  backoffLimit: 3
+
+  # Hard cap: if migrations take > 10 minutes something is wrong.
+  activeDeadlineSeconds: 600              # <-- CHANGE THIS
+
+  # Keep the last 3 succeeded and 1 failed Job for post-mortem.
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+
+  template:
+    metadata:
+      labels:
+        app: my-app
+        component: db-migrate
+    spec:
+      restartPolicy: OnFailure
+
+      # Run as non-root
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+
+      # Give the migration pod an RBAC-scoped service account with no
+      # extra Kubernetes permissions — it only needs DB access.
+      serviceAccountName: db-migrate-sa   # <-- CHANGE THIS or remove if using default
+
+      initContainers:
+        # Wait until the DB is accepting connections before attempting migration.
+        # This prevents spurious Job failures during DB startup / failover.
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for database at $DB_HOST:$DB_PORT..."
+              until nc -z "$DB_HOST" "$DB_PORT"; do
+                echo "  not ready — sleeping 3s"
+                sleep 3
+              done
+              echo "Database is up"
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials  # <-- CHANGE THIS
+                  key: DB_HOST
+            - name: DB_PORT
+              value: "5432"               # <-- CHANGE THIS: 3306 for MySQL
+
+      containers:
+        - name: migrate
+          image: my-registry/my-app:latest  # <-- CHANGE THIS: same image as deployment
+          imagePullPolicy: Always
+
+          # ── Pick ONE of the command examples below ──────────────────────
+
+          # Flyway
+          # command: ["flyway", "migrate"]
+
+          # Liquibase
+          # command: ["liquibase", "--changelog-file=db/changelog.xml", "update"]
+
+          # EF Core (.NET)
+          command: ["dotnet", "ef", "database", "update", "--no-build"]
+
+          # Alembic (Python)
+          # command: ["alembic", "upgrade", "head"]
+
+          # golang-migrate
+          # command: ["migrate", "-path", "/migrations", "-database", "$(DATABASE_URL)", "up"]
+
+          # Prisma
+          # command: ["npx", "prisma", "migrate", "deploy"]
+
+          # ────────────────────────────────────────────────────────────────
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials  # <-- CHANGE THIS
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_PASSWORD
+            # Convenience connection string built from individual keys (EF Core / ADO.NET)
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=$(DB_HOST);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)"
+
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+          # Mount a writable tmp dir if the migration tool needs to write temp files
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+# ── 2. Service Account for the migration Job ─────────────────────────────
+# Minimal permissions — the Job needs no Kubernetes API access.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: db-migrate-sa
+  namespace: default              # <-- CHANGE THIS
+  labels:
+    app: my-app
+    component: db-migrate
+  # For IRSA (EKS) or Workload Identity (AKS/GKE), annotate the SA here:
+  # annotations:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/db-migrate-role
+  #   azure.workload.identity/client-id: <client-id>
+
+---
+# ── 3. Rollback Job ───────────────────────────────────────────────────────
+# Run this MANUALLY (kubectl apply) when a release must be reverted.
+# Do NOT automate rollback — a human should decide when a schema rollback
+# is safe because it may involve data loss.
+#
+# Usage:
+#   kubectl apply -f db-migration-job.yaml --selector app=my-app,component=db-rollback
+#   kubectl wait --for=condition=complete job/db-rollback-v1-2-0 --timeout=300s
+#   kubectl rollout undo deployment/my-app   # roll back app AFTER schema
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-rollback-v1-2-0          # <-- CHANGE THIS: match the target version
+  namespace: default                 # <-- CHANGE THIS
+  labels:
+    app: my-app
+    component: db-rollback
+spec:
+  backoffLimit: 1                    # Fail fast on rollback — don't keep retrying
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: my-app
+        component: db-rollback
+    spec:
+      restartPolicy: Never           # Never retry a rollback automatically
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: db-migrate-sa
+      containers:
+        - name: rollback
+          image: my-registry/my-app:v1.2.0  # <-- CHANGE THIS: the PREVIOUS stable version
+          imagePullPolicy: Always
+
+          # ── Pick the rollback command matching your migration tool ────────
+
+          # Flyway — roll back to version 5
+          # command: ["flyway", "undo", "-target=5"]
+
+          # Liquibase — roll back last 1 change
+          # command: ["liquibase", "rollback-count", "1"]
+
+          # EF Core — roll back to a specific migration name
+          command: ["dotnet", "ef", "database", "update", "PreviousMigrationName", "--no-build"]
+
+          # Alembic — roll back to a specific revision
+          # command: ["alembic", "downgrade", "-1"]
+
+          # golang-migrate — roll back 1 step
+          # command: ["migrate", "-path", "/migrations", "-database", "$(DATABASE_URL)", "down", "1"]
+
+          # ─────────────────────────────────────────────────────────────────
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-credentials
+                  key: DB_PASSWORD
+
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp
+          emptyDir: {}

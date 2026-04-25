@@ -1,5 +1,5 @@
 ﻿import React, { useEffect } from 'react';
-import { Copy, ExternalLink, Info, Tag, Wrench, FileText, Shield, Link } from 'lucide-react';
+import { Copy, Download, ExternalLink, Info, Tag, Wrench, FileText, Shield, Link } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-yaml';
@@ -11,6 +11,10 @@ import 'prismjs/components/prism-java';
 import 'prismjs/components/prism-docker';
 import 'prismjs/components/prism-go';
 import 'prismjs/components/prism-ruby';
+import 'prismjs/components/prism-hcl';
+import 'prismjs/components/prism-powershell';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './CodeViewer.css';
 
 interface FileItem {
@@ -109,14 +113,16 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file }) => {
           <span className="file-size">{(file.size / 1024).toFixed(1)} KB</span>
         </div>
         <div className="code-actions">
-          <button
-            className={`action-btn ${copied ? 'copied' : ''}`}
-            onClick={handleCopy}
-            title="Copy to clipboard"
-          >
-            <Copy size={16} />
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+          {file.language !== 'pdf' && (
+            <button
+              className={`action-btn ${copied ? 'copied' : ''}`}
+              onClick={handleCopy}
+              title="Copy to clipboard"
+            >
+              <Copy size={16} />
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          )}
           <a
             href={gitHubUrl}
             target="_blank"
@@ -132,7 +138,38 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file }) => {
 
       <div className="code-body">
         <div className="code-content">
-          {file.language === 'svg' ? (
+          {file.language === 'pdf' ? (
+            <div className="pdf-download-view">
+              <div className="pdf-download-card">
+                <div className="pdf-icon">📄</div>
+                <h2 className="pdf-title">{file.fileName}</h2>
+                <p className="pdf-meta">{(file.size / 1024).toFixed(0)} KB · PDF Document</p>
+                <div className="pdf-actions">
+                  <a
+                    href={`${import.meta.env.BASE_URL}${file.path}`}
+                    download={file.fileName}
+                    className="pdf-btn pdf-btn-primary"
+                  >
+                    <Download size={16} />
+                    Download PDF
+                  </a>
+                  <a
+                    href={`${import.meta.env.BASE_URL}${file.path}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pdf-btn pdf-btn-secondary"
+                  >
+                    <ExternalLink size={16} />
+                    Open in Browser
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : file.language === 'markdown' ? (
+            <div className="markdown-body">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{file.content}</ReactMarkdown>
+            </div>
+          ) : file.language === 'svg' ? (
             <div className="svg-viewer">
               <img
                 src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(file.content)}`}

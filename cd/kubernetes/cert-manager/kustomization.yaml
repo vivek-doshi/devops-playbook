@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Note 1: Apply namespace.yaml FIRST (it is listed first here).
+# Kustomize does not guarantee order by default, but listing the namespace
+# before the issuers avoids race conditions on first apply.
+resources:
+  - namespace.yaml
+  - cluster-issuer-selfsigned.yaml    # Local dev / internal CA — no external dependencies
+  - cluster-issuer-staging.yaml       # Let's Encrypt staging — validate before using prod
+  - cluster-issuer-prod.yaml          # Let's Encrypt production — internet-facing services

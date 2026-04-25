@@ -1,0 +1,254 @@
+# ============================================================
+# TEMPLATE: GitHub Actions — Terraform Drift Detection
+# WHEN TO USE: Detect when live infrastructure diverges from the
+#   Terraform state (someone applied changes outside Terraform, a
+#   cloud provider changed defaults, etc.). Runs daily on a schedule.
+#   Opens a GitHub Issue automatically when drift is found.
+# PREREQUISITES:
+#   - Terraform state in a remote backend (S3, Azure, GCS)
+#   - Cloud credentials as GitHub Actions OIDC secrets
+#   - GitHub token with Issues write permission
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   ci/github-actions/terraform/plan-apply.yml
+#   terraform/aws-eks/main.tf  (or whichever module to monitor)
+# MATURITY: Stable
+# ============================================================
+
+name: Terraform Drift Detection
+
+on:
+  # Note 1: Schedule runs at 06:00 UTC daily — adjust to match your team's
+  # working hours so the issue appears when someone is online to triage it.
+  schedule:
+    - cron: "0 6 * * 1-5"   # <-- CHANGE THIS: Mon-Fri 06:00 UTC (skip weekends)
+  # Note 2: workflow_dispatch lets you trigger a manual drift check without
+  # waiting for the schedule — useful after an incident or bulk change.
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to check for drift"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+env:
+  TF_VERSION:     "1.10.0"          # <-- CHANGE THIS: keep in sync with plan-apply.yml
+  TF_WORKING_DIR: "terraform/aws-eks"  # <-- CHANGE THIS: module under drift check
+  TF_VAR_FILE:    "envs/prod.tfvars"   # <-- CHANGE THIS: or leave empty if not using var files
+  AWS_REGION:     "us-east-1"          # <-- CHANGE THIS: cloud-specific, used for display only
+
+permissions:
+  contents: read
+  issues:   write   # Note 3: Required to open a drift issue automatically
+  id-token: write   # Note 4: Required for OIDC cloud authentication
+
+# Note 5: Concurrency prevents two drift checks running simultaneously
+# (e.g., manual trigger during scheduled run). The cancel-in-progress=false
+# ensures the scheduled run finishes rather than being killed by a manual one.
+concurrency:
+  group: terraform-drift-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # =============================================
+  # DRIFT CHECK — plan with -detailed-exitcode
+  # =============================================
+  detect-drift:
+    name: Detect Terraform Drift
+    runs-on: ubuntu-latest
+    # Note 6: output the drift status so the notify job can check it
+    outputs:
+      drift-detected: ${{ steps.plan.outputs.drift }}
+      plan-output:    ${{ steps.plan.outputs.plan_text }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Cloud Authentication (uncomment ONE) ──────────────────────────
+      # - name: Azure Login (OIDC)
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id:       ${{ secrets.AZURE_CLIENT_ID }}    # <-- CHANGE THIS
+      #     tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # - name: AWS Login (OIDC)
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }} # <-- CHANGE THIS
+      #     aws-region: ${{ env.AWS_REGION }}
+
+      # - name: GCP Auth (Workload Identity)
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }} # <-- CHANGE THIS
+      #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          # Note 7: wrapper=false gives us the raw exit code from terraform plan.
+          # With wrapper=true, Terraform exit code 2 (drift) would be swallowed.
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform Plan (drift check)
+        id: plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        # Note 8: Exit codes from `terraform plan -detailed-exitcode`:
+        #   0 = no changes (no drift)
+        #   1 = error
+        #   2 = changes present (DRIFT DETECTED)
+        # We capture the exit code manually and set step outputs.
+        run: |
+          PLAN_ARGS="-detailed-exitcode -input=false -no-color"
+          if [ -n "${{ env.TF_VAR_FILE }}" ]; then
+            PLAN_ARGS="${PLAN_ARGS} -var-file=${{ env.TF_VAR_FILE }}"
+          fi
+
+          set +e
+          terraform plan ${PLAN_ARGS} 2>&1 | tee /tmp/plan.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+
+          # Store plan output in step output (truncated to 65535 chars — GH limit)
+          PLAN_TEXT=$(cat /tmp/plan.txt | tail -c 60000)
+          echo "plan_text<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${PLAN_TEXT}"   >> "$GITHUB_OUTPUT"
+          echo "EOF"            >> "$GITHUB_OUTPUT"
+
+          if [ "$EXIT_CODE" -eq 2 ]; then
+            echo "drift=true"  >> "$GITHUB_OUTPUT"
+            echo "::warning::Drift detected in ${{ env.TF_WORKING_DIR }}"
+            exit 0   # Note 9: Don't fail the step — let the notify job open the issue
+          elif [ "$EXIT_CODE" -eq 1 ]; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "::error::terraform plan failed"
+            exit 1
+          else
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "No drift detected."
+          fi
+
+  # =============================================
+  # NOTIFY — open (or update) a GitHub Issue when drift is found
+  # =============================================
+  open-drift-issue:
+    name: Open Drift Issue
+    runs-on: ubuntu-latest
+    needs: detect-drift
+    if: needs.detect-drift.outputs.drift-detected == 'true'
+
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = `[Drift] Terraform drift detected in ${{ env.TF_WORKING_DIR }}`;
+            const body = [
+              "## :warning: Terraform Drift Detected",
+              "",
+              `**Module:** \`${{ env.TF_WORKING_DIR }}\``,
+              `**Detected at:** ${new Date().toISOString()}`,
+              `**Triggered by:** \`${{ github.event_name }}\``,
+              `**Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+              "",
+              "### What this means",
+              "The live infrastructure no longer matches the Terraform state.",
+              "This typically happens when:",
+              "- Someone applied changes directly via the cloud console or CLI",
+              "- A cloud provider changed default values or resource behaviour",
+              "- A resource was manually deleted or recreated",
+              "",
+              "### How to resolve",
+              "1. Review the plan output below",
+              "2. Determine if the live change should be **imported** (`terraform import`) or **reverted** (re-run plan-apply)",
+              "3. Apply the fix and close this issue",
+              "",
+              "### Plan output",
+              "```",
+              `${{ needs.detect-drift.outputs.plan-output }}`,
+              "```",
+            ].join("\n");
+
+            // Note 10: Check for an existing open drift issue so we don't spam.
+            // If one already exists, add a comment instead of opening a duplicate.
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              state: "open",
+              labels: "terraform-drift",
+            });
+
+            const existing = issues.find(i => i.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner:    context.repo.owner,
+                repo:     context.repo.repo,
+                issue_number: existing.number,
+                body: `Drift still present as of ${new Date().toISOString()}.\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+              });
+              console.log(`Updated existing drift issue #${existing.number}`);
+            } else {
+              const { data: issue } = await github.rest.issues.create({
+                owner:  context.repo.owner,
+                repo:   context.repo.repo,
+                title,
+                body,
+                labels: ["terraform-drift", "infrastructure"],   // <-- CHANGE THIS: labels must exist in your repo
+              });
+              console.log(`Opened drift issue #${issue.number}: ${issue.html_url}`);
+            }
+
+  # =============================================
+  # CLOSE ISSUE — auto-close drift issue when drift is resolved
+  # =============================================
+  close-drift-issue:
+    name: Close Resolved Drift Issue
+    runs-on: ubuntu-latest
+    needs: detect-drift
+    if: needs.detect-drift.outputs.drift-detected == 'false'
+
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = `[Drift] Terraform drift detected in ${{ env.TF_WORKING_DIR }}`;
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              state: "open",
+              labels: "terraform-drift",
+            });
+
+            const existing = issues.find(i => i.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner:    context.repo.owner,
+                repo:     context.repo.repo,
+                issue_number: existing.number,
+                body: `Drift resolved as of ${new Date().toISOString()}. Closing automatically.\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+              });
+              await github.rest.issues.update({
+                owner:  context.repo.owner,
+                repo:   context.repo.repo,
+                issue_number: existing.number,
+                state:  "closed",
+              });
+              console.log(`Closed drift issue #${existing.number}`);
+            } else {
+              console.log("No open drift issue to close.");
+            }

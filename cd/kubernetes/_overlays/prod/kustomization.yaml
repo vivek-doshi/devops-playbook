@@ -3,41 +3,36 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 2: The base contains the Deployment, Service, Ingress, HPA, PDB, and ConfigMap.
+  # All resources in _base/kustomization.yaml are included automatically.
   - ../../_base
 
 namespace: production
 
 patches:
-  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 3: Scale the Deployment to 3 replicas in production (base default is 1).
   - patch: |-
       - op: replace
         path: /spec/replicas
-        # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         value: 3
     target:
       kind: Deployment
-      # Note 5: Resource identity and metadata drive automation, selectors, and operational traceability.
       name: app
 
-# PodDisruptionBudget for production high availability
+  # Note 4: Tighten the PDB for production — with 3 replicas, keep at least 2 healthy.
+  # This means at most 1 pod can be disrupted at a time during node drains or upgrades.
+  # The base pdb.yaml sets minAvailable: 1 (safe for dev/staging with 2 replicas).
+  # This patch upgrades it to minAvailable: 2 for production.
+  #
+  # IMPORTANT: minAvailable must always be < replica count, otherwise voluntary
+  # disruptions (kubectl drain, cluster upgrades) will block indefinitely.
   - patch: |-
-      apiVersion: policy/v1
-      # Note 6: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
-      kind: PodDisruptionBudget
-      metadata:
-        name: app-pdb
-      # Note 7: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
-      spec:
-        minAvailable: 1
-        selector:
-          # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-          matchLabels:
-            app: app
+      - op: replace
+        path: /spec/minAvailable
+        value: 2
     target:
-      # Note 9: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
-      kind: Deployment
-      name: app
+      kind: PodDisruptionBudget
+      name: app-pdb               # <-- CHANGE THIS: must match pdb.yaml metadata.name
 
 images:
   - name: my-registry/my-app

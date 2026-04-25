@@ -1,0 +1,90 @@
+# ============================================================
+# TEMPLATE: RBAC — CI/CD Deployer (namespace-scoped Role)
+# WHEN TO USE: Grant the CI/CD pipeline service account just enough
+#   permission to deploy workloads to a specific namespace. This
+#   uses a namespace-scoped Role (not ClusterRole) to prevent the
+#   pipeline from touching other namespaces.
+#
+# LEAST PRIVILEGE PRINCIPLE: The CI deployer can update Deployments
+#   and ConfigMaps but cannot read Secrets or modify RBAC resources.
+#   If your pipeline needs to read secrets (e.g., for env var validation),
+#   add `secrets: ["get", "list"]` but NOT `create` or `update`.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/_base/rbac/readonly-developer.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-deployer                          # <-- CHANGE THIS
+  namespace: production                      # <-- CHANGE THIS: namespace this SA deploys to
+  annotations:
+    description: "Service account for CI/CD pipeline deployments"
+    # For EKS IRSA (if pipeline runs on EKS):
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/ci-deployer-irsa
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer
+  namespace: production                      # <-- CHANGE THIS
+rules:
+  # Note 1: The pipeline needs to update existing Deployments and create new
+  # ones during first-time deploys. It does NOT need delete — use separate
+  # runbooks for decommissioning workloads.
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs: ["get", "list", "create", "update", "patch"]
+
+  - apiGroups: [""]
+    resources:
+      - services
+      - configmaps
+    verbs: ["get", "list", "create", "update", "patch"]
+
+  # Note 2: The pipeline needs to read pods to check rollout status
+  # (e.g., `kubectl rollout status`) but not exec into them.
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/status
+      - pods/log
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+    verbs: ["get", "list", "create", "watch"]
+
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs: ["get", "list", "create", "update", "patch"]
+
+  # Note 3: HPA management — needed if your pipeline scales workloads
+  # as part of a canary or load-test deploy.
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["get", "list", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer-binding
+  namespace: production                      # <-- CHANGE THIS
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer                        # <-- CHANGE THIS: must match the ServiceAccount name above
+    namespace: production                    # <-- CHANGE THIS
+roleRef:
+  kind: Role
+  name: ci-deployer
+  apiGroup: rbac.authorization.k8s.io

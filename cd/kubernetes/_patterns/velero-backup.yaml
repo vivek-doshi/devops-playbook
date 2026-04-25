@@ -1,0 +1,195 @@
+# ============================================================
+# TEMPLATE: Velero — Cluster Backup & Disaster Recovery
+# WHEN TO USE: Take scheduled backups of Kubernetes workloads
+#              (namespaces, PVs, secrets, configmaps) and restore
+#              them in a different cluster or after accidental deletion.
+#
+# INSTALL VELERO (once per cluster):
+#
+#   # AWS (S3 + EBS snapshots via EBS CSI driver)
+#   velero install \
+#     --provider aws \
+#     --plugins velero/velero-plugin-for-aws:v1.9.0 \
+#     --bucket my-velero-backups \                   # <-- CHANGE THIS
+#     --backup-location-config region=us-east-1 \   # <-- CHANGE THIS
+#     --snapshot-location-config region=us-east-1 \ # <-- CHANGE THIS
+#     --secret-file ./credentials-velero \           # IAM key or leave empty for IRSA
+#     --use-node-agent \                             # required for PV backups via restic/kopia
+#     --default-volumes-to-fs-backup                # backup all PVs as filesystem snapshots
+#
+#   # Azure (Blob Storage + Azure Disk snapshots)
+#   velero install \
+#     --provider azure \
+#     --plugins velero/velero-plugin-for-microsoft-azure:v1.9.0 \
+#     --bucket velero \
+#     --secret-file ./credentials-velero \
+#     --backup-location-config resourceGroup=velero-rg,storageAccount=velerobackups \
+#     --snapshot-location-config apiTimeout=5m,resourceGroup=velero-rg \
+#     --use-node-agent
+#
+#   # GCP (GCS + GCE Persistent Disk snapshots)
+#   velero install \
+#     --provider gcp \
+#     --plugins velero/velero-plugin-for-gcp:v1.9.0 \
+#     --bucket my-velero-gcs-bucket \
+#     --secret-file ./credentials-velero \
+#     --use-node-agent
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: terraform/aws-eks/backup.tf
+#                terraform/azure-aks/backup.tf
+#                terraform/gcp-gke/backup.tf
+# MATURITY: Stable
+# ============================================================
+
+---
+# ── 1. BackupStorageLocation — where backups are persisted ───────────────
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+spec:
+  provider: aws                       # <-- CHANGE THIS: azure | gcp
+  objectStorage:
+    bucket: my-velero-backups         # <-- CHANGE THIS
+    prefix: cluster-name/             # <-- CHANGE THIS: separate clusters share a bucket
+  config:
+    region: us-east-1                 # <-- CHANGE THIS
+    kmsKeyId: "arn:aws:kms:..."       # <-- CHANGE THIS: optional — encrypt backups at rest
+    # For Azure: resourceGroup, storageAccount
+    # For GCP: no extra config needed (project is inferred from SA)
+
+---
+# ── 2. VolumeSnapshotLocation — where PV snapshots are stored ────────────
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: default
+  namespace: velero
+spec:
+  provider: aws                       # <-- CHANGE THIS: azure | gcp
+  config:
+    region: us-east-1                 # <-- CHANGE THIS
+
+---
+# ── 3. Daily backup — all production namespaces ───────────────────────────
+# Backs up everything in the namespaces list, retains 14 copies.
+# PV snapshots are included automatically when snapshotVolumes: true.
+#
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-prod-backup
+  namespace: velero
+spec:
+  schedule: "0 2 * * *"              # 02:00 UTC daily  # <-- CHANGE THIS
+  useOwnerReferencesInBackup: false
+  template:
+    includedNamespaces:
+      - default                       # <-- CHANGE THIS: list your production namespaces
+      - monitoring
+      - ingress-nginx
+      - cert-manager
+    # Exclude namespaces that don't need backup
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - velero
+    snapshotVolumes: true
+    volumeSnapshotLocations:
+      - default
+    storageLocation: default
+    ttl: 336h                         # 14 days retention  # <-- CHANGE THIS
+    # Include cluster-scoped resources needed for full restore
+    includeClusterResources: true
+    defaultVolumesToFsBackup: false   # use CSI snapshots; set true for restic/kopia fallback
+    hooks:
+      resources: []                   # add pre/post hooks here if apps need quiescing
+
+---
+# ── 4. Weekly full-cluster backup ─────────────────────────────────────────
+# A "belt-and-suspenders" weekly backup that captures everything,
+# retained for 90 days for compliance.
+#
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: weekly-full-backup
+  namespace: velero
+spec:
+  schedule: "0 3 * * 0"              # 03:00 UTC every Sunday  # <-- CHANGE THIS
+  template:
+    includedNamespaces:
+      - "*"
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - velero
+    snapshotVolumes: true
+    volumeSnapshotLocations:
+      - default
+    storageLocation: default
+    ttl: 2160h                        # 90 days retention  # <-- CHANGE THIS
+    includeClusterResources: true
+    defaultVolumesToFsBackup: false
+
+---
+# ── 5. Pre-deploy backup (on-demand) ─────────────────────────────────────
+# Trigger this from your CI pipeline before a major release so you have
+# a clean restore point.
+#
+# Usage:
+#   velero backup create pre-release-v2-0-0 \
+#     --from-schedule daily-prod-backup \
+#     --wait
+#
+# Or apply this manifest and delete it afterwards:
+#
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  name: pre-release-placeholder       # <-- CHANGE THIS: pre-release-v2-0-0
+  namespace: velero
+  labels:
+    trigger: manual
+spec:
+  includedNamespaces:
+    - default                         # <-- CHANGE THIS
+  snapshotVolumes: true
+  volumeSnapshotLocations:
+    - default
+  storageLocation: default
+  ttl: 720h                           # 30 days
+  includeClusterResources: true
+
+---
+# ── 6. Restore (use during DR — manual) ──────────────────────────────────
+# Step-by-step restore process (do not automate — human decision required):
+#
+#   1. Install Velero on the target cluster with the same BackupStorageLocation.
+#   2. List available backups:
+#        velero backup get
+#   3. Describe a backup before restoring:
+#        velero backup describe <backup-name> --details
+#   4. Apply the Restore manifest below (or use velero restore create).
+#   5. Monitor progress:
+#        velero restore describe <restore-name> --details
+#        kubectl get events -n velero
+#
+# apiVersion: velero.io/v1
+# kind: Restore
+# metadata:
+#   name: restore-prod-2024-01-15       # <-- CHANGE THIS
+#   namespace: velero
+# spec:
+#   backupName: daily-prod-backup-20240115020000  # <-- CHANGE THIS: from velero backup get
+#   includedNamespaces:
+#     - default                         # <-- CHANGE THIS: or "*" for full restore
+#   # Restore PV data from snapshots
+#   restorePVs: true
+#   # Preserve original node ports during restore
+#   preserveNodePorts: true
+#   # Remap namespaces if restoring into a different environment
+#   # namespaceMapping:
+#   #   prod: prod-restored

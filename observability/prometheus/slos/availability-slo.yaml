@@ -1,0 +1,212 @@
+# ============================================================
+# TEMPLATE: Prometheus SLO — Availability
+# WHEN TO USE: You want multi-window burn-rate alerting for
+#   a request-success-rate SLO (i.e., fraction of non-5xx requests).
+#
+# SLO TARGET: 99.9% availability  (error budget = 43m 49s per 30 days)
+#
+# WHAT TO CHANGE:
+#   - SLO_TARGET annotation (default: 0.999)     # <-- CHANGE THIS
+#   - job label filter (default: "my-service")   # <-- CHANGE THIS
+#   - namespace label in metadata                # <-- CHANGE THIS
+#   - Burn-rate thresholds if SLO target changes # <-- CHANGE THIS
+#
+# RELATED FILES: observability/prometheus/slos/README.md
+#                observability/prometheus/slos/latency-slo.yaml
+#                observability/prometheus/alerts/slo-rules.yaml
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: PrometheusRule is a CRD provided by the Prometheus Operator
+# (kube-prometheus-stack). It is automatically discovered by any Prometheus
+# instance with the matching label selector.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: availability-slo                        # <-- CHANGE THIS: use your service name, e.g. payments-availability-slo
+  namespace: monitoring                          # <-- CHANGE THIS: namespace where Prometheus Operator runs
+  labels:
+    # Note 2: The Prometheus Operator watches for PrometheusRule resources that
+    # match the ruleSelector on the Prometheus CR. kube-prometheus-stack sets
+    # this to `release: kube-prometheus-stack` by default.
+    release: kube-prometheus-stack               # <-- CHANGE THIS: match your Prometheus Operator release name
+    app: kube-prometheus-stack
+  annotations:
+    # Note 3: Document the SLO metadata in annotations for human reference.
+    # These are not used by Prometheus but appear in alert notifications.
+    SLO_TARGET: "0.999"                          # <-- CHANGE THIS: e.g. "0.995" for 99.5%
+    SLO_WINDOW: "30d"
+    SERVICE: "my-service"                        # <-- CHANGE THIS: your service name
+spec:
+  groups:
+
+    # ── Recording Rules ────────────────────────────────────────────────────
+    # Note 4: Recording rules pre-compute the error ratio over multiple time windows.
+    # This makes alert evaluation fast (single metric lookup instead of two-range joins)
+    # and makes the values available in Grafana dashboards.
+    #
+    # The metric name convention `slo:sli_error:ratio_rate<window>` is used by
+    # the standard SLO dashboards (Grafana ID 14348, Sloth, Pyrra).
+    #
+    # Formula: (5xx requests / total requests) over the window
+    # "error" = any 5xx response (server-side fault, not client error)
+    - name: availability-slo-recording
+      interval: 30s                              # <-- CHANGE THIS: how often rules are evaluated
+      rules:
+        # Note 5: Each recording rule covers one of the burn-rate windows.
+        # Having all windows pre-computed means alert rules do just a simple comparison,
+        # keeping alert evaluation latency under 1 second.
+        - record: slo:sli_error:ratio_rate5m
+          expr: |
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[5m]))  # <-- CHANGE THIS: job label and metric name
+            /
+            sum(rate(http_requests_total{job="my-service"}[5m]))               # <-- CHANGE THIS
+          labels:
+            slo: availability
+            service: my-service                  # <-- CHANGE THIS
+
+        - record: slo:sli_error:ratio_rate30m
+          expr: |
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[30m]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[30m]))
+          labels:
+            slo: availability
+            service: my-service                  # <-- CHANGE THIS
+
+        - record: slo:sli_error:ratio_rate1h
+          expr: |
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[1h]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[1h]))
+          labels:
+            slo: availability
+            service: my-service
+
+        - record: slo:sli_error:ratio_rate2h
+          expr: |
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[2h]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[2h]))
+          labels:
+            slo: availability
+            service: my-service
+
+        - record: slo:sli_error:ratio_rate6h
+          expr: |
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[6h]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[6h]))
+          labels:
+            slo: availability
+            service: my-service
+
+        - record: slo:sli_error:ratio_rate1d
+          expr: |
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[1d]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[1d]))
+          labels:
+            slo: availability
+            service: my-service
+
+        - record: slo:sli_error:ratio_rate3d
+          expr: |
+            sum(rate(http_requests_total{job="my-service", code=~"5.."}[3d]))
+            /
+            sum(rate(http_requests_total{job="my-service"}[3d]))
+          labels:
+            slo: availability
+            service: my-service
+
+    # ── Alerting Rules ─────────────────────────────────────────────────────
+    # Note 6: The three alert tiers implement the multi-window burn rate strategy
+    # from the Google SRE Workbook. See observability/prometheus/slos/README.md
+    # for the full explanation.
+    #
+    # Thresholds are derived from: burn_rate × (1 - SLO_TARGET)
+    #   - 14× burn = (1 - 0.999) × 14 = 0.014  → exhausts budget in ~50h
+    #   - 6×  burn = (1 - 0.999) × 6  = 0.006  → exhausts budget in ~5 days
+    #   - 3×  burn = (1 - 0.999) × 3  = 0.003  → exhausts budget in ~10 days
+    #
+    # If you change SLO_TARGET you MUST recalculate these thresholds.        # <-- CHANGE THIS
+    - name: availability-slo-alerts
+      rules:
+
+        # ── Critical: Fast Burn (page immediately) ─────────────────────
+        # Note 7: Two-window condition: BOTH windows must exceed the threshold.
+        # The short window (5m) catches the onset of the incident quickly.
+        # The long window (1h) prevents alerting on a brief spike that will
+        # self-resolve without exhausting significant budget.
+        - alert: SLOAvailabilityFastBurnCritical
+          expr: |
+            (
+              slo:sli_error:ratio_rate5m{service="my-service"} > (14 * (1 - 0.999))  # <-- CHANGE THIS: service label and SLO target
+              and
+              slo:sli_error:ratio_rate1h{service="my-service"} > (14 * (1 - 0.999))  # <-- CHANGE THIS
+            )
+          for: 2m
+          labels:
+            severity: critical
+            slo: availability
+            service: my-service                  # <-- CHANGE THIS
+          annotations:
+            summary: "SLO availability fast burn — critical ({{ $labels.service }})"
+            description: >
+              The error rate for {{ $labels.service }} is burning the availability error budget
+              at 14× the acceptable rate. At this pace the entire 30-day budget will be
+              exhausted in approximately 50 hours.
+              Current 5m error ratio: {{ $value | humanizePercentage }}.
+            runbook_url: "https://your-wiki.example.com/runbooks/slo-availability"  # <-- CHANGE THIS
+            dashboard_url: "https://grafana.example.com/d/slo-availability"         # <-- CHANGE THIS
+
+        # ── Warning: Medium Burn (ticket, investigate today) ───────────
+        # Note 8: This tier catches burns that are fast enough to exhaust the budget
+        # within 5 days but not fast enough to warrant an immediate page.
+        # Use 6h + 3d windows to smooth out noise from normal traffic variance.
+        - alert: SLOAvailabilityFastBurnWarning
+          expr: |
+            (
+              slo:sli_error:ratio_rate30m{service="my-service"} > (6 * (1 - 0.999))  # <-- CHANGE THIS
+              and
+              slo:sli_error:ratio_rate6h{service="my-service"}  > (6 * (1 - 0.999))  # <-- CHANGE THIS
+            )
+          for: 15m
+          labels:
+            severity: warning
+            slo: availability
+            service: my-service                  # <-- CHANGE THIS
+          annotations:
+            summary: "SLO availability burn elevated — warning ({{ $labels.service }})"
+            description: >
+              The error rate for {{ $labels.service }} is burning the availability error budget
+              at 6× the acceptable rate. At this pace the entire 30-day budget will be
+              exhausted in approximately 5 days.
+              Current 30m error ratio: {{ $value | humanizePercentage }}.
+            runbook_url: "https://your-wiki.example.com/runbooks/slo-availability"  # <-- CHANGE THIS
+
+        # ── Warning: Slow Burn (ticket, investigate this week) ─────────
+        # Note 9: This tier catches a sustained low-level error rate that would
+        # silently exhaust the error budget over 10+ days without any alert.
+        # The very long windows (6h AND 3d) mean this alert only fires for
+        # genuinely persistent issues, not transient deployments or restarts.
+        - alert: SLOAvailabilitySlowBurnWarning
+          expr: |
+            (
+              slo:sli_error:ratio_rate6h{service="my-service"} > (3 * (1 - 0.999))   # <-- CHANGE THIS
+              and
+              slo:sli_error:ratio_rate3d{service="my-service"} > (3 * (1 - 0.999))   # <-- CHANGE THIS
+            )
+          for: 1h
+          labels:
+            severity: warning
+            slo: availability
+            service: my-service                  # <-- CHANGE THIS
+          annotations:
+            summary: "SLO availability slow burn — warning ({{ $labels.service }})"
+            description: >
+              The error rate for {{ $labels.service }} has been burning the availability error
+              budget at 3× the acceptable rate for over 6 hours. This is a sustained degradation.
+              At this pace the 30-day error budget will be exhausted in approximately 10 days.
+              Current 6h error ratio: {{ $value | humanizePercentage }}.
+            runbook_url: "https://your-wiki.example.com/runbooks/slo-availability"  # <-- CHANGE THIS

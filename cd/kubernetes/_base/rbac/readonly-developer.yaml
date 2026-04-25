@@ -1,0 +1,97 @@
+# ============================================================
+# TEMPLATE: RBAC — Read-Only Developer Access (ClusterRole)
+# WHEN TO USE: Grant developers view-only access to inspect
+#   workloads cluster-wide without the ability to modify anything.
+#   Suitable for on-call triage (read logs, describe pods) without
+#   write permissions.
+#
+# SECURITY: This role grants read access to Secrets by name listing
+#   only (no data values). Remove the Secrets rule below if even
+#   listing secret names is too broad for your threat model.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/_base/rbac/ci-deployer.yaml
+#                cd/kubernetes/_base/rbac/namespace-admin.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: readonly-developer
+  labels:
+    rbac.example.com/aggregate-to-view: "true"  # <-- CHANGE THIS: optional aggregation label
+rules:
+  # Note 1: The built-in ClusterRole "view" covers most read resources but
+  # explicitly excludes Secrets. We start from scratch to be explicit about
+  # what is permitted rather than inheriting from "view" and adding exceptions.
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - pods/status
+      - services
+      - endpoints
+      - configmaps
+      - events
+      - namespaces
+      - nodes               # Cluster-scoped — useful for node capacity checks
+      - persistentvolumeclaims
+      - replicationcontrollers
+      - resourcequotas
+      - serviceaccounts
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - networkpolicies
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["policy"]
+    resources:
+      - poddisruptionbudgets
+    verbs: ["get", "list", "watch"]
+
+  # Note 2: Secrets — only listing allowed (not reading data values).
+  # A user can see secret NAMES but cannot execute `kubectl get secret <name> -o yaml`.
+  # Remove this rule if listing secret names is too broad.
+  - apiGroups: [""]
+    resources:
+      - secrets
+    verbs: ["list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: readonly-developer-binding
+subjects:
+  # Note 3: Add individual users or a group (e.g., GitHub team mapped via OIDC).
+  # Prefer groups over individual users for easier onboarding/offboarding.
+  - kind: Group
+    name: developers                 # <-- CHANGE THIS: your OIDC group name (e.g., GitHub team)
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: readonly-developer
+  apiGroup: rbac.authorization.k8s.io

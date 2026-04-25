@@ -1,0 +1,61 @@
+# ============================================================
+# TEMPLATE: Velero Backup Schedule
+# WHEN TO USE: After Velero is installed. Creates a recurring
+#   backup of all namespaces (or a filtered subset) stored in
+#   the configured BackupStorageLocation (S3 / Azure Blob / GCS).
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: backup/velero/aws-install.sh
+#                backup/velero/namespace-backup.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-full-backup                     # <-- CHANGE THIS
+  namespace: velero
+spec:
+  # Note 1: Cron syntax — this runs at 02:00 UTC every day.
+  # Adjust to a low-traffic window in your time zone.
+  schedule: "0 2 * * *"                       # <-- CHANGE THIS
+
+  template:
+    # Note 2: ttl controls how long backups are retained before Velero
+    # automatically deletes them. 720h = 30 days. Balance retention
+    # requirements against storage cost.
+    ttl: 720h0m0s                             # <-- CHANGE THIS: 720h = 30 days
+
+    # Note 3: To back up only specific namespaces, replace the empty
+    # includedNamespaces list with your target namespaces.
+    # An empty list or omitted field means ALL namespaces.
+    includedNamespaces:
+      - "*"                                   # <-- CHANGE THIS: e.g., [default, production, monitoring]
+
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - velero                                # Never back up Velero itself
+
+    # Note 4: includeClusterResources: true backs up cluster-scoped objects
+    # like Namespaces, PersistentVolumes, ClusterRoles, and CustomResourceDefinitions.
+    # Set to false if you manage cluster resources separately via GitOps.
+    includeClusterResources: true
+
+    # Note 5: snapshotVolumes: true takes CSI VolumeSnapshots of PersistentVolumes.
+    # Requires the CSI snapshot controller and VolumeSnapshotClass to be installed,
+    # and the --features=EnableCSI flag in the Velero install command.
+    snapshotVolumes: true
+
+    storageLocation: default                  # <-- CHANGE THIS: name of your BackupStorageLocation
+
+    # Note 6: Label selectors let you include/exclude specific workloads.
+    # Uncomment to filter by label instead of namespace.
+    # labelSelector:
+    #   matchLabels:
+    #     backup: "enabled"
+
+    hooks: {}
+
+  useOwnerReferencesInBackup: false

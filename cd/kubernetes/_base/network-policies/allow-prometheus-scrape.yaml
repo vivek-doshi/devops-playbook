@@ -1,0 +1,39 @@
+# ============================================================
+# TEMPLATE: Allow ingress from Prometheus for metrics scraping
+# WHEN TO USE: Apply this in every namespace where application pods
+#   expose a /metrics endpoint (Prometheus scrape port). Without this
+#   policy, Prometheus in the monitoring namespace cannot reach the
+#   metrics port and will report pods as scrape targets DOWN.
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: default-deny.yaml
+#                observability/prometheus/
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: default          # <-- CHANGE THIS: namespace where app pods expose /metrics
+spec:
+  # Note 1: Only allow scraping for pods that expose a metrics port.
+  # Restrict by label to avoid accidentally opening all pods in the namespace.
+  podSelector:
+    matchLabels:
+      monitoring: "enabled"   # <-- CHANGE THIS: label to identify pods that expose /metrics
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring    # <-- CHANGE THIS: namespace where Prometheus runs
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus         # <-- CHANGE THIS: label on Prometheus pod
+      ports:
+        - protocol: TCP
+          port: 9090    # <-- CHANGE THIS: your application's metrics port (commonly 9090, 8080, 8081)

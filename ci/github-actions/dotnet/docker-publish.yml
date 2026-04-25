@@ -29,13 +29,14 @@ jobs:
     # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 7: Pass the image digest forward so the attest job can sign the exact
+    # immutable digest rather than a mutable tag.
+    outputs:
+      image-digest: ${{ steps.build-push.outputs.digest }}
+    # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     permissions:
       contents: read
-      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       packages: write
-      attestations: write   # Required for anchore/sbom-action to attach SBOM as OCI referrer
-      id-token: write       # Required for OIDC-based attestation signing
 
     steps:
       # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -80,13 +81,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Generate a Software Bill of Materials (SBOM) in SPDX format and
-      # attach it to the image as an OCI referrer. Required for SLSA level 2+.
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-push.outputs.digest }}
-          format: spdx-json
-          output-file: sbom.spdx.json
-          upload-artifact: true
-          artifact-name: sbom-dotnet-${{ github.sha }}.spdx.json
+  # ── Attestation job — SBOM + SLSA provenance + cosign signing ──────────────
+  # Note 9: Runs after the build job completes. Uses the reusable workflow that
+  # consistently applies SBOM generation, SLSA provenance attestation, and
+  # cosign keyless signing across all images in this repo.
+  attest:
+    name: Sign & Attest
+    needs: docker
+    uses: ./.github/workflows/reusable-attest.yml      # <-- CHANGE THIS to your workflow path
+    permissions:
+      id-token:     write
+      attestations: write
+      packages:     write
+    with:
+      image-ref:    ghcr.io/${{ github.repository }}@${{ needs.docker.outputs.image-digest }}
+      image-digest: ${{ needs.docker.outputs.image-digest }}
+      sbom-artifact-name: sbom-dotnet-${{ github.sha }}.spdx.json
+    secrets:
+      registry-token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,92 @@
+# ============================================================
+# TEMPLATE: RBAC — Namespace Admin (full control within namespace only)
+# WHEN TO USE: Grant a team or individual full administrative access
+#   to a single namespace (e.g., a team owns the `payments` namespace)
+#   without giving them any cluster-level permissions (no node access,
+#   no ClusterRole management, no PersistentVolume creation).
+#
+# DIFFERENCE FROM cluster-admin:
+#   - cluster-admin can manage PersistentVolumes, Nodes, ClusterRoles, Namespaces
+#   - namespace-admin is bounded to a single namespace
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES: cd/kubernetes/_base/rbac/readonly-developer.yaml
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: namespace-admin
+  namespace: payments                        # <-- CHANGE THIS: the namespace this team owns
+rules:
+  # Note 1: Granting `*` verbs on core workload resources within a namespace
+  # is intentional here — this team owns the namespace completely.
+  # The key constraint is that this is a Role (not ClusterRole), so it
+  # cannot escape the namespace boundary.
+  - apiGroups: ["", "apps", "batch", "autoscaling", "networking.k8s.io", "policy"]
+    resources:
+      - pods
+      - pods/log
+      - pods/exec
+      - pods/portforward
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+      - services
+      - endpoints
+      - configmaps
+      - persistentvolumeclaims
+      - jobs
+      - cronjobs
+      - horizontalpodautoscalers
+      - ingresses
+      - networkpolicies
+      - poddisruptionbudgets
+    verbs: ["*"]
+
+  # Note 2: ServiceAccounts — allow creation so the team can set up workload
+  # identity for their services without escalation. They cannot create RBAC
+  # bindings (that would allow privilege escalation via impersonation).
+  - apiGroups: [""]
+    resources:
+      - serviceaccounts
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+  # Note 3: Secrets — full CRUD within the namespace. The team must be able
+  # to create/update secrets for their workloads, but they cannot access
+  # secrets in other namespaces.
+  - apiGroups: [""]
+    resources:
+      - secrets
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+  # Note 4: External Secrets Operator CRDs — allow the team to manage
+  # ExternalSecret resources in their own namespace.
+  - apiGroups: ["external-secrets.io"]
+    resources:
+      - externalsecrets
+    verbs: ["*"]
+
+  # Note 5: Events — read-only. Events are helpful for debugging but
+  # modifying them provides no operational benefit.
+  - apiGroups: [""]
+    resources:
+      - events
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: namespace-admin-binding
+  namespace: payments                        # <-- CHANGE THIS
+subjects:
+  - kind: Group
+    name: payments-team                      # <-- CHANGE THIS: your OIDC group or team name
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: namespace-admin
+  apiGroup: rbac.authorization.k8s.io

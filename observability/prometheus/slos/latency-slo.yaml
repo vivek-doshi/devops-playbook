@@ -1,0 +1,220 @@
+# ============================================================
+# TEMPLATE: Prometheus SLO — Latency
+# WHEN TO USE: You want multi-window burn-rate alerting for
+#   a request-latency SLO (fraction of requests below a threshold).
+#
+# SLO TARGET: 99% of requests complete in < 500ms
+#
+# WHAT TO CHANGE:
+#   - SLO_TARGET annotation (default: 0.99)               # <-- CHANGE THIS
+#   - LATENCY_THRESHOLD_SECONDS annotation (default: 0.5) # <-- CHANGE THIS
+#   - job label filter (default: "my-service")            # <-- CHANGE THIS
+#   - histogram bucket le value to match threshold        # <-- CHANGE THIS
+#   - namespace label in metadata                         # <-- CHANGE THIS
+#
+# PREREQUISITES:
+#   Your service must expose an http_request_duration_seconds histogram
+#   with bucket boundaries that include your threshold.
+#   Standard Prometheus client histograms include: .005, .01, .025, .05, .1,
+#   .25, .5, 1, 2.5, 5, 10. For a 500ms SLO use le="0.5".
+#   For a 200ms SLO use le="0.25" (closest bucket below 200ms).
+#
+# RELATED FILES: observability/prometheus/slos/README.md
+#                observability/prometheus/slos/availability-slo.yaml
+# MATURITY: Stable
+# ============================================================
+
+# Note 1: PrometheusRule is a CRD provided by the Prometheus Operator.
+# Discovered automatically by Prometheus instances matching the label selector.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: latency-slo                              # <-- CHANGE THIS: use your service name, e.g. payments-latency-slo
+  namespace: monitoring                          # <-- CHANGE THIS
+  labels:
+    release: kube-prometheus-stack               # <-- CHANGE THIS: match your Prometheus Operator release name
+    app: kube-prometheus-stack
+  annotations:
+    SLO_TARGET: "0.99"                           # <-- CHANGE THIS: fraction of requests that must meet the latency target
+    LATENCY_THRESHOLD_SECONDS: "0.5"             # <-- CHANGE THIS: P99 latency threshold in seconds
+    SERVICE: "my-service"                        # <-- CHANGE THIS
+spec:
+  groups:
+
+    # ── Recording Rules ────────────────────────────────────────────────────
+    # Note 2: Latency SLOs measure the fraction of requests BELOW a threshold,
+    # using the histogram bucket for that threshold.
+    #
+    # Formula for the "good request" ratio:
+    #   rate(histogram_bucket{le="0.5"}[window]) / rate(histogram_count[window])
+    #
+    # This is the inverse of the error ratio used in the availability SLO:
+    #   error_ratio = 1 - good_ratio
+    # We record the error ratio (1 - good) to keep the same direction as
+    # the availability SLO and reuse the same burn-rate thresholds.
+    - name: latency-slo-recording
+      interval: 30s
+      rules:
+        # Note 3: `le="0.5"` selects the 500ms histogram bucket.
+        # This bucket counts all requests that completed in ≤ 500ms.
+        # Change `le` to match your latency threshold.       # <-- CHANGE THIS: le bucket
+        - record: slo:sli_latency_error:ratio_rate5m
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[5m]))  # <-- CHANGE THIS: job and le
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[5m]))              # <-- CHANGE THIS: job
+            )
+          labels:
+            slo: latency
+            service: my-service                  # <-- CHANGE THIS
+
+        - record: slo:sli_latency_error:ratio_rate30m
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[30m]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[30m]))
+            )
+          labels:
+            slo: latency
+            service: my-service
+
+        - record: slo:sli_latency_error:ratio_rate1h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[1h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[1h]))
+            )
+          labels:
+            slo: latency
+            service: my-service
+
+        - record: slo:sli_latency_error:ratio_rate2h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[2h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[2h]))
+            )
+          labels:
+            slo: latency
+            service: my-service
+
+        - record: slo:sli_latency_error:ratio_rate6h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[6h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[6h]))
+            )
+          labels:
+            slo: latency
+            service: my-service
+
+        - record: slo:sli_latency_error:ratio_rate1d
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[1d]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[1d]))
+            )
+          labels:
+            slo: latency
+            service: my-service
+
+        - record: slo:sli_latency_error:ratio_rate3d
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="my-service", le="0.5"}[3d]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="my-service"}[3d]))
+            )
+          labels:
+            slo: latency
+            service: my-service
+
+    # ── Alerting Rules ─────────────────────────────────────────────────────
+    # Note 4: Burn-rate thresholds for a 99% SLO differ from a 99.9% SLO
+    # because the error budget is larger (1% vs 0.1%).
+    #
+    # Thresholds: burn_rate × (1 - 0.99) = burn_rate × 0.01
+    #   - 14× burn = 0.14  → exhausts budget in ~50h
+    #   - 6×  burn = 0.06  → exhausts budget in ~5 days
+    #   - 3×  burn = 0.03  → exhausts budget in ~10 days
+    #                                                # <-- CHANGE THIS if SLO_TARGET changes
+    - name: latency-slo-alerts
+      rules:
+
+        # ── Critical: Fast Burn (page immediately) ─────────────────────
+        # Note 5: Two-window condition prevents false positives from brief spikes.
+        # At 14× burn rate, 50h of error budget will be consumed — page immediately.
+        - alert: SLOLatencyFastBurnCritical
+          expr: |
+            (
+              slo:sli_latency_error:ratio_rate5m{service="my-service"}  > (14 * (1 - 0.99))  # <-- CHANGE THIS: service and SLO target
+              and
+              slo:sli_latency_error:ratio_rate1h{service="my-service"}  > (14 * (1 - 0.99))  # <-- CHANGE THIS
+            )
+          for: 2m
+          labels:
+            severity: critical
+            slo: latency
+            service: my-service                  # <-- CHANGE THIS
+          annotations:
+            summary: "SLO latency fast burn — critical ({{ $labels.service }})"
+            description: >
+              P99 latency for {{ $labels.service }} is burning the latency error budget
+              at 14× the acceptable rate. The threshold is 500ms.              # <-- CHANGE THIS: threshold in message
+              At this pace the entire 30-day budget will be exhausted in approximately 50 hours.
+              Current 5m latency error ratio: {{ $value | humanizePercentage }}.
+            runbook_url: "https://your-wiki.example.com/runbooks/slo-latency"  # <-- CHANGE THIS
+            dashboard_url: "https://grafana.example.com/d/slo-latency"         # <-- CHANGE THIS
+
+        # ── Warning: Medium Burn (ticket, investigate today) ───────────
+        - alert: SLOLatencyFastBurnWarning
+          expr: |
+            (
+              slo:sli_latency_error:ratio_rate30m{service="my-service"} > (6 * (1 - 0.99))   # <-- CHANGE THIS
+              and
+              slo:sli_latency_error:ratio_rate6h{service="my-service"}  > (6 * (1 - 0.99))   # <-- CHANGE THIS
+            )
+          for: 15m
+          labels:
+            severity: warning
+            slo: latency
+            service: my-service                  # <-- CHANGE THIS
+          annotations:
+            summary: "SLO latency burn elevated — warning ({{ $labels.service }})"
+            description: >
+              P99 latency for {{ $labels.service }} is burning the latency error budget
+              at 6× the acceptable rate (threshold: 500ms).                   # <-- CHANGE THIS: threshold in message
+              At this pace the entire 30-day budget will be exhausted in approximately 5 days.
+              Current 30m latency error ratio: {{ $value | humanizePercentage }}.
+            runbook_url: "https://your-wiki.example.com/runbooks/slo-latency"  # <-- CHANGE THIS
+
+        # ── Warning: Slow Burn (ticket, investigate this week) ─────────
+        # Note 6: Slow burn for latency often indicates a gradual database or
+        # downstream service degradation. The 6h+3d windows confirm it is
+        # a sustained trend, not a temporary deployment artifact.
+        - alert: SLOLatencySlowBurnWarning
+          expr: |
+            (
+              slo:sli_latency_error:ratio_rate6h{service="my-service"} > (3 * (1 - 0.99))    # <-- CHANGE THIS
+              and
+              slo:sli_latency_error:ratio_rate3d{service="my-service"} > (3 * (1 - 0.99))    # <-- CHANGE THIS
+            )
+          for: 1h
+          labels:
+            severity: warning
+            slo: latency
+            service: my-service                  # <-- CHANGE THIS
+          annotations:
+            summary: "SLO latency slow burn — warning ({{ $labels.service }})"
+            description: >
+              P99 latency for {{ $labels.service }} has been above the 500ms threshold # <-- CHANGE THIS: threshold
+              at 3× the acceptable error rate for over 6 hours. Sustained degradation detected.
+              At this pace the 30-day error budget will be exhausted in approximately 10 days.
+              Current 6h latency error ratio: {{ $value | humanizePercentage }}.
+            runbook_url: "https://your-wiki.example.com/runbooks/slo-latency"  # <-- CHANGE THIS
