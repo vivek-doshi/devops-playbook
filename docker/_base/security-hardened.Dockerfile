@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Security-Hardened Dockerfile
 # WHEN TO USE: High-security environments, compliance requirements
@@ -10,7 +10,7 @@
 # ============================================================
 # Patterns: distroless base, non-root user, read-only FS, dropped capabilities
 
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --ignore-scripts
