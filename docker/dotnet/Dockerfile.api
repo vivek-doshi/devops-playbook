@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — ASP.NET Core Web API
 # WHEN TO USE: Any ASP.NET Core / .NET 8+ Web API project
@@ -11,7 +11,7 @@
 
 # ── Stage 1: Build ──────────────────────────────────────────────────────────
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /src
 
@@ -37,7 +37,7 @@ RUN dotnet publish "MyApp.csproj" \
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 # Note 12: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 # Note 13: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
