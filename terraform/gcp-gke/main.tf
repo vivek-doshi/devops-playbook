@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform — Google Kubernetes Engine (GKE)
 # WHEN TO USE: Provisioning a production-ready GKE cluster on GCP
 # PREREQUISITES: GCP project, gcloud CLI authenticated
@@ -17,7 +17,7 @@ terraform {
     google = {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/google"
-      version = "~> 5.10.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 7.30.0" # <-- CHANGE THIS: pin to latest stable
     # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
