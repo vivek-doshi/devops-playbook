@@ -43,6 +43,19 @@ if command -v npm >/dev/null 2>&1; then
   npm install --global @pulumi/pulumi >/dev/null 2>&1
 fi
 
+echo "==> Installing helm plugins..."
+if helm plugin list | grep -q '^diff'; then
+  echo "    helm-diff already installed, skipping"
+else
+  helm plugin install https://github.com/databus23/helm-diff
+fi
+
+if helm plugin list | grep -q '^secrets'; then
+  echo "    helm-secrets already installed, skipping"
+else
+  helm plugin install https://github.com/jkroepke/helm-secrets
+fi
+
 if [ -f .pre-commit-config.yaml ] && command -v pre-commit >/dev/null 2>&1; then
   pre-commit install
   pre-commit install --hook-type pre-push

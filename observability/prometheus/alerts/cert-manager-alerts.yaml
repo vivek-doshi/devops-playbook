@@ -1,0 +1,148 @@
+# cert-manager-alerts.yaml
+#
+# PrometheusRule for monitoring TLS certificate lifecycle events exposed by cert-manager.
+#
+# Prerequisites
+# -------------
+# 1. cert-manager >= 1.8 must be running with the metrics endpoint enabled.
+#    The controller, cainjector, and webhook expose /metrics on port 9402 by default.
+#
+# 2. A ServiceMonitor (or PodMonitor) must exist in the monitoring namespace that
+#    scrapes the cert-manager controller pods.  If you installed cert-manager via Helm,
+#    enable it with:
+#      --set prometheus.enabled=true \
+#      --set prometheus.servicemonitor.enabled=true \
+#      --set prometheus.servicemonitor.prometheusInstance=kube-prometheus-stack
+#
+# 3. The flag --enable-certificate-owner-ref is NOT required for metrics, but if you
+#    rely on automatic secret cleanup you should enable it in the cert-manager values.
+#
+# 4. Apply this file to the cluster:
+#      kubectl apply -f observability/prometheus/alerts/cert-manager-alerts.yaml
+#
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cert-manager-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    app: kube-prometheus-stack
+spec:
+  groups:
+    - name: cert-manager.rules
+      rules:
+
+        # ── CertificateExpiringIn14Days ──────────────────────────────────────
+        # Early-warning: gives the team two weeks to investigate renewal failures
+        # before the certificate actually expires and traffic is disrupted.
+        - alert: CertificateExpiringIn14Days
+          expr: >-
+            (
+              certmanager_certificate_expiration_timestamp_seconds
+              - time()
+            ) < 1209600
+          for: 1h
+          labels:
+            severity: warning
+            release: kube-prometheus-stack
+            app: kube-prometheus-stack
+          annotations:
+            summary: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.namespace }}
+              expires in less than 14 days.
+            description: >-
+              Certificate {{ $labels.name }} (namespace: {{ $labels.namespace }},
+              issuer: {{ $labels.issuer_name }}) will expire in
+              {{ printf "%.1f" (div (sub $value 0.0) 86400.0) }} days.
+              Verify that cert-manager has successfully renewed the certificate
+              and that the issuer ({{ $labels.issuer_kind }}/{{ $labels.issuer_name }})
+              is reachable.
+            runbook_url: https://runbooks.example.com/certmanager/certificateexpiring # <-- CHANGE THIS
+
+        # ── CertificateExpiringIn7Days ───────────────────────────────────────
+        # Critical escalation: one week remaining is the last comfortable window
+        # for manual intervention if automated renewal has silently failed.
+        # Page the on-call engineer — certificate expiry causes hard outages.
+        - alert: CertificateExpiringIn7Days
+          expr: >-
+            (
+              certmanager_certificate_expiration_timestamp_seconds
+              - time()
+            ) < 604800
+          for: 1h
+          labels:
+            severity: critical
+            release: kube-prometheus-stack
+            app: kube-prometheus-stack
+          annotations:
+            summary: >-
+              CRITICAL: Certificate {{ $labels.name }} in namespace
+              {{ $labels.namespace }} expires in less than 7 days.
+            description: >-
+              Certificate {{ $labels.name }} (namespace: {{ $labels.namespace }},
+              issuer: {{ $labels.issuer_kind }}/{{ $labels.issuer_name }}) will
+              expire in {{ printf "%.1f" (div (sub $value 0.0) 86400.0) }} days.
+              Automated renewal has not completed in time. Check cert-manager
+              controller logs and issuer status immediately:
+                kubectl describe certificate {{ $labels.name }} -n {{ $labels.namespace }}
+                kubectl describe certificaterequest -n {{ $labels.namespace }}
+            runbook_url: https://runbooks.example.com/certmanager/certificateexpiring # <-- CHANGE THIS
+
+        # ── CertificateExpired ───────────────────────────────────────────────
+        # The certificate is already past its NotAfter timestamp.
+        # TLS handshakes will fail for any workload using this secret.
+        # Fire immediately (for: 0m) — do not wait for a confirmation window.
+        - alert: CertificateExpired
+          expr: >-
+            certmanager_certificate_expiration_timestamp_seconds - time() < 0
+          for: 0m
+          labels:
+            severity: critical
+            release: kube-prometheus-stack
+            app: kube-prometheus-stack
+          annotations:
+            summary: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.namespace }}
+              has EXPIRED.
+            description: >-
+              Certificate {{ $labels.name }} (namespace: {{ $labels.namespace }},
+              issuer: {{ $labels.issuer_kind }}/{{ $labels.issuer_name }}) expired
+              {{ printf "%.0f" (div (sub 0.0 $value) 86400.0) }} day(s) ago.
+              Any service using this certificate's Secret will be serving an
+              invalid TLS certificate. Rotate or force-renew immediately:
+                kubectl delete certificaterequest -n {{ $labels.namespace }} \
+                  -l cert-manager.io/certificate-name={{ $labels.name }}
+            runbook_url: https://runbooks.example.com/certmanager/certificateexpired # <-- CHANGE THIS
+
+        # ── CertificateRenewalFailed ─────────────────────────────────────────
+        # Detect certificates whose Ready condition has been False for >30 minutes.
+        # This fires before expiry and covers cases where cert-manager is cycling
+        # (e.g. ACME DNS challenge failures, rate limits, issuer misconfigurations).
+        # The metric label condition="False" is set by cert-manager when the
+        # Certificate object's Ready condition transitions to False.
+        - alert: CertificateRenewalFailed
+          expr: >-
+            max by (namespace, name, issuer_name, issuer_kind) (
+              certmanager_certificate_ready_status{condition="False"} == 1
+            )
+          for: 30m
+          labels:
+            severity: warning
+            release: kube-prometheus-stack
+            app: kube-prometheus-stack
+          annotations:
+            summary: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.namespace }}
+              has been in a non-Ready state for more than 30 minutes.
+            description: >-
+              Certificate {{ $labels.name }} (namespace: {{ $labels.namespace }},
+              issuer: {{ $labels.issuer_kind }}/{{ $labels.issuer_name }}) has
+              had a Ready=False condition for over 30 minutes, indicating that
+              renewal or issuance is failing. Common causes: ACME challenge
+              failure, DNS propagation delay, issuer rate-limit, or missing
+              ClusterIssuer/Issuer. Investigate with:
+                kubectl describe certificate {{ $labels.name }} -n {{ $labels.namespace }}
+                kubectl get certificaterequest -n {{ $labels.namespace }}
+                kubectl logs -n cert-manager deploy/cert-manager
+            runbook_url: https://runbooks.example.com/certmanager/certificaterenewalfailed # <-- CHANGE THIS

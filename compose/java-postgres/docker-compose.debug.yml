@@ -1,0 +1,25 @@
+# ============================================================
+# TEMPLATE: Docker Compose Override — Spring Boot + pgAdmin
+# WHEN TO USE: Local development when you also need a PostgreSQL admin UI
+# PREREQUISITES: Docker and Docker Compose v2+
+# SECRETS NEEDED: PGADMIN_DEFAULT_EMAIL, PGADMIN_DEFAULT_PASSWORD (in .env file)
+# WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
+# RELATED FILES: compose/java-postgres/docker-compose.yml
+# MATURITY: Stable
+# ============================================================
+
+# pgAdmin debug override — combine with docker-compose.yml for local DB inspection
+
+services:
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-net

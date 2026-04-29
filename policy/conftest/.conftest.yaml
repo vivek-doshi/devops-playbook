@@ -1,0 +1,15 @@
+# conftest configuration
+# https://www.conftest.dev/configuration/
+
+# Root directory that conftest searches for policy files.
+# Override per invocation with --policy <path> when you only want
+# to run a subset (e.g. only kubernetes/ or only terraform/).
+policy: policy/conftest
+
+# Emit results as a human-readable table in the terminal.
+# Switch to "json" or "junit" for machine-readable CI output.
+output: table
+
+# Warnings do not cause a non-zero exit code by default.
+# Set to true to make warnings fail the gate (useful in pre-merge CI).
+fail-on-warn: false

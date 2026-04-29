@@ -1,0 +1,285 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+silent: true
+
+dotenv:
+  - .env
+  - .env.local
+
+vars:
+  HELM_WEBAPP_CHART: cd/helm/webapp
+  K8S_OVERLAYS: cd/kubernetes/_overlays
+  TERRAFORM_DIR: terraform
+
+requires:
+  vars: []
+
+tasks:
+  # ---------------------------------------------------------------------------
+  # DOCKER
+  # ---------------------------------------------------------------------------
+
+  docker:build:
+    desc: "Build a Docker image. Args: IMAGE=<name:tag> DOCKERFILE=<path>"
+    requires:
+      vars: [IMAGE, DOCKERFILE]
+    deps:
+      - _require:docker
+    cmds:
+      - docker build -f "{{.DOCKERFILE}}" -t "{{.IMAGE}}" .
+
+  docker:scan:
+    desc: "Scan a built image with Trivy. Args: IMAGE=<name:tag>"
+    requires:
+      vars: [IMAGE]
+    deps:
+      - _require:docker
+    cmds:
+      - trivy image --exit-code 1 --severity HIGH,CRITICAL "{{.IMAGE}}"
+
+  docker:lint-dockerfiles:
+    desc: "Run hadolint against every Dockerfile in the repository"
+    deps:
+      - _require:docker
+    cmds:
+      - |
+        find . -name "Dockerfile" -not -path "*/.git/*" | sort | while read -r f; do
+          echo "  linting $f"
+          hadolint "$f"
+        done
+
+  # ---------------------------------------------------------------------------
+  # KUBERNETES
+  # ---------------------------------------------------------------------------
+
+  k8s:apply-dev:
+    desc: "kubectl apply -k for the dev overlay"
+    deps:
+      - _require:kubectl
+    cmds:
+      - kubectl apply -k {{.K8S_OVERLAYS}}/dev
+
+  k8s:apply-staging:
+    desc: "kubectl apply -k for the staging overlay"
+    deps:
+      - _require:kubectl
+    cmds:
+      - kubectl apply -k {{.K8S_OVERLAYS}}/staging
+
+  k8s:apply-prod:
+    desc: "kubectl apply -k for the prod overlay (requires confirmation)"
+    deps:
+      - _require:kubectl
+    prompt: "You are about to apply to PRODUCTION. Are you sure?"
+    cmds:
+      - kubectl apply -k {{.K8S_OVERLAYS}}/prod
+
+  k8s:diff:
+    desc: "kubectl diff -k for an overlay. Args: OVERLAY=<dev|staging|prod>"
+    requires:
+      vars: [OVERLAY]
+    deps:
+      - _require:kubectl
+    cmds:
+      - kubectl diff -k {{.K8S_OVERLAYS}}/{{.OVERLAY}}
+
+  k8s:rollout-status:
+    desc: "Check rollout status for deployment/app. Args: NAMESPACE=<ns>"
+    requires:
+      vars: [NAMESPACE]
+    deps:
+      - _require:kubectl
+    cmds:
+      - kubectl rollout status deployment/app -n {{.NAMESPACE}}
+
+  # ---------------------------------------------------------------------------
+  # TERRAFORM
+  # ---------------------------------------------------------------------------
+
+  tf:init:
+    desc: "terraform init for a module. Args: MODULE=<path under terraform/>"
+    requires:
+      vars: [MODULE]
+    deps:
+      - _require:terraform
+    dir: "{{.TERRAFORM_DIR}}/{{.MODULE}}"
+    cmds:
+      - terraform init
+
+  tf:plan:
+    desc: "terraform plan for a module + env. Args: MODULE=<path> ENV=<dev|staging|prod>"
+    requires:
+      vars: [MODULE, ENV]
+    deps:
+      - _require:terraform
+    dir: "{{.TERRAFORM_DIR}}/{{.MODULE}}"
+    cmds:
+      - terraform plan -var-file="vars/{{.ENV}}.tfvars" -out="{{.ENV}}.tfplan"
+
+  tf:apply:
+    desc: "terraform apply for a module + env (requires confirmation). Args: MODULE=<path> ENV=<dev|staging|prod>"
+    requires:
+      vars: [MODULE, ENV]
+    deps:
+      - _require:terraform
+    prompt: "Apply Terraform changes to {{.ENV}} in module {{.MODULE}}?"
+    dir: "{{.TERRAFORM_DIR}}/{{.MODULE}}"
+    cmds:
+      - terraform apply "{{.ENV}}.tfplan"
+
+  tf:test:
+    desc: "Run terraform test for a module. Args: MODULE=<path>"
+    requires:
+      vars: [MODULE]
+    deps:
+      - _require:terraform
+    dir: "{{.TERRAFORM_DIR}}/{{.MODULE}}"
+    cmds:
+      - terraform test
+
+  tf:fmt-check:
+    desc: "Check Terraform formatting recursively across terraform/"
+    deps:
+      - _require:terraform
+    cmds:
+      - terraform fmt -check -recursive {{.TERRAFORM_DIR}}
+
+  # ---------------------------------------------------------------------------
+  # HELM
+  # ---------------------------------------------------------------------------
+
+  helm:lint:
+    desc: "helm lint the webapp chart"
+    deps:
+      - _require:helm
+    cmds:
+      - helm lint {{.HELM_WEBAPP_CHART}}
+
+  helm:template-dev:
+    desc: "Render the webapp chart with dev values"
+    deps:
+      - _require:helm
+    cmds:
+      - helm template webapp {{.HELM_WEBAPP_CHART}} -f {{.HELM_WEBAPP_CHART}}/values.dev.yaml
+
+  helm:diff:
+    desc: "Show diff for a Helm release upgrade. Args: RELEASE=<name> NAMESPACE=<ns>"
+    requires:
+      vars: [RELEASE, NAMESPACE]
+    deps:
+      - _require:helm
+    cmds:
+      - helm diff upgrade --allow-unreleased {{.RELEASE}} {{.HELM_WEBAPP_CHART}} -n {{.NAMESPACE}} -f {{.HELM_WEBAPP_CHART}}/values.dev.yaml
+
+  helm:install-dev:
+    desc: "Install the webapp chart into the dev namespace. Args: NAMESPACE=<ns>"
+    vars:
+      NAMESPACE: '{{.NAMESPACE | default "dev"}}'
+    deps:
+      - _require:helm
+    cmds:
+      - helm install webapp {{.HELM_WEBAPP_CHART}} -n {{.NAMESPACE}} --create-namespace -f {{.HELM_WEBAPP_CHART}}/values.dev.yaml
+
+  helm:upgrade-prod:
+    desc: "Upgrade the webapp chart in prod (requires confirmation). Args: NAMESPACE=<ns>"
+    vars:
+      NAMESPACE: '{{.NAMESPACE | default "prod"}}'
+    deps:
+      - _require:helm
+    prompt: "Upgrade Helm release 'webapp' in namespace '{{.NAMESPACE}}' on PRODUCTION?"
+    cmds:
+      - helm upgrade --install webapp {{.HELM_WEBAPP_CHART}} -n {{.NAMESPACE}} --create-namespace -f {{.HELM_WEBAPP_CHART}}/values.prod.yaml
+
+  # ---------------------------------------------------------------------------
+  # LOCAL
+  # ---------------------------------------------------------------------------
+
+  local:kind-up:
+    desc: "Create a local kind cluster"
+    deps:
+      - _require:kind
+    cmds:
+      - bash local-dev/kind/setup.sh
+
+  local:kind-down:
+    desc: "Tear down the local kind cluster"
+    deps:
+      - _require:kind
+    cmds:
+      - bash local-dev/kind/teardown.sh
+
+  local:load-image:
+    desc: "Load a Docker image into the kind cluster. Args: IMAGE=<name:tag>"
+    requires:
+      vars: [IMAGE]
+    deps:
+      - _require:kind
+      - _require:docker
+    cmds:
+      - bash local-dev/kind/load-image.sh "{{.IMAGE}}"
+
+  # ---------------------------------------------------------------------------
+  # QUALITY
+  # ---------------------------------------------------------------------------
+
+  quality:pre-commit-run:
+    desc: "Run all pre-commit hooks against all files"
+    cmds:
+      - pre-commit run --all-files
+
+  quality:lint-all:
+    desc: "Run ruff, eslint, and golangci-lint in parallel"
+    deps:
+      - quality:_lint-python
+      - quality:_lint-js
+      - quality:_lint-go
+
+  quality:_lint-python:
+    internal: true
+    cmds:
+      - ruff check .
+
+  quality:_lint-js:
+    internal: true
+    cmds:
+      - npx eslint . --ext .js,.ts,.jsx,.tsx
+
+  quality:_lint-go:
+    internal: true
+    cmds:
+      - golangci-lint run ./...
+
+  # ---------------------------------------------------------------------------
+  # INTERNAL GUARDS
+  # ---------------------------------------------------------------------------
+
+  _require:docker:
+    internal: true
+    preconditions:
+      - sh: command -v docker
+        msg: "'docker' is not on PATH — install Docker Desktop or the Docker CLI."
+
+  _require:kubectl:
+    internal: true
+    preconditions:
+      - sh: command -v kubectl
+        msg: "'kubectl' is not on PATH — install kubectl: https://kubernetes.io/docs/tasks/tools/"
+
+  _require:helm:
+    internal: true
+    preconditions:
+      - sh: command -v helm
+        msg: "'helm' is not on PATH — install Helm: https://helm.sh/docs/intro/install/"
+
+  _require:terraform:
+    internal: true
+    preconditions:
+      - sh: command -v terraform
+        msg: "'terraform' is not on PATH — install Terraform: https://developer.hashicorp.com/terraform/install"
+
+  _require:kind:
+    internal: true
+    preconditions:
+      - sh: command -v kind
+        msg: "'kind' is not on PATH — install kind: https://kind.sigs.k8s.io/docs/user/quick-start/#installation"

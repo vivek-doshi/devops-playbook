@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { CodeViewer } from './components/CodeViewer';
 import './App.css';
 
-type ThemeName = 'ocean' | 'midnight';
+type ThemeName = 'runbook-dawn' | 'terminal-dusk';
 
 interface FileItem {
   path: string;
@@ -20,7 +20,11 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState<ThemeName>(() => {
     const savedTheme = window.localStorage.getItem('devops-playbook-theme');
-    return savedTheme === 'midnight' ? 'midnight' : 'ocean';
+    if (savedTheme === 'terminal-dusk' || savedTheme === 'midnight') {
+      return 'terminal-dusk';
+    }
+
+    return 'runbook-dawn';
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
