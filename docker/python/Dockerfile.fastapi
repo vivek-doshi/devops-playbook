@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — FastAPI Application
 # WHEN TO USE: FastAPI applications served via Uvicorn
@@ -10,7 +10,7 @@
 # ============================================================
 
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM python:3.13-slim AS base
+FROM python:3.14-slim AS base
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
