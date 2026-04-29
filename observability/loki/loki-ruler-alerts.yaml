@@ -1,0 +1,176 @@
+# loki-ruler-alerts.yaml
+#
+# Kubernetes ConfigMap that holds Loki ruler alert rules in the Loki rule-file format.
+# The ruler evaluates LogQL queries on a schedule and sends firing alerts to Alertmanager,
+# where they appear alongside Prometheus alerts on the same routing tree.
+#
+# ── Prerequisites ────────────────────────────────────────────────────────────────
+#
+# 1. Loki ruler must be enabled in values.yaml.  The minimum required stanza is shown
+#    at the bottom of observability/loki/values.yaml; it turns on the ruler component,
+#    sets storage to "local", and points the rules directory at /var/loki/rules
+#    (the same path already used by the filesystem storage backend).
+#
+# 2. The ConfigMap below must be mounted into the Loki pod at /var/loki/rules/fake/
+#    (the "fake" sub-directory is the synthetic tenant name used in single-tenant mode
+#    where auth_enabled=false).  The extraVolume / extraVolumeMount entries in the
+#    ruler stanza in values.yaml handle this automatically.
+#
+# 3. Alertmanager must be reachable from the Loki ruler pod.  Set the
+#    loki.config.ruler.alertmanager_url in values.yaml to match your Alertmanager
+#    service (typically http://kube-prometheus-stack-alertmanager.monitoring:9093).
+#
+# 4. Apply this ConfigMap before (or at the same time as) upgrading the Loki Helm release:
+#      kubectl apply -f observability/loki/loki-ruler-alerts.yaml
+#      helm upgrade loki grafana/loki-stack -n monitoring -f observability/loki/values.yaml
+#
+# ── Alert routing ────────────────────────────────────────────────────────────────
+#
+# Loki ruler alerts carry the label "ruler: loki" (added in the group below) which
+# can be used in Alertmanager route matchers to send log-based alerts to a separate
+# receiver or to merge them with the existing Prometheus alert routes.
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-ruler-config
+  namespace: monitoring
+  labels:
+    app: loki
+    release: kube-prometheus-stack
+data:
+  # The file name must end in .yaml or .yml; Loki ignores other files in the rules directory.
+  application-rules.yaml: |
+    groups:
+      - name: application.rules
+        rules:
+
+          # ── HighErrorLogRate ─────────────────────────────────────────────────
+          # Fires when any app is producing more than 10 error log lines per second
+          # averaged over the last 5 minutes, sustained for 5 minutes.
+          # A threshold of 10/s is a reasonable baseline; tune per-app with
+          # additional rules that narrow the stream selector.
+          - alert: HighErrorLogRate
+            expr: |
+              sum(
+                rate(
+                  {namespace=~"production|staging"} | json | level="error" [5m]
+                )
+              ) by (namespace, app) > 10
+            for: 5m
+            labels:
+              severity: warning
+              ruler: loki
+            annotations:
+              summary: >-
+                High error log rate in {{ $labels.app }}
+                (namespace: {{ $labels.namespace }})
+              description: >-
+                Application {{ $labels.app }} in namespace {{ $labels.namespace }}
+                is emitting {{ printf "%.1f" $value }} error log lines per second
+                (threshold: 10/s). Investigate recent deployments, upstream
+                dependencies, or configuration changes.
+              runbook_url: https://runbooks.example.com/loki/higherrorlograte # <-- CHANGE THIS
+
+          # ── ErrorLogSpike ────────────────────────────────────────────────────
+          # Fires when the 5-minute error rate is more than 5× the 1-hour baseline.
+          # This catches sudden regressions even when the absolute rate is low,
+          # which is especially useful for low-traffic apps where HighErrorLogRate
+          # might never fire.
+          - alert: ErrorLogSpike
+            expr: |
+              (
+                sum(
+                  rate(
+                    {namespace=~"production|staging"} | json | level="error" [5m]
+                  )
+                ) by (namespace, app)
+              )
+              /
+              (
+                sum(
+                  rate(
+                    {namespace=~"production|staging"} | json | level="error" [1h]
+                  )
+                ) by (namespace, app) + 0.001
+              ) > 5
+            for: 2m
+            labels:
+              severity: critical
+              ruler: loki
+            annotations:
+              summary: >-
+                Error log spike detected for {{ $labels.app }}
+                (namespace: {{ $labels.namespace }})
+              description: >-
+                Application {{ $labels.app }} in namespace {{ $labels.namespace }}
+                has an error log rate {{ printf "%.1f" $value }}× above its
+                1-hour baseline. A spike this large usually indicates a failed
+                deployment, a broken upstream dependency, or an active incident.
+                Check recent deploys and downstream service health.
+              runbook_url: https://runbooks.example.com/loki/errorlogspike # <-- CHANGE THIS
+
+          # ── OOMKilledDetected ────────────────────────────────────────────────
+          # Fires immediately (for: 0m) when any log line in the production namespace
+          # contains "OOMKilled" or "out of memory".  These strings appear in kubelet
+          # event logs, container runtime logs, and application panic messages.
+          # An OOM kill usually means resource limits are misconfigured or there is a
+          # memory leak — both need prompt attention to prevent cascading failures.
+          - alert: OOMKilledDetected
+            expr: |
+              sum(
+                count_over_time(
+                  {namespace="production"}
+                    |~ "(?i)(OOMKilled|out of memory)"
+                  [5m]
+                )
+              ) by (namespace, app, pod) > 0
+            for: 0m
+            labels:
+              severity: critical
+              ruler: loki
+            annotations:
+              summary: >-
+                OOM kill detected for {{ $labels.app }}
+                (pod: {{ $labels.pod }}, namespace: {{ $labels.namespace }})
+              description: >-
+                A log line matching "OOMKilled" or "out of memory" was found in
+                pod {{ $labels.pod }} (app: {{ $labels.app }}, namespace:
+                {{ $labels.namespace }}). The container was likely terminated by
+                the kernel OOM killer. Review memory limits and recent heap growth:
+                  kubectl top pod {{ $labels.pod }} -n {{ $labels.namespace }}
+                  kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+              runbook_url: https://runbooks.example.com/loki/oomkilleddetected # <-- CHANGE THIS
+
+          # ── PanicDetected ────────────────────────────────────────────────────
+          # Fires immediately (for: 0m) when any production log line indicates a
+          # fatal runtime error.  Covered patterns:
+          #   - "panic:"         Go runtime panics and application-level panic() calls
+          #   - "SIGSEGV"        Segmentation fault — memory safety violation in native code
+          #   - "fatal error:"   Go runtime fatal errors (e.g. "concurrent map writes")
+          # These indicate a process crash or imminent crash and always warrant
+          # immediate investigation.
+          - alert: PanicDetected
+            expr: |
+              sum(
+                count_over_time(
+                  {namespace="production"}
+                    |~ "(?i)(panic:|SIGSEGV|fatal error:)"
+                  [5m]
+                )
+              ) by (namespace, app, pod) > 0
+            for: 0m
+            labels:
+              severity: critical
+              ruler: loki
+            annotations:
+              summary: >-
+                Panic or fatal error detected in {{ $labels.app }}
+                (pod: {{ $labels.pod }}, namespace: {{ $labels.namespace }})
+              description: >-
+                A log line matching "panic:", "SIGSEGV", or "fatal error:" was
+                found in pod {{ $labels.pod }} (app: {{ $labels.app }}, namespace:
+                {{ $labels.namespace }}). The process has crashed or is in an
+                unrecoverable state. Collect a stack trace immediately:
+                  kubectl logs {{ $labels.pod }} -n {{ $labels.namespace }} --previous
+              runbook_url: https://runbooks.example.com/loki/panicdetected # <-- CHANGE THIS

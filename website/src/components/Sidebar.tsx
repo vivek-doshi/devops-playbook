@@ -17,8 +17,8 @@ interface SidebarProps {
   onFileSelect: (file: FileItem) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  theme: 'ocean' | 'midnight';
-  onThemeChange: (theme: 'ocean' | 'midnight') => void;
+  theme: 'runbook-dawn' | 'terminal-dusk';
+  onThemeChange: (theme: 'runbook-dawn' | 'terminal-dusk') => void;
 }
 
 interface TreeNode {
@@ -181,18 +181,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <p className="subtitle">Code Template Browser</p>
         <div className="theme-switcher" role="group" aria-label="Theme selector">
           <button
-            className={`theme-btn ${theme === 'ocean' ? 'active' : ''}`}
-            onClick={() => onThemeChange('ocean')}
+            className={`theme-btn ${theme === 'runbook-dawn' ? 'active' : ''}`}
+            onClick={() => onThemeChange('runbook-dawn')}
             type="button"
           >
-            Ocean Ops
+            Runbook Dawn
           </button>
           <button
-            className={`theme-btn ${theme === 'midnight' ? 'active' : ''}`}
-            onClick={() => onThemeChange('midnight')}
+            className={`theme-btn ${theme === 'terminal-dusk' ? 'active' : ''}`}
+            onClick={() => onThemeChange('terminal-dusk')}
             type="button"
           >
-            Midnight
+            Terminal Dusk
           </button>
         </div>
       </div>

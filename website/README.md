@@ -2,6 +2,10 @@
 
 An interactive code template browser for DevOps engineers. Browse, search, and copy templates for Docker, Kubernetes, CI/CD pipelines, and more.
 
+The UI ships with two named themes:
+- `Runbook Dawn` for a warm, document-first light mode
+- `Terminal Dusk` for a high-contrast dark mode tuned for code review
+
 ## 🚀 Quick Start
 
 ### Local Development
@@ -106,6 +110,10 @@ Edit CSS files in `website/src/components/`:
 - `Sidebar.css` - Left navigation styling
 - `CodeViewer.css` - Code display styling  
 - `App.css` - Overall layout
+
+Edit `website/index.html` if you also want browser chrome colors and metadata to match the visual theme system:
+- `theme-color` meta tags control the browser toolbar color in light and dark mode
+- Page `title` and `description` should stay aligned with the current theme naming
 
 ### Add Supported Languages
 

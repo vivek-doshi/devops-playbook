@@ -12,6 +12,7 @@ Ready-to-use compose stacks for local development.
 | `dotnet-sqlserver/` | ASP.NET Core API + SQL Server |
 <!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 | `python-postgres-redis/` | Python API + PostgreSQL + Redis |
+| `java-postgres/` | Spring Boot API + PostgreSQL (+ optional pgAdmin) |
 | `microservices-example/` | Multiple services with shared network |
 <!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 | `_templates/` | Annotated base template with all common patterns |

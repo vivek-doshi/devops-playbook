@@ -1,9 +1,39 @@
 {
-  "name": "DevOps Playbook",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
+  "name": "DevOps Starter",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  // --privileged is required for docker-in-docker and kind
+  "runArgs": ["--privileged"],
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "minikube": "none"
+    },
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "1.10",
+      "tflint": "none",
+      "terragrunt": "none"
+    },
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/google-cloud-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.24"
+    },
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "8.0"
+    }
   },
+
   "postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
   "remoteUser": "vscode",
   "forwardPorts": [3000, 8000, 8080, 9090, 3100, 16686],
@@ -30,34 +60,14 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        // Terraform HCL authoring, validation, and fmt support for the repository's IaC templates.
         "hashicorp.terraform",
-        // Kubernetes manifest, Helm, and cluster management support for the cd/ folder.
         "ms-kubernetes-tools.vscode-kubernetes-tools",
-        // YAML schema validation and formatting for pipelines, manifests, and Helm values files.
         "redhat.vscode-yaml",
-        // Dockerfile authoring and container workflow integration across docker/ and compose/.
+        "github.vscode-github-actions",
         "ms-azuretools.vscode-docker",
-        // Inline AI assistance for adapting templates to project-specific needs.
-        "github.copilot",
-        // Chat-driven repository assistance for DevOps workflows and troubleshooting.
-        "github.copilot-chat",
-        // ShellCheck diagnostics for the shell scripts and local tooling in scripts/ and .devcontainer/.
-        "timonwong.shellcheck",
-        // Shell formatting support for bash scripts maintained in this repository.
-        "foxundermoon.shell-format",
-        // Python language tooling for scripts, quality config, and automation helpers.
+        "golang.go",
         "ms-python.python",
-        // Ruff linting and formatting integration aligned with quality/python/pyproject.toml.
-        "charliermarsh.ruff",
-        // Prettier formatting for JSON, Markdown, and frontend assets in website/.
-        "esbenp.prettier-vscode",
-        // ESLint integration for JavaScript and TypeScript content in website/ and examples.
-        "dbaeumer.vscode-eslint",
-        // Git history and blame visibility for template evolution and repository learning.
-        "eamodio.gitlens",
-        // Commit graph visualization for release, branching, and automation workflows.
-        "mhutchie.git-graph"
+        "ms-dotnettools.csdevkit"
       ],
       "settings": {
         "editor.formatOnSave": true,

@@ -246,3 +246,58 @@ promtail:
     enabled: true
     labels:
       monitoring: "true"
+
+# ─── Loki Ruler ───────────────────────────────────────────────────────────────
+#
+# The ruler evaluates LogQL alert rules on a schedule and forwards firing alerts
+# to Alertmanager, where they appear alongside Prometheus alerts on the same
+# routing tree.
+#
+# Prerequisites:
+#   1. Apply the rules ConfigMap first (or in the same Helm sync):
+#        kubectl apply -f observability/loki/loki-ruler-alerts.yaml
+#   2. The ConfigMap is mounted at /var/loki/rules/fake/ — "fake" is the synthetic
+#      tenant name used in single-tenant mode (auth_enabled=false).
+#   3. Set alertmanager_url below to match your Alertmanager service FQDN.
+#
+# This block extends loki.config defined earlier in this file. The Helm chart
+# deep-merges the config keys, so only the new ruler section is added here.
+loki:
+  config:
+    ruler:
+      # Store rule files on the local filesystem, read from the mounted ConfigMap.
+      # For distributed/microservices mode, switch to an object storage backend:
+      #   storage: { type: s3, s3: { ... } }
+      storage:
+        type: local
+        local:
+          # This path is also used by common.storage.filesystem.rules_directory above.
+          # The sub-directory "fake" is Loki's default org ID for single-tenant deployments.
+          directory: /var/loki/rules
+
+      # <-- CHANGE THIS to the Alertmanager service in your monitoring namespace.
+      alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring:9093
+
+      # Send alerts to Alertmanager even when only one Loki replica is running.
+      enable_alertmanager_v2: true
+
+      # Poll the rules directory every minute for configuration changes.
+      # Lower values mean faster rule propagation; the minimum supported is 15s.
+      poll_interval: 1m
+
+      # Enable the remote-write path so ruler evaluation results can also be written
+      # back to Prometheus as recording rules (set to false if not needed).
+      enable_api: true
+
+  # Mount the loki-ruler-config ConfigMap into the Loki pod so the ruler can read
+  # the alert rules without requiring a pod restart on rule changes.
+  extraVolumes:
+    - name: loki-ruler-rules
+      configMap:
+        name: loki-ruler-config
+
+  extraVolumeMounts:
+    - name: loki-ruler-rules
+      # /var/loki/rules/fake/ — "fake" is the single-tenant org ID.
+      mountPath: /var/loki/rules/fake
+      readOnly: true

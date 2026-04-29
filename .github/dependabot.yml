@@ -1,16 +1,26 @@
 # ============================================================
 # Dependabot configuration
-# Keeps GitHub Actions and Docker base images up to date
-# automatically by opening PRs for version bumps.
+# Keeps dependencies up to date across the full DevOps monorepo
+# by opening PRs for version bumps on a weekly Monday cadence.
 # Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
-# Behaviour summary:
-#   - GitHub Actions  : all updates grouped into ONE PR per week.
-#   - Docker images   : all directories grouped into ONE PR per week.
-#   - Major versions  : ignored for .NET, Java (temurin/gradle), Ruby
-#                       and Node so breaking upgrades need an explicit opt-in.
-#   - Auto-merge      : a separate workflow (.github/workflows/dependabot-automerge.yml)
-#                       automatically merges patch-level Docker and Actions PRs.
+# Ecosystems covered:
+#   - github-actions : all workflow files under .github/workflows/
+#   - docker         : every Dockerfile directory under docker/
+#   - terraform      : all Terraform module directories
+#   - npm            : Pulumi CDK projects under cd/pulumi/
+#   - pip            : Python requirements files
+#   - gomod          : Go modules (Terratest)
+#
+# Common settings (applied to every entry):
+#   - schedule       : weekly on Monday at 09:00 UTC
+#   - labels         : ["dependencies", "automated"]
+#   - reviewers      : platform-team
+#   - limit          : 10 open PRs per ecosystem directory
+#   - Major versions : ignored for runtimes that require code changes
+#                      (.NET, Java, Node, Ruby) — bump manually when ready.
+#   - Auto-merge     : a separate workflow (dependabot-automerge.yml)
+#                      merges patch-level PRs automatically.
 # ============================================================
 
 version: 2
@@ -26,9 +36,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "github-actions"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "ci(deps)"
     # All Actions bumps batched into one PR per week.
@@ -49,9 +62,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -66,9 +82,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -92,9 +111,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -109,9 +131,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -135,9 +160,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -157,9 +185,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -174,9 +205,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -191,9 +225,12 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
     groups:
@@ -205,19 +242,191 @@ updates:
       - dependency-name: "ruby"
         update-types: ["version-update:semver-major"]
 
-  - package-ecosystem: "docker"
-    directory: "/docker/_base"
+  # ── Terraform modules ────────────────────────────────────────
+  # Each module directory is scanned independently so that provider
+  # version bumps produce targeted, reviewable PRs.
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/aws-eks"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "docker"
+      - "automated"
+    reviewers:
+      - "platform-team"
     commit-message:
       prefix: "build(deps)"
-    groups:
-      docker-all:
-        patterns:
-          - "*"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/aws-ecs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/azure-aks"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/gcp-gke"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/azure-app-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/aws-lambda"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  # ── npm (Pulumi CDK projects) ────────────────────────────────
+
+  - package-ecosystem: "npm"
+    directory: "/cd/pulumi/aws"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "npm"
+    directory: "/cd/pulumi/azure"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "npm"
+    directory: "/cd/pulumi/gcp"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  # ── pip (Python requirements) ────────────────────────────────
+  # Dependabot searches for requirements*.txt, setup.cfg, Pipfile,
+  # pyproject.toml recursively from the declared directory. Pointing
+  # at "/" covers every Python requirements file in the repo.
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"
+
+  # ── gomod (Terratest) ────────────────────────────────────────
+
+  - package-ecosystem: "gomod"
+    directory: "/terraform/_testing/terratest"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "platform-team"
+    commit-message:
+      prefix: "build(deps)"

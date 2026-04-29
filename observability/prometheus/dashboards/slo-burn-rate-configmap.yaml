@@ -1,0 +1,769 @@
+# slo-burn-rate-configmap.yaml
+#
+# Wraps the slo-burn-rate Grafana dashboard JSON in a Kubernetes ConfigMap so
+# the Grafana sidecar (grafana-sc-dashboard) auto-discovers and loads it.
+#
+# ── How the sidecar works ────────────────────────────────────────────────────
+#
+# kube-prometheus-stack ships Grafana with the sidecar container enabled by
+# default.  The sidecar watches all namespaces (or a configurable set) for
+# ConfigMaps that carry the label grafana_dashboard: "1" and mounts them into
+# the Grafana pod at /tmp/dashboards/.  Grafana's provisioning config reads
+# that directory and loads any .json files found there.
+#
+# No Grafana restart is required — the sidecar detects ConfigMap changes via
+# the Kubernetes watch API and updates the mounted files in place.
+#
+# ── Deploying ────────────────────────────────────────────────────────────────
+#
+#   kubectl apply -f observability/prometheus/dashboards/slo-burn-rate-configmap.yaml
+#
+# ── Checking that the dashboard loaded ───────────────────────────────────────
+#
+#   kubectl logs -n monitoring -l app.kubernetes.io/name=grafana \
+#     -c grafana-sc-dashboard --tail=50
+#
+# Look for a line containing "slo-burn-rate.json" to confirm the sidecar
+# picked up the file.
+#
+# ── Updating the dashboard ───────────────────────────────────────────────────
+#
+# Edit slo-burn-rate.json, then re-apply this ConfigMap.  The sidecar detects
+# the change within ~30 seconds and hot-reloads the dashboard in Grafana.
+#
+# To export a dashboard edited in the Grafana UI back to JSON:
+#   Dashboard menu → Share → Export → Save to file
+# Then replace the content of the data key below with the exported JSON.
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-slo-burn-rate
+  namespace: monitoring   # <-- CHANGE THIS if Grafana runs in a different namespace
+  labels:
+    # The sidecar watches for this exact label.  Do not rename it.
+    grafana_dashboard: "1"
+    # Optional extra labels for organisational purposes only.
+    app: grafana
+    release: kube-prometheus-stack  # <-- CHANGE THIS to match your Helm release name
+data:
+  slo-burn-rate.json: |-
+    {
+      "__inputs": [
+        {
+          "name": "DS_PROMETHEUS",
+          "label": "Prometheus",
+          "description": "",
+          "type": "datasource",
+          "pluginId": "prometheus",
+          "pluginName": "Prometheus"
+        }
+      ],
+      "__requires": [
+        {
+          "type": "grafana",
+          "id": "grafana",
+          "name": "Grafana",
+          "version": "10.0.0"
+        },
+        {
+          "type": "datasource",
+          "id": "prometheus",
+          "name": "Prometheus",
+          "version": "1.0.0"
+        },
+        {
+          "type": "panel",
+          "id": "stat",
+          "name": "Stat",
+          "version": ""
+        },
+        {
+          "type": "panel",
+          "id": "timeseries",
+          "name": "Time series",
+          "version": ""
+        },
+        {
+          "type": "panel",
+          "id": "gauge",
+          "name": "Gauge",
+          "version": ""
+        },
+        {
+          "type": "panel",
+          "id": "table",
+          "name": "Table",
+          "version": ""
+        }
+      ],
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          },
+          {
+            "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+            "enable": true,
+            "hide": false,
+            "iconColor": "#5794F2",
+            "name": "Deployments",
+            "type": "tags",
+            "tags": ["deployment"],
+            "builtIn": 0,
+            "limit": 100,
+            "showIn": 0,
+            "step": "60s"
+          }
+        ]
+      },
+      "description": "Multi-window, multi-burn-rate SLO dashboard.  Uses the slo:sli_error:ratio_rate<window> recording rules produced by the availability-slo PrometheusRule template (observability/prometheus/slos/availability-slo.yaml).",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 10,
+          "title": "Current Status",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Current 5-minute error rate as a percentage of total requests.  Colour thresholds reflect the burn-rate multiplier against the error budget:\n  • Green  = below 1× budget burn (on track)\n  • Yellow = 1×–6× (elevated; may page on the slow-burn alert)\n  • Orange = 6×–14× (high burn; fast-burn alert may be firing)\n  • Red    = above 14× (critical; fast-burn alert should be firing)",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "decimals": 4,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  {
+                    "color": "yellow",
+                    "value": null,
+                    "__expr": "(1 - ${slo_target}) * 1"
+                  },
+                  {
+                    "color": "orange",
+                    "value": null,
+                    "__expr": "(1 - ${slo_target}) * 6"
+                  },
+                  {
+                    "color": "red",
+                    "value": null,
+                    "__expr": "(1 - ${slo_target}) * 14"
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+          "id": 1,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate5m{job=~\"$service\"}",
+              "instant": true,
+              "legendFormat": "Error rate (5m)",
+              "refId": "A"
+            }
+          ],
+          "title": "Current Error Rate (5m)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Percentage of the monthly error budget that has not yet been consumed.  Calculated as:\n  remaining% = 1 − (30d_burn_rate / (1 − SLO_target))\nWhere 30d_burn_rate = slo:sli_error:ratio_rate30d.\n\nA value near 100% means the service is well within budget for the month.\nA negative value means the budget has been exhausted and the SLO is already breached.",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "decimals": 1,
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red",    "value": null },
+                  { "color": "orange", "value": 0.2 },
+                  { "color": "yellow", "value": 0.5 },
+                  { "color": "green",  "value": 0.75 }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+          "id": 3,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "1 - (slo:sli_error:ratio_rate30d{job=~\"$service\"} / (1 - $slo_target))",
+              "instant": true,
+              "legendFormat": "Budget remaining",
+              "refId": "A"
+            }
+          ],
+          "title": "Error Budget Remaining (30d window)",
+          "type": "gauge"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+          "id": 11,
+          "title": "Error Ratio — All Windows",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Overlays the SLI error ratio across all six burn-rate windows (5m, 30m, 1h, 6h, 1d, 3d) for the selected service.  The horizontal dashed line marks the error budget (1 − SLO target).\n\nA window crossing the budget line means that window is burning faster than 1× — the service would exhaust its budget before the 30-day period ends if the rate were sustained.\n\nShorter windows react faster; longer windows smooth out transient spikes.  Alert rules fire when BOTH a fast window and a slow window simultaneously exceed their respective thresholds (multi-window burn-rate alerting).",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Error ratio",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "decimals": 5,
+              "mappings": [],
+              "unit": "percentunit"
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Error budget" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+                  {
+                    "id": "custom.lineStyle",
+                    "value": { "dash": [8, 4], "fill": "dash" }
+                  },
+                  { "id": "custom.lineWidth", "value": 2 }
+                ]
+              }
+            ]
+          },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 7 },
+          "id": 2,
+          "options": {
+            "legend": {
+              "calcs": ["lastNotNull", "max"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate5m{job=~\"$service\"}",
+              "legendFormat": "5m",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate30m{job=~\"$service\"}",
+              "legendFormat": "30m",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate1h{job=~\"$service\"}",
+              "legendFormat": "1h",
+              "refId": "C"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate6h{job=~\"$service\"}",
+              "legendFormat": "6h",
+              "refId": "D"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate1d{job=~\"$service\"}",
+              "legendFormat": "1d",
+              "refId": "E"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate3d{job=~\"$service\"}",
+              "legendFormat": "3d",
+              "refId": "F"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "vector(1 - $slo_target)",
+              "legendFormat": "Error budget",
+              "refId": "G"
+            }
+          ],
+          "title": "Error Ratio — All Windows",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+          "id": 12,
+          "title": "Burn Rate Multiplier",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Burn rate multiplier = (current error ratio) / (error budget).\n\nA value of 1× means the error budget is being consumed exactly on pace — the service would exhaust the budget in exactly 30 days.  Values above 1× mean the budget will be exhausted sooner.\n\nAlert thresholds used by the Google SRE multi-window burn-rate alerting model:\n  • 1×  — slow burn; the service will miss the SLO unless the rate drops\n  • 6×  — medium burn; triggers the slow-window alert (1h|5m pair)\n  • 14× — fast burn; triggers the fast-window alert (5m|1h pair, pages immediately)\n\nReference: https://sre.google/workbook/alerting-on-slos/#multiple_burn_rate_alerts",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Multiplier (×)",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 5,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "decimals": 2,
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "1× threshold" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } },
+                  { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } },
+                  { "id": "custom.lineWidth", "value": 1 }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "6× threshold" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } },
+                  { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } },
+                  { "id": "custom.lineWidth", "value": 1 }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "14× threshold" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+                  { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } },
+                  { "id": "custom.lineWidth", "value": 2 }
+                ]
+              }
+            ]
+          },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 17 },
+          "id": 4,
+          "options": {
+            "legend": {
+              "calcs": ["lastNotNull", "max"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate5m{job=~\"$service\"} / (1 - $slo_target)",
+              "legendFormat": "5m burn rate",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate30m{job=~\"$service\"} / (1 - $slo_target)",
+              "legendFormat": "30m burn rate",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate1h{job=~\"$service\"} / (1 - $slo_target)",
+              "legendFormat": "1h burn rate",
+              "refId": "C"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate6h{job=~\"$service\"} / (1 - $slo_target)",
+              "legendFormat": "6h burn rate",
+              "refId": "D"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate1d{job=~\"$service\"} / (1 - $slo_target)",
+              "legendFormat": "1d burn rate",
+              "refId": "E"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate3d{job=~\"$service\"} / (1 - $slo_target)",
+              "legendFormat": "3d burn rate",
+              "refId": "F"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "vector(1)",
+              "legendFormat": "1× threshold",
+              "refId": "G"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "vector(6)",
+              "legendFormat": "6× threshold",
+              "refId": "H"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "vector(14)",
+              "legendFormat": "14× threshold",
+              "refId": "I"
+            }
+          ],
+          "title": "Burn Rate Multiplier Over Time",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+          "id": 13,
+          "title": "Per-Service SLO Status",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Per-service SLO status table.  Shows the current 5m and 1h burn rate multipliers, the percentage of the 30-day error budget remaining, and a derived alert status.\n\nAlert status logic:\n  • OK        — 5m burn rate < 1×\n  • WARNING   — 5m burn rate ≥ 1×  (slow burn, trending towards budget exhaustion)\n  • CRITICAL  — 5m burn rate ≥ 6×  (fast/medium burn, alert may be firing)\n  • PAGE      — 5m burn rate ≥ 14× (critical burn, fast-window page should be active)",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "custom": {
+                "align": "auto",
+                "cellOptions": { "type": "auto" },
+                "filterable": true,
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green",  "value": null },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "orange", "value": 6 },
+                  { "color": "red",    "value": 14 }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Service" },
+                "properties": [
+                  { "id": "custom.width", "value": 200 }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Burn rate (5m)" },
+                "properties": [
+                  { "id": "unit",     "value": "short" },
+                  { "id": "decimals", "value": 2 },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": { "type": "color-background", "mode": "gradient" }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green",  "value": null },
+                        { "color": "yellow", "value": 1 },
+                        { "color": "orange", "value": 6 },
+                        { "color": "red",    "value": 14 }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Burn rate (1h)" },
+                "properties": [
+                  { "id": "unit",     "value": "short" },
+                  { "id": "decimals", "value": 2 }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Budget remaining (%)" },
+                "properties": [
+                  { "id": "unit",     "value": "percentunit" },
+                  { "id": "decimals", "value": 1 },
+                  { "id": "custom.width", "value": 180 },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "red",    "value": null },
+                        { "color": "orange", "value": 0.2 },
+                        { "color": "yellow", "value": 0.5 },
+                        { "color": "green",  "value": 0.75 }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": { "type": "color-background", "mode": "gradient" }
+                  }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Alert status" },
+                "properties": [
+                  { "id": "custom.width", "value": 120 },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      { "type": "range", "options": { "from": 0, "to": 0.9999, "result": { "text": "OK",       "color": "green"  } } },
+                      { "type": "range", "options": { "from": 1, "to": 5.9999, "result": { "text": "WARNING",  "color": "yellow" } } },
+                      { "type": "range", "options": { "from": 6, "to": 13.9999,"result": { "text": "CRITICAL", "color": "orange" } } },
+                      { "type": "range", "options": { "from": 14,"to": 1e10,   "result": { "text": "PAGE",     "color": "red"    } } }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": { "type": "color-background", "mode": "basic" }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green",  "value": null },
+                        { "color": "yellow", "value": 1 },
+                        { "color": "orange", "value": 6 },
+                        { "color": "red",    "value": 14 }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 27 },
+          "id": 5,
+          "options": {
+            "cellHeight": "sm",
+            "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+            "showHeader": true,
+            "sortBy": [{ "displayName": "Burn rate (5m)", "desc": true }]
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate5m / (1 - $slo_target)",
+              "instant": true,
+              "legendFormat": "{{job}}",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "slo:sli_error:ratio_rate1h / (1 - $slo_target)",
+              "instant": true,
+              "legendFormat": "{{job}}",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "1 - (slo:sli_error:ratio_rate30d / (1 - $slo_target))",
+              "instant": true,
+              "legendFormat": "{{job}}",
+              "refId": "C"
+            }
+          ],
+          "title": "Per-Service SLO Status",
+          "transformations": [
+            {
+              "id": "joinByField",
+              "options": { "byField": "job", "mode": "outer" }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "renameByName": {
+                  "job":       "Service",
+                  "Value #A":  "Burn rate (5m)",
+                  "Value #B":  "Burn rate (1h)",
+                  "Value #C":  "Budget remaining (%)"
+                }
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "Alert status",
+                "mode": "reduceRow",
+                "reduce": {
+                  "reducer": "lastNotNull"
+                },
+                "binary": {
+                  "left":     "Burn rate (5m)",
+                  "right":    "Burn rate (5m)",
+                  "operator": "+"
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "renameByName": {
+                  "Alert status": "Alert status"
+                },
+                "indexByName": {
+                  "Service":              0,
+                  "Burn rate (5m)":       1,
+                  "Burn rate (1h)":       2,
+                  "Budget remaining (%)": 3,
+                  "Alert status":         4
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
+      "refresh": "1m",
+      "schemaVersion": 38,
+      "tags": ["slo", "reliability"],
+      "templating": {
+        "list": [
+          {
+            "current": {},
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "",
+            "type": "datasource",
+            "label": "Datasource"
+          },
+          {
+            "current": {},
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "definition": "label_values(slo:sli_error:ratio_rate5m, job)",
+            "hide": 0,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": true,
+            "name": "service",
+            "options": [],
+            "query": {
+              "query": "label_values(slo:sli_error:ratio_rate5m, job)",
+              "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "sort": 1,
+            "type": "query",
+            "label": "Service"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": "0.999",
+              "value": "0.999"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "name": "slo_target",
+            "options": [
+              { "selected": true,  "text": "99.9% (0.999)", "value": "0.999" },
+              { "selected": false, "text": "99.5% (0.995)", "value": "0.995" },
+              { "selected": false, "text": "99%   (0.99)",  "value": "0.99"  },
+              { "selected": false, "text": "95%   (0.95)",  "value": "0.95"  }
+            ],
+            "query": "0.999,0.995,0.99,0.95",
+            "type": "custom",
+            "label": "SLO Target"
+          }
+        ]
+      },
+      "time": { "from": "now-24h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "SLO Burn Rate — Multi-Window",
+      "uid": "slo-burn-rate",
+      "version": 1,
+      "weekStart": ""
+    }
