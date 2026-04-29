@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — .NET Background Worker / Hosted Service
 # WHEN TO USE: .NET Worker Service, console apps, background processors
@@ -11,7 +11,7 @@
 
 # ── Stage 1: Build ──────────────────────────────────────────────────────────
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /src
 
@@ -34,7 +34,7 @@ RUN dotnet publish "MyWorker.csproj" \                      # <-- CHANGE THIS: y
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 # NOTE: Uses dotnet/runtime (NOT aspnet) — workers don't need the HTTP stack
-FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:10.0-alpine AS runtime
 WORKDIR /app
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
