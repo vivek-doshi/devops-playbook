@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform — AWS ECS Fargate
 # WHEN TO USE: Running containers on AWS without managing servers
 # PREREQUISITES: AWS account, AWS CLI authenticated
@@ -17,7 +17,7 @@ terraform {
     aws = {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/aws"
-      version = "~> 5.31.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 6.42.0" # <-- CHANGE THIS: pin to latest stable
     # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
