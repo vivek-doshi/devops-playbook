@@ -1,7 +1,7 @@
 # ============================================================
 # Dependabot Auto-merge
-# Automatically approves and merges Dependabot PRs that are
-# patch-level updates only — no human review needed for those.
+# Automatically approves patch-level Dependabot PRs and posts
+# a compatibility summary for Docker base image updates.
 #
 # Major and minor bumps are left open for manual review because
 # they can carry breaking changes (see dependabot.yml ignore rules).
@@ -10,16 +10,25 @@
 #   - Settings > General > Allow auto-merge  (must be ON)
 #   - Branch protection rule on `main` with "Require status checks"
 #     so auto-merge only completes after CI passes.
+#   - Optional secret `PAT_TOKEN` to enable Dependabot's official
+#     compatibility score lookup for Docker/base image PRs.
+#
+# Compatibility summary behavior for Docker PRs:
+#   - With `PAT_TOKEN`: use dependabot/fetch-metadata compat-lookup
+#     and post the official `compatibility-score` output.
+#   - Without `PAT_TOKEN`: use a semver heuristic fallback so PRs still
+#     show a readable score (patch=95, minor=80, major=45, other=65).
 # ============================================================
 
 name: Dependabot Auto-merge
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 jobs:
@@ -27,7 +36,7 @@ jobs:
     name: Auto-merge patch updates
     runs-on: ubuntu-latest
     # Only run for PRs opened by Dependabot itself.
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
 
     steps:
       - name: Fetch Dependabot metadata
@@ -35,6 +44,107 @@ jobs:
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch Dependabot compatibility score
+        id: compat
+        if: steps.meta.outputs.package-ecosystem == 'docker' && secrets.PAT_TOKEN != ''
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.PAT_TOKEN }}
+          compat-lookup: true
+
+      - name: Post Docker compatibility summary
+        if: steps.meta.outputs.package-ecosystem == 'docker'
+        uses: actions/github-script@v7
+        env:
+          COMPATIBILITY_SCORE: ${{ steps.compat.outputs.compatibility-score }}
+          DEPENDENCY_NAMES: ${{ steps.meta.outputs.dependency-names }}
+          PREVIOUS_VERSION: ${{ steps.meta.outputs.previous-version }}
+          NEW_VERSION: ${{ steps.meta.outputs.new-version }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          DIRECTORY: ${{ steps.meta.outputs.directory }}
+        with:
+          script: |
+            const marker = '<!-- dependabot-docker-compatibility -->';
+            const dependencyNames = process.env.DEPENDENCY_NAMES || 'base image';
+            const previousVersion = process.env.PREVIOUS_VERSION || 'unknown';
+            const newVersion = process.env.NEW_VERSION || 'unknown';
+            const updateType = process.env.UPDATE_TYPE || 'unknown';
+            const directory = process.env.DIRECTORY || 'unknown';
+
+            const heuristicScores = {
+              'version-update:semver-patch': 95,
+              'version-update:semver-minor': 80,
+              'version-update:semver-major': 45,
+            };
+
+            let score = Number(process.env.COMPATIBILITY_SCORE || '0');
+            let source = 'official Dependabot compatibility lookup';
+
+            if (!Number.isFinite(score) || score <= 0) {
+              score = heuristicScores[updateType] ?? 65;
+              source = 'semver heuristic fallback';
+            }
+
+            let rating = 'Manual verification required';
+            let guidance = 'Treat this as a breaking-risk update and validate the container image explicitly before merge.';
+
+            if (score >= 90) {
+              rating = 'Low compatibility risk';
+              guidance = 'Usually safe to merge once CI and a basic container smoke test pass.';
+            } else if (score >= 75) {
+              rating = 'Review recommended';
+              guidance = 'Check release notes, rebuild the image, and run targeted smoke tests before merge.';
+            } else if (score >= 60) {
+              rating = 'Needs targeted testing';
+              guidance = 'Validate startup, package installs, and runtime compatibility before merge.';
+            }
+
+            const body = `${marker}
+            ## Docker base image compatibility
+
+            **Compatibility score:** ${score}/100
+            **Rating:** ${rating}
+
+            - Image: \`${dependencyNames}\`
+            - Proposed change: \`${previousVersion}\` -> \`${newVersion}\`
+            - Update type: \`${updateType}\`
+            - Directory: \`${directory}\`
+            - Source: ${source}
+
+            ${guidance}
+
+            This score is advisory. It helps prioritize review effort; it does not replace CI, image rebuilds, or runtime validation.
+            `;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
 
       # Auto-approve + merge ONLY when the update is patch-level.
       # Semver: patch = third digit (1.2.X), minor = second (1.X.0).
