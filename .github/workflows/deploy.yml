@@ -3,25 +3,7 @@ name: Deploy Code Browser
 
 on:
   push:
-    # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     branches: [main]
-    paths:
-      - 'docker/**'
-      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      - 'ci/**'
-      - 'kubernetes/**'
-      - 'cd/**'
-      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      - 'compose/**'
-      - 'terraform/**'
-      - 'scripts/**'
-      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      - 'security/**'
-      - 'quality/**'
-      - 'notifications/**'
-      # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      - 'website/**'
-      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
