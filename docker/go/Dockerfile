@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — Go API / Service
 # WHEN TO USE: Any Go application (API, CLI, worker)
@@ -11,7 +11,7 @@
 
 # ── Stage 1: Build ───────────────────────────────────────────────────────────
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM golang:1.24-alpine AS build
+FROM golang:1.26-alpine AS build
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
