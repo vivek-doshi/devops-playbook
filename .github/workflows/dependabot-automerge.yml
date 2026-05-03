@@ -35,27 +35,29 @@ jobs:
   auto-merge:
     name: Auto-merge patch updates
     runs-on: ubuntu-latest
+    env:
+      HAS_PAT_TOKEN: ${{ secrets.PAT_TOKEN != '' }}
     # Only run for PRs opened by Dependabot itself.
     if: github.event.pull_request.user.login == 'dependabot[bot]'
 
     steps:
       - name: Fetch Dependabot metadata
         id: meta
-        uses: dependabot/fetch-metadata@v3
+        uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch Dependabot compatibility score
         id: compat
-        if: steps.meta.outputs.package-ecosystem == 'docker' && secrets.PAT_TOKEN != ''
-        uses: dependabot/fetch-metadata@v3
+        if: steps.meta.outputs.package-ecosystem == 'docker' && env.HAS_PAT_TOKEN == 'true'
+        uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ secrets.PAT_TOKEN }}
           compat-lookup: true
 
       - name: Post Docker compatibility summary
         if: steps.meta.outputs.package-ecosystem == 'docker'
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
         env:
           COMPATIBILITY_SCORE: ${{ steps.compat.outputs.compatibility-score }}
           DEPENDENCY_NAMES: ${{ steps.meta.outputs.dependency-names }}
