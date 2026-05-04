@@ -355,6 +355,49 @@ resource "aws_eks_node_group" "main" {
   ]
 }
 
+resource "aws_eks_node_group" "gpu" {
+  count           = var.gpu_node_group_enabled ? 1 : 0
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "ng-gpu-${var.project}-${var.environment}"
+  node_role_arn   = aws_iam_role.eks_nodes.arn
+  subnet_ids      = aws_subnet.private[*].id
+  instance_types  = var.gpu_instance_types
+  capacity_type   = var.gpu_capacity_type
+  ami_type        = var.gpu_ami_type
+  disk_size       = var.gpu_disk_size
+  labels          = var.gpu_labels
+
+  scaling_config {
+    desired_size = var.gpu_desired_count
+    min_size     = var.gpu_min_count
+    max_size     = var.gpu_max_count
+  }
+
+  dynamic "taint" {
+    for_each = var.gpu_node_taint_enabled ? [1] : []
+    content {
+      key    = "nvidia.com/gpu"
+      value  = "dedicated"
+      effect = "NO_SCHEDULE"
+    }
+  }
+
+  update_config {
+    max_unavailable = 1
+  }
+
+  tags = merge(local.common_tags, {
+    Name     = "ng-gpu-${var.project}-${var.environment}"
+    NodePool = "gpu"
+  })
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_worker_node_policy,
+    aws_iam_role_policy_attachment.eks_cni_policy,
+    aws_iam_role_policy_attachment.ecr_read_only,
+  ]
+}
+
 # ---------------------------------------------
 # Security Group for EKS Cluster
 # ---------------------------------------------
@@ -390,6 +433,8 @@ resource "aws_security_group" "eks_cluster" {
 locals {
   cluster_name = "eks-${var.project}-${var.environment}"
   common_tags = {
+    CostCenter  = var.cost_center
+    Owner       = var.owner
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"

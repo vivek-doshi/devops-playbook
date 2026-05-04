@@ -1,0 +1,294 @@
+# ============================================================
+# TEMPLATE: GPU Inference Deployment (Kubernetes)
+# WHEN TO USE: Serve a trained ML model on GPU nodes.
+#              Suitable for real-time inference workloads using
+#              frameworks such as NVIDIA Triton Inference Server,
+#              TorchServe, BentoML, vLLM, or custom FastAPI services.
+#
+# PREREQUISITES:
+#   - A GPU node pool is enabled in Terraform:
+#       AWS EKS:  terraform/aws-eks/variables.tf  → gpu_node_group_enabled = true
+#       Azure AKS: terraform/azure-aks/variables.tf → gpu_node_pool_enabled = true
+#   - NVIDIA device plugin DaemonSet is running on the cluster.
+#     Verify: kubectl get pods -n kube-system -l name=nvidia-device-plugin-ds
+#   - A model repository PVC is mounted at /models (pre-populated separately).
+#
+# SCALING:
+#   This file includes an HPA configured to scale on custom GPU-utilisation
+#   metrics exported via DCGM Exporter → Prometheus → custom-metrics adapter.
+#   If you do not have that stack, delete the HPA and scale manually or use
+#   a simple CPU/memory HPA instead.
+#
+# FINOPS REQUIREMENT:
+#   GPU nodes are expensive.  All pods scheduled here MUST carry the
+#   FinOps labels enforced by policy/kyverno/enforce-finops-labels.yaml:
+#     finops.org/costcenter: <your-cost-centre>
+#     finops.org/environment: dev | staging | prod
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   cd/kubernetes/_patterns/gpu-training-job.yaml
+#   docs/golden-paths/mlops-workflow.md
+#   terraform/aws-eks/variables.tf
+#   terraform/azure-aks/variables.tf
+# MATURITY: Stable
+# ============================================================
+
+---
+# ── 1. Deployment ────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-inference                     # <-- CHANGE THIS
+  namespace: ml-team                        # <-- CHANGE THIS
+  labels:
+    app: model-inference                    # <-- CHANGE THIS
+    component: inference
+    version: "1.0.0"                        # <-- CHANGE THIS: pin to your model/image tag
+    team: ml-platform                       # <-- CHANGE THIS
+    # ── FinOps labels (required by Kyverno policy) ─────────────────────
+    finops.org/costcenter: "ml-1234"        # <-- CHANGE THIS
+    finops.org/environment: prod            # <-- CHANGE THIS: dev | staging | prod
+spec:
+  # Start with one replica; the HPA below will scale this.
+  # Keep replicas: 1 here so the HPA owns the replica count.
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: model-inference                  # <-- CHANGE THIS (must match template labels)
+
+  strategy:
+    # RollingUpdate keeps the service live during model version updates.
+    # maxSurge: 1 means one extra GPU pod is started before the old one stops —
+    # ensure the node pool has enough GPU headroom for this.
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  template:
+    metadata:
+      labels:
+        app: model-inference                # <-- CHANGE THIS
+        component: inference
+        version: "1.0.0"                    # <-- CHANGE THIS
+        finops.org/costcenter: "ml-1234"    # <-- CHANGE THIS
+        finops.org/environment: prod        # <-- CHANGE THIS
+      annotations:
+        # Prometheus scrape config — adjust port/path for your server.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8002"          # <-- CHANGE THIS: Triton metrics port
+        prometheus.io/path: "/metrics"
+    spec:
+      # ── Node selection ─────────────────────────────────────────────────
+      # Route pods to GPU nodes via the label applied by the Terraform module.
+      nodeSelector:
+        accelerator: nvidia-gpu             # <-- CHANGE THIS if you used different gpu_node_labels
+
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: accelerator
+                    operator: In
+                    values:
+                      - nvidia-gpu          # <-- CHANGE THIS to match your gpu_node_labels
+        # Spread inference replicas across different physical nodes to avoid
+        # a single node failure taking down the entire serving tier.
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: model-inference    # <-- CHANGE THIS
+                topologyKey: kubernetes.io/hostname
+
+      # ── Taint toleration ───────────────────────────────────────────────
+      # The GPU node pool is tainted  nvidia.com/gpu=dedicated:NoSchedule.
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Equal"
+          value: "dedicated"
+          effect: "NoSchedule"
+
+      # ── Security context ───────────────────────────────────────────────
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      # ── Volumes ────────────────────────────────────────────────────────
+      volumes:
+        # Model repository — populated by a training pipeline or artifact store.
+        - name: model-repo
+          persistentVolumeClaim:
+            claimName: model-repo-pvc       # <-- CHANGE THIS
+        # Shared memory for CUDA IPC (required by some inference frameworks).
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi                  # <-- CHANGE THIS
+
+      # ── Termination grace ──────────────────────────────────────────────
+      # Allow in-flight requests to complete before the pod is killed.
+      terminationGracePeriodSeconds: 60     # <-- CHANGE THIS to your p99 latency + buffer
+
+      containers:
+        - name: inference-server
+          # Example: NVIDIA Triton Inference Server.
+          # Replace with your own serving image (TorchServe, vLLM, BentoML, etc.).
+          image: nvcr.io/nvidia/tritonserver:24.04-py3  # <-- CHANGE THIS
+          imagePullPolicy: Always
+
+          # ── GPU resource request ────────────────────────────────────────
+          # One GPU per replica is the common pattern for inference.
+          # If your model fits in GPU memory alongside others, consider
+          # MIG (Multi-Instance GPU) partitioning instead.
+          resources:
+            requests:
+              cpu: "2"                      # <-- CHANGE THIS
+              memory: "8Gi"                 # <-- CHANGE THIS
+              nvidia.com/gpu: "1"           # <-- CHANGE THIS
+            limits:
+              cpu: "4"                      # <-- CHANGE THIS
+              memory: "16Gi"                # <-- CHANGE THIS
+              nvidia.com/gpu: "1"           # <-- CHANGE THIS: must equal request
+
+          # ── Inference server entrypoint ─────────────────────────────────
+          # Triton example — replace with your framework's command.
+          command:
+            - tritonserver
+            - --model-repository=/models
+            - --strict-model-config=false
+            - --log-verbose=0              # <-- CHANGE THIS: set to 1 for debugging
+          # <-- CHANGE THIS: replace with your server's args
+
+          ports:
+            - name: http
+              containerPort: 8000           # <-- CHANGE THIS: Triton HTTP
+            - name: grpc
+              containerPort: 8001           # <-- CHANGE THIS: Triton gRPC
+            - name: metrics
+              containerPort: 8002           # <-- CHANGE THIS: Triton metrics
+
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+
+          volumeMounts:
+            - name: model-repo
+              mountPath: /models
+              readOnly: true
+            - name: dshm
+              mountPath: /dev/shm
+
+          # ── Probes ─────────────────────────────────────────────────────
+          # Triton exposes /v2/health/ready and /v2/health/live.
+          # Update the paths for your inference framework.
+          readinessProbe:
+            httpGet:
+              path: /v2/health/ready        # <-- CHANGE THIS
+              port: http
+            initialDelaySeconds: 30         # <-- CHANGE THIS: time for model to load
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /v2/health/live         # <-- CHANGE THIS
+              port: http
+            initialDelaySeconds: 60         # <-- CHANGE THIS
+            periodSeconds: 20
+            failureThreshold: 3
+
+          startupProbe:
+            httpGet:
+              path: /v2/health/ready        # <-- CHANGE THIS
+              port: http
+            # Allow up to (failureThreshold × periodSeconds) = 5 min for first model load.
+            failureThreshold: 30
+            periodSeconds: 10
+
+---
+# ── 2. Service ──────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-inference                     # <-- CHANGE THIS
+  namespace: ml-team                        # <-- CHANGE THIS
+  labels:
+    app: model-inference                    # <-- CHANGE THIS
+spec:
+  selector:
+    app: model-inference                    # <-- CHANGE THIS
+  ports:
+    - name: http
+      port: 8000                            # <-- CHANGE THIS
+      targetPort: http
+    - name: grpc
+      port: 8001                            # <-- CHANGE THIS
+      targetPort: grpc
+  type: ClusterIP
+
+---
+# ── 3. HorizontalPodAutoscaler ──────────────────────────────────────────
+# Scales based on GPU utilisation exported by DCGM Exporter and exposed
+# via the Prometheus custom-metrics adapter.
+# If you don't have custom metrics yet, replace the metric block with a
+# simple CPU utilisation target (type: Resource / cpu) to get started.
+#
+# Install DCGM Exporter: https://github.com/NVIDIA/dcgm-exporter
+# Install custom-metrics adapter: https://github.com/kubernetes-sigs/prometheus-adapter
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: model-inference-hpa                 # <-- CHANGE THIS
+  namespace: ml-team                        # <-- CHANGE THIS
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: model-inference                   # <-- CHANGE THIS (must match Deployment name)
+
+  minReplicas: 1                            # <-- CHANGE THIS: always keep ≥ 1 for serving
+  maxReplicas: 4                            # <-- CHANGE THIS: cap to node pool max GPU count
+
+  metrics:
+    # ── Option A: GPU utilisation via DCGM custom metric ─────────────────
+    # Scale up when average GPU utilisation across pods exceeds 70 %.
+    - type: Pods
+      pods:
+        metric:
+          name: DCGM_FI_DEV_GPU_UTIL       # <-- Metric name from DCGM Exporter
+        target:
+          type: AverageValue
+          averageValue: "70"               # <-- CHANGE THIS: target GPU utilisation %
+
+    # ── Option B: fallback — scale on request queue depth ─────────────────
+    # Uncomment this block and remove Option A if you don't have DCGM metrics.
+    # - type: Pods
+    #   pods:
+    #     metric:
+    #       name: inference_request_queue_size  # <-- your custom metric
+    #     target:
+    #       type: AverageValue
+    #       averageValue: "10"
+
+  behavior:
+    # Scale up quickly to meet demand spikes.
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    # Scale down slowly — GPU pods are expensive to evict and re-schedule.
+    scaleDown:
+      stabilizationWindowSeconds: 300       # 5-minute cool-down before scale-down
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120

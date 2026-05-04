@@ -1,0 +1,68 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: enforce-finops-labels
+  annotations:
+    policies.kyverno.io/title: Enforce FinOps Labels on Namespaces and Pods
+    policies.kyverno.io/category: FinOps
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Blocks Namespace and Pod create or update requests unless the FinOps labels
+      finops.org/costcenter and finops.org/environment are present. Excludes kube-system,
+      cert-manager, and DaemonSet-managed Pods to avoid blocking cluster-critical workloads.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: validate-finops-labels-on-namespaces
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              names:
+                - kube-system
+                - cert-manager
+      validate:
+        message: >-
+          FinOps policy violation: You must include costcenter and environment labels to deploy to this cluster.
+        pattern:
+          metadata:
+            labels:
+              finops.org/costcenter: "?*"
+              finops.org/environment: "?*"
+
+    - name: validate-finops-labels-on-pods
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - cert-manager
+      preconditions:
+        all:
+          - key: "{{ request.object.metadata.ownerReferences[0].kind || '' }}"
+            operator: NotEquals
+            value: DaemonSet
+      validate:
+        message: >-
+          FinOps policy violation: You must include costcenter and environment labels to deploy to this cluster.
+        pattern:
+          metadata:
+            labels:
+              finops.org/costcenter: "?*"
+              finops.org/environment: "?*"

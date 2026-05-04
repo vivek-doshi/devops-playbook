@@ -1,0 +1,210 @@
+# ============================================================
+# TEMPLATE: GPU Training Job (Kubernetes)
+# WHEN TO USE: Run a batch ML training workload on a GPU node pool.
+#              Use this pattern for one-shot or scheduled training
+#              runs (PyTorch, TensorFlow, JAX, etc.).
+#
+# PREREQUISITES:
+#   - A GPU node pool is enabled in Terraform:
+#       AWS EKS:  terraform/aws-eks/variables.tf  → gpu_node_group_enabled = true
+#       Azure AKS: terraform/azure-aks/variables.tf → gpu_node_pool_enabled = true
+#   - NVIDIA device plugin DaemonSet is running on the cluster.
+#     Verify: kubectl get pods -n kube-system -l name=nvidia-device-plugin-ds
+#   - The training image has CUDA libraries compatible with the node GPU driver.
+#
+# TAINT/TOLERATION MODEL:
+#   The GPU node pool is tainted  nvidia.com/gpu=dedicated:NoSchedule
+#   so that only pods that explicitly tolerate it will land there.
+#   This prevents non-GPU workloads from wasting expensive GPU capacity.
+#
+# FINOPS REQUIREMENT:
+#   GPU nodes are expensive.  All pods scheduled here MUST carry the
+#   FinOps labels enforced by policy/kyverno/enforce-finops-labels.yaml:
+#     finops.org/costcenter: <your-cost-centre>
+#     finops.org/environment: dev | staging | prod
+#
+# WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
+# RELATED FILES:
+#   cd/kubernetes/_patterns/gpu-inference-deployment.yaml
+#   docs/golden-paths/mlops-workflow.md
+#   terraform/aws-eks/variables.tf
+#   terraform/azure-aks/variables.tf
+# MATURITY: Stable
+# ============================================================
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-training-v1                   # <-- CHANGE THIS: use a versioned name
+  namespace: ml-team                        # <-- CHANGE THIS
+  labels:
+    app: model-training                     # <-- CHANGE THIS
+    component: training
+    version: "1.0.0"                        # <-- CHANGE THIS: pin to your image tag
+    team: ml-platform                       # <-- CHANGE THIS
+    # ── FinOps labels (required by Kyverno policy) ─────────────────────
+    finops.org/costcenter: "ml-1234"        # <-- CHANGE THIS
+    finops.org/environment: prod            # <-- CHANGE THIS: dev | staging | prod
+spec:
+  # Retry once on transient node failures; do NOT retry on OOM/CUDA errors
+  # without fixing the root cause — they will simply fail again.
+  backoffLimit: 1
+
+  # Hard upper bound: kill the Job if it runs longer than 6 hours.
+  # Adjust to your expected training duration + a safety margin.
+  activeDeadlineSeconds: 21600             # <-- CHANGE THIS
+
+  # Keep history for post-mortem inspection.
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+  template:
+    metadata:
+      labels:
+        app: model-training                 # <-- CHANGE THIS (match .metadata.labels)
+        component: training
+        finops.org/costcenter: "ml-1234"    # <-- CHANGE THIS (must match above)
+        finops.org/environment: prod        # <-- CHANGE THIS
+    spec:
+      restartPolicy: Never                  # Never restart a failed training pod
+
+      # ── Node selection ──────────────────────────────────────────────────
+      # Route this pod to GPU nodes via the label the Terraform module applies.
+      # AWS EKS:  the gpu node group sets  accelerator=nvidia-gpu  and  node-role=gpu
+      # Azure AKS: same labels via gpu_node_labels variable.
+      nodeSelector:
+        accelerator: nvidia-gpu             # <-- CHANGE THIS if you used different gpu_node_labels
+
+      # Prefer nodes with the most available GPU capacity when multiple
+      # GPU node sizes coexist.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: accelerator
+                    operator: In
+                    values:
+                      - nvidia-gpu          # <-- CHANGE THIS to match your gpu_node_labels
+
+      # ── Taint toleration ────────────────────────────────────────────────
+      # The GPU node pool is tainted  nvidia.com/gpu=dedicated:NoSchedule.
+      # Without this toleration the pod will remain Pending indefinitely.
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Equal"
+          value: "dedicated"
+          effect: "NoSchedule"
+
+      # ── Security context ────────────────────────────────────────────────
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      # ── Volumes ─────────────────────────────────────────────────────────
+      volumes:
+        # Shared memory required by PyTorch DataLoader with num_workers > 0.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi                  # <-- CHANGE THIS: typically 25–50 % of node RAM
+        # Mount training data from a PVC (pre-populated by a data pipeline).
+        - name: training-data
+          persistentVolumeClaim:
+            claimName: training-data-pvc    # <-- CHANGE THIS
+        # Mount model checkpoints so training can be resumed on retry.
+        - name: checkpoints
+          persistentVolumeClaim:
+            claimName: model-checkpoints-pvc  # <-- CHANGE THIS
+
+      containers:
+        - name: trainer
+          # Use an image that bundles your training code + CUDA runtime.
+          # The base image CUDA version must be <= the GPU node driver version.
+          # Check node driver: kubectl describe node <gpu-node> | grep nvidia
+          image: your-registry/model-trainer:1.0.0   # <-- CHANGE THIS
+          imagePullPolicy: Always
+
+          # ── GPU resource request ───────────────────────────────────────
+          # Request exactly the number of GPUs the training script uses.
+          # Fractional GPUs are not supported by default; use whole numbers.
+          # For multi-GPU training set this to the number of GPUs per node
+          # and launch with torchrun / torch.distributed.
+          resources:
+            requests:
+              cpu: "4"                      # <-- CHANGE THIS
+              memory: "16Gi"                # <-- CHANGE THIS
+              nvidia.com/gpu: "1"           # <-- CHANGE THIS: whole number only
+            limits:
+              cpu: "8"                      # <-- CHANGE THIS
+              memory: "32Gi"                # <-- CHANGE THIS
+              nvidia.com/gpu: "1"           # <-- CHANGE THIS: must equal request
+
+          # ── Training entrypoint ─────────────────────────────────────────
+          command: ["python", "-m", "trainer.train"]   # <-- CHANGE THIS
+          args:
+            - "--epochs=10"                 # <-- CHANGE THIS
+            - "--batch-size=32"             # <-- CHANGE THIS
+            - "--data-dir=/data"
+            - "--checkpoint-dir=/checkpoints"
+
+          env:
+            # NCCL tuning for multi-GPU — harmless for single-GPU.
+            - name: NCCL_DEBUG
+              value: "WARN"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            # Expose the pod name so the training script can tag checkpoints.
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: training-data
+              mountPath: /data
+              readOnly: true
+            - name: checkpoints
+              mountPath: /checkpoints
+
+          # ── Probes ─────────────────────────────────────────────────────
+          # Jobs don't use readiness/liveness probes; use a startup probe
+          # only if the process takes a long time to initialise CUDA context.
+          # startupProbe:
+          #   exec:
+          #     command: ["cat", "/tmp/ready"]
+          #   failureThreshold: 30
+          #   periodSeconds: 10
+
+      # ── Init container: wait for data PVC to be populated ───────────────
+      # Remove if your training data pipeline guarantees the PVC is ready.
+      initContainers:
+        - name: wait-for-data
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for training data..."
+              until [ -f /data/.ready ]; do sleep 5; done
+              echo "Data ready, starting trainer."
+          volumeMounts:
+            - name: training-data
+              mountPath: /data
+              readOnly: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true

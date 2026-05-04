@@ -18,7 +18,7 @@ This repository is a comprehensive, real-world reference for building, deploying
 
 It provides:
 
-- **Golden paths**: End-to-end, copy-pasteable workflows for microservices, serverless, frontend SPAs, data pipelines, and platform onboarding
+- **Golden paths**: End-to-end, copy-pasteable workflows for microservices, serverless, frontend SPAs, data pipelines, MLOps, and platform onboarding
 - **Ready-to-use CI/CD templates**: GitHub Actions, Azure Pipelines, GitLab CI, Jenkins
 - **Infrastructure as Code**: Terraform, Pulumi, Helm, Kustomize
 - **Security & compliance**: Built-in scanning, policies, and secret management
@@ -27,6 +27,8 @@ It provides:
 
 
 > **Start here:** Pick your [golden path](docs/golden-paths/) and follow it step-by-step. Each path links directly to the files you need to copy or edit.
+> 
+> For local GPU experimentation and fine-tuning, use the dedicated CUDA devcontainer at [.devcontainer/gpu/devcontainer.json](.devcontainer/gpu/devcontainer.json).
 
 ---
 
@@ -90,6 +92,7 @@ Golden paths are **opinionated, end-to-end workflows** that guide you from idea 
 | [serverless-app.md](docs/golden-paths/serverless-app.md) | Lambda/Cloud Run function, event-driven or scheduled |
 | [frontend-spa.md](docs/golden-paths/frontend-spa.md) | React/Angular SPA → CDN/App Service |
 | [data-pipeline.md](docs/golden-paths/data-pipeline.md) | Batch jobs, CronJobs, ECS tasks |
+| [mlops-workflow.md](docs/golden-paths/mlops-workflow.md) | GPU-backed model training, fine-tuning, and inference delivery |
 | [platform-onboarding.md](docs/golden-paths/platform-onboarding.md) | New team onboarding, platform setup |
 | [incident-response.md](docs/golden-paths/incident-response.md) | Production incident response & ops |
 
@@ -120,9 +123,6 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 ```
 
 ---
-
-## Quickstart
-
 
 ## Quickstart
 
@@ -160,11 +160,12 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 
 ## Documentation
 
-- **[docs/golden-paths/](docs/golden-paths/)** — Start here for all workflows
+- **[docs/golden-paths/](docs/golden-paths/)** — Start here for all workflows, including the new MLOps path
 - **[docs/guides/](docs/guides/)** — Deep dives: onboarding, secrets, environments, migrations, DR
 - **[docs/runbooks/](docs/runbooks/)** — Incident response, troubleshooting, templates
 - **[docs/ARCHITECTURE_DECISION_GUIDE.md](docs/ARCHITECTURE_DECISION_GUIDE.md)** — How decisions are made
 - **[docs/repo_structure.md](docs/repo_structure.md)** — Full n-level repo tree with explanations
+- **[.devcontainer/gpu/README.md](.devcontainer/gpu/README.md)** — Local CUDA/GPU devcontainer usage
 
 ---
 

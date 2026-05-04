@@ -35,6 +35,10 @@ terraform {
 provider "azurerm" {
   # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   features {}
+
+  default_tags {
+    tags = local.common_tags
+  }
 }
 
 # ---------------------------------------------
@@ -177,11 +181,35 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   principal_id         = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
 }
 
+resource "azurerm_kubernetes_cluster_node_pool" "gpu" {
+  count                 = var.gpu_node_pool_enabled ? 1 : 0
+  name                  = var.gpu_node_pool_name
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
+  vm_size               = var.gpu_node_vm_size
+  mode                  = "User"
+  orchestrator_version  = var.kubernetes_version
+  vnet_subnet_id        = azurerm_subnet.aks.id
+  os_disk_size_gb       = var.gpu_node_os_disk_size_gb
+  max_pods              = 50
+  enable_auto_scaling   = var.gpu_enable_autoscaling
+  node_count            = var.gpu_enable_autoscaling ? null : var.gpu_node_count
+  min_count             = var.gpu_enable_autoscaling ? var.gpu_node_min_count : null
+  max_count             = var.gpu_enable_autoscaling ? var.gpu_node_max_count : null
+  node_labels           = var.gpu_node_labels
+  node_taints           = var.gpu_node_taint_enabled ? ["nvidia.com/gpu=dedicated:NoSchedule"] : []
+
+  tags = merge(local.common_tags, {
+    NodePool = "gpu"
+  })
+}
+
 # ---------------------------------------------
 # Common Tags
 # ---------------------------------------------
 locals {
   common_tags = {
+    CostCenter  = var.cost_center
+    Owner       = var.owner
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"

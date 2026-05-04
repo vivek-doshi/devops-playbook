@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dev-scaler
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dev-scaler
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - statefulsets
+      - deployments/scale
+      - statefulsets/scale
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-scaler
+subjects:
+  - kind: ServiceAccount
+    name: dev-scaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dev-scaler
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dev-scale-to-zero
+spec:
+  schedule: "0 19 * * 1-5"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: dev-scaler
+          restartPolicy: OnFailure
+          containers:
+            - name: scaler
+              image: bitnami/kubectl:1.30
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  namespace="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
+                  for resource in $(kubectl -n "${namespace}" get deployments,statefulsets -o name); do
+                    kubectl -n "${namespace}" scale "${resource}" --replicas=0
+                  done
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dev-scale-up
+spec:
+  schedule: "0 7 * * 1-5"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: dev-scaler
+          restartPolicy: OnFailure
+          containers:
+            - name: scaler
+              image: bitnami/kubectl:1.30
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  namespace="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
+                  for resource in $(kubectl -n "${namespace}" get deployments,statefulsets -o name); do
+                    kubectl -n "${namespace}" scale "${resource}" --replicas=1
+                  done

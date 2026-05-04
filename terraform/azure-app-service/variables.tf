@@ -9,7 +9,23 @@ variable "project" {
   # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "myapp" # <-- CHANGE THIS
+
+  validation {
+    condition     = length(trim(var.project)) > 0
+    error_message = "Project must be a non-empty string."
+  }
 # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+}
+
+variable "cost_center" {
+  description = "FinOps cost center tag applied to all resources"
+  type        = string
+  default     = "engineering-shared" # <-- CHANGE THIS
+
+  validation {
+    condition     = length(trim(var.cost_center)) > 0
+    error_message = "CostCenter must be a non-empty string."
+  }
 }
 
 variable "environment" {
@@ -18,6 +34,22 @@ variable "environment" {
   type        = string
   # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "dev" # <-- CHANGE THIS
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
+  }
+}
+
+variable "owner" {
+  description = "FinOps owner tag applied to all resources; must be an email address"
+  type        = string
+  default     = "platform@example.com" # <-- CHANGE THIS
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.owner))
+    error_message = "Owner must be a valid email address."
+  }
 }
 
 # Note 6: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.

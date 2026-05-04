@@ -226,6 +226,70 @@ Store runbooks in `docs/runbooks/` and link them from your alert annotations.
 
 ---
 
+## Step 9b — GPU / ML workloads (optional)
+
+Skip this section if your team is not running machine-learning or GPU-accelerated workloads.
+
+### Enable a GPU node pool
+
+GPU nodes are **off by default** in the Terraform modules to avoid accidental costs.
+A platform engineer or FinOps approver must enable them:
+
+| Cloud | Variable to set | Default VM size |
+|-------|-----------------|-----------------|
+| AWS EKS | `gpu_node_group_enabled = true` in [`terraform/aws-eks/variables.tf`](../../terraform/aws-eks/variables.tf) | `g5.xlarge` (NVIDIA A10G) |
+| Azure AKS | `gpu_node_pool_enabled = true` in [`terraform/azure-aks/variables.tf`](../../terraform/azure-aks/variables.tf) | `Standard_NC4as_T4_v3` (NVIDIA T4) |
+
+Both node pools are tainted `nvidia.com/gpu=dedicated:NoSchedule`.  
+Only pods that explicitly tolerate this taint will be scheduled on GPU nodes.
+
+### FinOps labelling for GPU workloads
+
+GPU capacity is costly. The Kyverno policy [`policy/kyverno/enforce-finops-labels.yaml`](../../policy/kyverno/enforce-finops-labels.yaml) **blocks** any pod on a GPU node that is missing:
+
+```yaml
+finops.org/costcenter: "<your-cost-centre>"
+finops.org/environment: dev | staging | prod
+```
+
+Both labels must be present on every pod spec, not just the parent Deployment or Job.
+
+### Use the GPU development environment
+
+For local model development and experimentation, open the GPU devcontainer:
+
+```bash
+# From VS Code: Reopen in Container → select "GPU / CUDA ML Environment"
+# Or from the CLI:
+code --folder-uri vscode-remote://dev-container+$(pwd)/.devcontainer/gpu
+```
+
+This gives you CUDA 12.4 + cuDNN, PyTorch, TensorFlow, and Jupyter on port 8888.  
+Full instructions: [`.devcontainer/gpu/README.md`](../../.devcontainer/gpu/README.md)  
+Requires: NVIDIA GPU + Docker with NVIDIA Container Toolkit on the host.
+
+### Deploy GPU workloads to the cluster
+
+Two ready-to-use manifests are available:
+
+| Pattern | File | Use for |
+|---------|------|---------|
+| Training Job | [`cd/kubernetes/_patterns/gpu-training-job.yaml`](../../cd/kubernetes/_patterns/gpu-training-job.yaml) | Batch training runs (PyTorch, TensorFlow, JAX) |
+| Inference Deployment + HPA | [`cd/kubernetes/_patterns/gpu-inference-deployment.yaml`](../../cd/kubernetes/_patterns/gpu-inference-deployment.yaml) | Real-time model serving (Triton, TorchServe, vLLM) |
+
+Both templates include:
+- `tolerations` for the `nvidia.com/gpu=dedicated:NoSchedule` taint
+- `nodeSelector` / `nodeAffinity` targeting `accelerator: nvidia-gpu`
+- `nvidia.com/gpu` resource requests and limits
+- Required FinOps labels
+
+### End-to-end MLOps path
+
+For the full workflow — data pipeline → training → evaluation → deployment → observability — see:  
+[`docs/golden-paths/mlops-workflow.md`](mlops-workflow.md)
+
+---
+
 ## Step 10 — Choose your application path
 
 With platform foundations in place, pick the right path for what you're building:
@@ -236,6 +300,7 @@ With platform foundations in place, pick the right path for what you're building
 | React or Angular app | [frontend-spa.md](frontend-spa.md) |
 | Lambda / Cloud Run function | [serverless-app.md](serverless-app.md) |
 | Batch job / CronJob | [data-pipeline.md](data-pipeline.md) |
+| ML training / model serving | [mlops-workflow.md](mlops-workflow.md) |
 
 ---
 
@@ -248,6 +313,9 @@ Before any service goes to `prod`, confirm all of the following:
 - [ ] OIDC federation configured (no long-lived keys in GitHub secrets)
 - [ ] Namespace exists with RBAC and NetworkPolicy
 - [ ] External Secrets store configured and tested
+- [ ] *(GPU teams only)* GPU node pool enabled via Terraform and approved by FinOps
+- [ ] *(GPU teams only)* FinOps labels (`finops.org/costcenter`, `finops.org/environment`) on all GPU pod specs
+- [ ] *(GPU teams only)* `nvidia.com/gpu` resource limits set equal to requests in every GPU container
 - [ ] At least one alert rule deployed and tested (fire it, confirm it routes)
 - [ ] PagerDuty rotation set up for the team
 - [ ] Runbook written and linked from alert annotation

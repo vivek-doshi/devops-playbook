@@ -55,6 +55,7 @@ env:
   TF_WORKING_DIR: "terraform/azure-aks"      # <-- CHANGE THIS: path to root module
   # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   TF_VAR_FILE: ""                            # <-- CHANGE THIS: e.g., "environments/prod.tfvars"
+  INFRACOST_DIFF_THRESHOLD: "500"
 
   # --- Azure (uncomment if using Azure) ---
   # ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -255,6 +256,7 @@ jobs:
     name: Cost Estimation (Infracost)
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    needs: plan
     permissions:
       contents:      read
       pull-requests: write   # Note 1: Required to post the cost comment on the PR
@@ -268,6 +270,9 @@ jobs:
         with:
           # Note 2: Get a free API key at https://www.infracost.io/docs/#2-get-api-key
           api-key: ${{ secrets.INFRACOST_API_KEY }}   # <-- CHANGE THIS: add to repo secrets
+
+      - name: Ensure jq is available
+        run: jq --version
 
       # Note 3: We generate cost breakdowns for both the base branch and the PR
       # branch, then diff them so the comment shows only what CHANGED in this PR.
@@ -290,6 +295,14 @@ jobs:
           fi
           infracost breakdown ${INFRACOST_ARGS}
 
+      - name: Generate cost diff JSON
+        run: |
+          infracost diff \
+            --path /tmp/infracost-pr.json \
+            --compare-to /tmp/infracost-base.json \
+            --format json \
+            --out-file /tmp/infracost-diff.json
+
       - name: Post cost diff as PR comment
         # Note 4: --behavior=update replaces a previous Infracost comment rather than
         # posting a new one on each commit push, keeping PR threads clean.
@@ -302,3 +315,15 @@ jobs:
             --pull-request ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
             --behavior update
+
+      - name: Fail if monthly cost increase exceeds threshold
+        shell: bash
+        run: |
+          set -euo pipefail
+          monthly_diff=$(jq -r '(.totalMonthlyCostDiff // .diffTotalMonthlyCost // 0) | tonumber' /tmp/infracost-diff.json)
+          printf 'Infracost monthly diff: $%s\n' "$monthly_diff"
+
+          if jq -e --argjson threshold "${INFRACOST_DIFF_THRESHOLD}" '((.totalMonthlyCostDiff // .diffTotalMonthlyCost // 0) | tonumber) > $threshold' /tmp/infracost-diff.json > /dev/null; then
+            printf 'Monthly cost increase exceeds threshold of $%s.\n' "${INFRACOST_DIFF_THRESHOLD}"
+            exit 1
+          fi
