@@ -17,7 +17,7 @@ terraform {
     azurerm = {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/azurerm"
-      version = "~> 4.70.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 4.71.0" # <-- CHANGE THIS: pin to latest stable
     # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }

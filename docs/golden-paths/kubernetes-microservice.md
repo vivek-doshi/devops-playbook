@@ -42,17 +42,28 @@ local dev → pre-commit → CI (build + test + scan) → image push
 ## Step 1 — Start local environment
 
 ```bash
-make dev
+# Create a kind cluster, local registry, and ingress-nginx
+bash local-dev/kind/setup.sh
 ```
 
-This creates a kind cluster, local registry at `localhost:5001`, and installs ingress-nginx.  
+This script:
+1. Creates a kind cluster named `devops-playbook`
+2. Starts a local container registry at `localhost:5001`
+3. Installs ingress-nginx
+4. Creates a `dev` namespace and applies the dev Kustomize overlay
+
 Config: [`local-dev/kind/kind-config.yaml`](../../local-dev/kind/kind-config.yaml)  
 Script: [`local-dev/kind/setup.sh`](../../local-dev/kind/setup.sh)
+
+To tear down:
+
+```bash
+bash local-dev/kind/teardown.sh
+```
 
 To run your service with its dependencies (DB, cache) locally:
 
 ```bash
-# from your service directory
 docker compose -f compose/microservices-example/docker-compose.yml up
 ```
 
@@ -61,7 +72,8 @@ docker compose -f compose/microservices-example/docker-compose.yml up
 ## Step 2 — Install pre-commit hooks
 
 ```bash
-make hooks
+pre-commit install
+pre-commit install --hook-type commit-msg
 ```
 
 Hooks run on every `git commit` and `git push`. What they check:
@@ -133,30 +145,81 @@ Wire these three scans into CI. They run in parallel after the build step.
 
 ## Step 6 — Provision the cluster
 
-> Skip this step if a cluster already exists.
+> Skip this step if a cluster already exists. Check with your platform team first.
+
+### Bootstrap remote state (first time only)
+
+Before provisioning any cluster, set up the shared Terraform state backend. Run this once per cloud account:
+
+```bash
+# AWS
+cd terraform/_bootstrap/aws
+terraform init
+terraform plan -out=tfplan
+terraform apply tfplan
+# Copy the output bucket/table names into terraform/aws-eks/main.tf backend block
+
+# Azure
+cd terraform/_bootstrap/azure
+terraform init && terraform apply
+
+# GCP
+cd terraform/_bootstrap/gcp
+terraform init && terraform apply
+```
+
+Full instructions: [`terraform/_bootstrap/README.md`](../../terraform/_bootstrap/README.md)
+
+### Provision the cluster
 
 ```bash
 cd terraform/aws-eks    # or azure-aks / gcp-gke
 terraform init
-terraform apply
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
-Provisions: Kubernetes cluster, container registry, VPC/networking.
+Provisions: Kubernetes cluster, container registry, VPC/networking, IAM roles.
 
 Directories: [`terraform/aws-eks/`](../../terraform/aws-eks/) · [`terraform/azure-aks/`](../../terraform/azure-aks/) · [`terraform/gcp-gke/`](../../terraform/gcp-gke/)
 
 ---
 
-## Step 7 — Create Kubernetes manifests
+## Step 7 — Provision the database
+
+Most microservices need a database. Provision it alongside the cluster using the backup-enabled Terraform templates:
+
+```bash
+# Add backup.tf to your cluster module, then re-apply
+# AWS RDS with PITR + cross-region replica
+cp terraform/aws-eks/backup.tf my-infra/
+
+# Azure PostgreSQL with geo-redundant backup
+cp terraform/azure-aks/backup.tf my-infra/
+
+# GCP Cloud SQL with PITR + read replica
+cp terraform/gcp-gke/backup.tf my-infra/
+
+terraform apply
+```
+
+Files:
+- [`terraform/aws-eks/backup.tf`](../../terraform/aws-eks/backup.tf) — RDS with PITR, cross-region replica, CloudWatch alarm
+- [`terraform/azure-aks/backup.tf`](../../terraform/azure-aks/backup.tf) — PostgreSQL Flexible Server with geo-redundant backup
+- [`terraform/gcp-gke/backup.tf`](../../terraform/gcp-gke/backup.tf) — Cloud SQL with PITR, cross-region replica
+
+---
+
+## Step 8 — Create Kubernetes manifests
 
 Start from the base manifests and add environment overlays:
 
 ```
 cd/kubernetes/
-  _base/              ← deployment, service, ingress, HPA, PDB, network policy
-  _overlays/dev/      ← dev-specific patches (replicas, resource limits)
-  _overlays/staging/
-  _overlays/prod/
+  _base/              ← deployment, service, ingress, HPA, PDB, network policy, RBAC, VPA
+  _overlays/dev/      ← dev-specific patches (1 replica, relaxed resources)
+  _overlays/staging/  ← staging patches
+  _overlays/prod/     ← production patches (3 replicas, tight PDB, pinned image tag)
   _patterns/          ← canary, blue-green, db-migration hooks
 ```
 
@@ -164,18 +227,44 @@ Key files to copy and adapt:
 
 | File | Purpose |
 |------|---------|
-| [`_base/deployment.yaml`](../../cd/kubernetes/_base/deployment.yaml) | Deployment with health checks |
+| [`_base/deployment.yaml`](../../cd/kubernetes/_base/deployment.yaml) | Deployment with health checks, security context |
 | [`_base/hpa.yaml`](../../cd/kubernetes/_base/hpa.yaml) | Horizontal pod autoscaler |
 | [`_base/pdb.yaml`](../../cd/kubernetes/_base/pdb.yaml) | Pod disruption budget |
 | [`_base/networkpolicy.yaml`](../../cd/kubernetes/_base/networkpolicy.yaml) | Network isolation |
+| [`_base/vpa.yaml`](../../cd/kubernetes/_base/vpa.yaml) | Vertical pod autoscaler (Off mode) |
+| [`_base/rbac.yaml`](../../cd/kubernetes/_base/rbac.yaml) | ServiceAccounts and RBAC roles |
 | [`_patterns/canary.yaml`](../../cd/kubernetes/_patterns/canary.yaml) | Canary rollout |
 | [`_patterns/blue-green.yaml`](../../cd/kubernetes/_patterns/blue-green.yaml) | Blue/Green rollout |
 
 All services must declare `readinessProbe` and `livenessProbe`. The Kyverno policy [`policy/kyverno/require-liveness-readiness.yaml`](../../policy/kyverno/require-liveness-readiness.yaml) will block deployments that do not.
 
+Test manifests locally before pushing:
+
+```bash
+# Preview what Kustomize will generate
+kubectl kustomize cd/kubernetes/_overlays/dev
+
+# Run conftest policy checks
+conftest test cd/kubernetes/_base/ --policy policy/conftest/kubernetes
+```
+
 ---
 
-## Step 8 — Configure secrets
+## Step 9 — Handle database migrations
+
+If your service applies schema changes, use the appropriate migration pattern:
+
+| Scenario | Pattern |
+|----------|---------|
+| Short migration (< 5 min), app cannot start with old schema | [Init container](../../cd/kubernetes/_patterns/db-migration-init-container.yaml) |
+| Long migration (> 5 min) or must run once across cluster | [Pre-deploy Job](../../cd/kubernetes/_patterns/db-migration-job.yaml) |
+| Helm-managed release | [Pre-upgrade hook](../../cd/kubernetes/_patterns/db-migration-hook.yaml) |
+
+Full guide: [docs/guides/database-migrations.md](../guides/database-migrations.md)
+
+---
+
+## Step 10 — Configure secrets
 
 Do not put secrets in manifests. Use External Secrets Operator to sync from your cloud provider's vault:
 
@@ -186,18 +275,32 @@ Do not put secrets in manifests. Use External Secrets Operator to sync from your
 | GCP | [`secrets/external-secrets/gcp-secret-store.yaml`](../../secrets/external-secrets/gcp-secret-store.yaml) |
 
 Reference secret in a manifest: [`secrets/external-secrets/example-external-secret.yaml`](../../secrets/external-secrets/example-external-secret.yaml)  
-Background: [docs/guides/secrets-management.md](../guides/secrets-management.md)
+Full guide: [docs/guides/secrets-management.md](../guides/secrets-management.md)
 
 ---
 
-## Step 9 — Deploy via GitOps (ArgoCD)
+## Step 11 — Deploy via GitOps (ArgoCD)
 
-Register your service with ArgoCD:
+### Bootstrap ArgoCD (platform team, first time only)
+
+If ArgoCD is not yet installed on the cluster:
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl rollout status deployment argocd-server -n argocd --timeout=120s
+```
+
+### Register your service
 
 ```bash
 # Copy and edit the Application manifest
 cp cd/gitops/argocd/application.yaml \
    cd/gitops/argocd/my-service.yaml
+
+# Edit repoURL, path, and destination namespace
+# Then apply
+kubectl apply -f cd/gitops/argocd/my-service.yaml
 ```
 
 Key files:
@@ -208,12 +311,13 @@ Key files:
 | [`cd/gitops/argocd/applicationset.yaml`](../../cd/gitops/argocd/applicationset.yaml) | Multi-environment generator |
 | [`cd/gitops/argocd/app-of-apps.yaml`](../../cd/gitops/argocd/app-of-apps.yaml) | App-of-apps bootstrap |
 
-Once merged, ArgoCD syncs `dev` automatically. Promotion to `staging` and `prod` is a PR that updates the image tag in the relevant overlay.  
-Full promotion flow: [docs/guides/environment-strategy.md](../guides/environment-strategy.md)
+Once merged, ArgoCD syncs `dev` automatically. Promotion to `staging` and `prod` is a PR that updates the image tag in the relevant Kustomize overlay (`_overlays/prod/kustomization.yaml`).
+
+Environment strategy: [docs/guides/environment-strategy.md](../guides/environment-strategy.md)
 
 ---
 
-## Step 10 — Add observability
+## Step 12 — Add observability
 
 ### Metrics and alerts
 
@@ -229,20 +333,49 @@ observability/prometheus/
 
 Start with [`observability/prometheus/alerts/`](../../observability/prometheus/alerts/) — copy the pod-level alerts and edit the `app` label selector to match your service.
 
+Define an SLO:
+
+```bash
+# Copy and edit the availability SLO template
+cp observability/prometheus/slos/availability-slo.yaml \
+   observability/prometheus/slos/my-service-availability-slo.yaml
+# Replace all "my-service" references with your service's job label
+kubectl apply -f observability/prometheus/slos/my-service-availability-slo.yaml
+```
+
+Import the SLO dashboard into Grafana:
+
+```bash
+kubectl apply -f observability/prometheus/dashboards/slo-burn-rate-configmap.yaml
+```
+
 ### Distributed tracing
 
 Add the OpenTelemetry collector sidecar to your deployment:
 
-```yaml
-# paste into your deployment.yaml containers list
-# source: observability/opentelemetry/collector-sidecar.yaml
+```bash
+# Apply the collector ConfigMap first
+kubectl apply -f observability/opentelemetry/collector-config.yaml -n <namespace>
+
+# Then patch the Deployment to add the sidecar
+kubectl patch deployment <name> -n <namespace> \
+  --patch-file observability/opentelemetry/collector-sidecar.yaml
 ```
 
-File: [`observability/opentelemetry/collector-sidecar.yaml`](../../observability/opentelemetry/collector-sidecar.yaml)
+Load language-specific env vars:
+
+```bash
+# .NET, Python, or Java
+kubectl create configmap otel-dotnet-env \
+  --from-env-file=observability/opentelemetry/env-vars/dotnet.env \
+  -n <namespace>
+```
+
+Files: [`observability/opentelemetry/`](../../observability/opentelemetry/)
 
 ### Notifications
 
-Wire alert routing to your team channel. Copy and configure one of:
+Wire alert routing to your team channel:
 
 ```
 notifications/slack-notify.yml
@@ -252,12 +385,16 @@ notifications/teams-notify.yml
 
 ---
 
-## Step 11 — Enable backup (production only)
+## Step 13 — Enable backup (production only)
 
 ```bash
-# Install Velero and configure schedule
-bash backup/velero/aws-install.sh        # or edit for your cloud
+# Install Velero (first time per cluster)
+bash backup/velero/aws-install.sh
+
+# Apply the backup schedule
 kubectl apply -f backup/velero/schedule.yaml
+
+# Take an on-demand snapshot before a major release
 kubectl apply -f backup/velero/namespace-backup.yaml
 ```
 
@@ -284,8 +421,8 @@ These Kyverno policies are enforced cluster-wide. Deployments that violate them 
 
 | Role | Owns |
 |------|------|
-| Developer | Steps 1–5, 7–8, service manifests |
-| Platform team | Steps 6, 9 (ArgoCD setup), cluster policies |
+| Developer | Steps 1–5, 8–10, service manifests |
+| Platform team | Steps 6–7 (Terraform infra, cluster, DB), Step 11 (ArgoCD bootstrap), cluster policies |
 | Security team | Policies enforced in Step 5 |
 
 ---
