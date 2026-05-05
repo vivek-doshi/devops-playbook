@@ -51,9 +51,7 @@ Post-incident review within 48 h
 
 Acknowledge in PagerDuty within 5 minutes to stop escalation.
 
-```
-notifications/pagerduty-notify.yml   ← alert routing config
-```
+Alert routing config: [`notifications/pagerduty-notify.yml`](../../notifications/pagerduty-notify.yml)
 
 ### 1.2 Open an incident channel
 
@@ -97,14 +95,16 @@ kubectl get pods -n <namespace> -l app=<service>
 kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -20
 
 # Check rollout status
-bash scripts/k8s-rollout-check.sh <namespace> <deployment>
-```
+kubectl rollout status deployment/<name> -n <namespace>
 
-Script: [`scripts/k8s-rollout-check.sh`](../../scripts/k8s-rollout-check.sh)
+# Check all deployments in a namespace for rollout issues
+kubectl get deployments -n <namespace> \
+  -o custom-columns='NAME:.metadata.name,DESIRED:.spec.replicas,READY:.status.readyReplicas,AVAILABLE:.status.availableReplicas'
+```
 
 ### 2.2 Use the relevant runbook
 
-Every alert should link to a runbook. Start there.
+Every alert links to a runbook. Start there before doing anything else.
 
 | Symptom | Runbook |
 |---------|---------|
@@ -120,8 +120,12 @@ kubectl logs -n <namespace> -l app=<service> --tail=100
 # Previous container (if currently crashed)
 kubectl logs -n <namespace> <pod-name> --previous
 
+# Follow logs across all pods for a service
+kubectl logs -n <namespace> -l app=<service> -f --max-log-requests=10
+
 # Aggregated logs in Grafana Loki
-# observability/loki/ — query: {app="<service>", namespace="<namespace>"}
+# Query: {app="<service>", namespace="<namespace>"} | json | level="error"
+# Dashboard: observability/loki/dashboards/log-explorer.json
 ```
 
 ### 2.4 Check recent changes
@@ -132,20 +136,33 @@ A deployment or config change in the last 30 minutes is the most common root cau
 # Check recent rollout history
 kubectl rollout history deployment/<name> -n <namespace>
 
-# Check what changed in Git
-git log --oneline --since="30 minutes ago" main
+# Show what changed between revisions
+kubectl rollout history deployment/<name> -n <namespace> --revision=<N>
+
+# Check what changed in Git in the last hour
+git log --oneline --since="1 hour ago" main
+
+# Check recent ArgoCD syncs
+kubectl get applications -n argocd
+kubectl describe application <app-name> -n argocd | grep -A 20 "History:"
 ```
 
 ### 2.5 Check infrastructure health
 
-| What | Where |
-|------|-------|
-| Node health | `kubectl get nodes` |
+| What | Command |
+|------|---------|
+| Node health | `kubectl get nodes -o wide` |
+| Node conditions | `kubectl describe node <node> \| grep -A 10 Conditions` |
 | Persistent volumes | `kubectl get pv,pvc -n <namespace>` |
-| Cloud provider status | AWS Health Dashboard / Azure Status / GCP Status |
-| Database | Check Prometheus alert for `PostgresDown` or `RDSConnectionErrors` |
+| cert-manager certificates | `kubectl get certificate -n <namespace>` |
+| Database connectivity | `kubectl exec -it <pod> -n <namespace> -- nc -zv <db-host> 5432` |
 
-Disaster recovery procedures (cluster loss, database corruption):  
+Check cloud provider status pages directly for region-level incidents:
+- AWS: https://health.aws.amazon.com
+- Azure: https://status.azure.com
+- GCP: https://status.cloud.google.com
+
+Disaster recovery procedures (cluster loss, database corruption):
 [docs/guides/disaster-recovery.md](../guides/disaster-recovery.md)
 
 ---
@@ -166,8 +183,14 @@ kubectl rollout status deployment/<name> -n <namespace>
 To roll back to a specific revision:
 
 ```bash
+# List revisions
+kubectl rollout history deployment/<name> -n <namespace>
+
+# Roll back to a specific one
 kubectl rollout undo deployment/<name> -n <namespace> --to-revision=<N>
 ```
+
+> **Note:** Rolling back the Deployment only reverts the app. If a schema migration ran, you must also run the rollback Job. See [docs/guides/database-migrations.md](../guides/database-migrations.md).
 
 ### Option B — Scale up
 
@@ -175,24 +198,46 @@ If the issue is capacity (too many requests, node pressure):
 
 ```bash
 kubectl scale deployment/<name> -n <namespace> --replicas=<N>
+
+# Or patch the HPA max temporarily
+kubectl patch hpa <name> -n <namespace> -p '{"spec":{"maxReplicas":<N>}}'
 ```
 
 ### Option C — Redirect traffic
 
-If one region or availability zone is failing, update your ingress or load balancer to redirect to a healthy region. Refer to your environment-specific networking config in `terraform/`.
+If one region or availability zone is failing, update your ingress or load balancer to redirect to a healthy region. Refer to your environment-specific Terraform config in `terraform/` for networking resources.
 
 ### Option D — Disable the feature
 
-If the issue is isolated to a specific feature, disable it via a feature flag or config map update:
+If the issue is isolated to a specific feature, disable it via a feature flag or ConfigMap update:
 
 ```bash
+# Edit the ConfigMap directly (temporary — commit the change after the incident)
 kubectl edit configmap <name> -n <namespace>
-# or apply a patched overlay from cd/kubernetes/_overlays/<env>/
+
+# Or apply a patched overlay
+kubectl apply -k cd/kubernetes/_overlays/<env>/
 ```
 
 ### Option E — Restore from backup (data corruption only)
 
 Follow: [docs/guides/disaster-recovery.md](../guides/disaster-recovery.md)
+
+```bash
+# List available Velero backups
+velero backup get
+
+# Describe a backup before restoring
+velero backup describe <backup-name> --details
+
+# Restore a namespace
+velero restore create \
+  --from-backup <backup-name> \
+  --include-namespaces <namespace>
+
+# Monitor restore progress
+velero restore describe <restore-name> --details
+```
 
 Velero backup manifests: [`backup/velero/namespace-backup.yaml`](../../backup/velero/namespace-backup.yaml)
 
@@ -209,8 +254,11 @@ kubectl get pods -n <namespace> -l app=<service>
 # Confirm health endpoint returns 200
 curl -I https://my-service.example.com/health
 
-# Check error rate has returned to baseline in Prometheus/Grafana
-# observability/prometheus/dashboards/ → your service dashboard
+# Check that the HPA is not at max replicas (sign of sustained load)
+kubectl get hpa -n <namespace>
+
+# Check error rate has returned to baseline
+# Grafana: observability/prometheus/dashboards/slo-burn-rate-configmap.yaml
 ```
 
 Post to the incident channel:
@@ -245,7 +293,7 @@ A post-incident review (PIR) is mandatory for SEV-1 and SEV-2. Recommended for S
 
 Use the template: [`docs/runbooks/template.md`](../runbooks/template.md)
 
-Commit the new runbook to `docs/runbooks/` and link it from the relevant Prometheus alert annotation so the next engineer on-call sees it immediately.
+Commit the new runbook to `docs/runbooks/` and link it from the relevant Prometheus alert annotation (`runbook_url`) so the next engineer on-call sees it immediately.
 
 ### What not to do
 
@@ -259,15 +307,18 @@ Commit the new runbook to `docs/runbooks/` and link it from the relevant Prometh
 
 | Scenario | First command | Likely fix |
 |----------|--------------|-----------|
-| All pods in CrashLoopBackOff | `kubectl logs <pod> --previous` | Rollback or fix config |
-| OOMKilled pods | `kubectl describe pod <pod>` — look for `OOMKilled` | Increase memory limit |
-| ImagePullBackOff | `kubectl describe pod <pod>` — look for registry error | Fix image tag or registry credentials |
-| Zero ready replicas | `kubectl get endpoints <svc>` | Check readiness probe |
-| Database connection refused | `kubectl exec -it <pod> -- nc -zv <db-host> 5432` | Check secret, network policy, DB health |
-| Disk pressure on node | `kubectl describe node <node>` | `docker system prune` or drain node |
-| Certificate expired | `kubectl describe certificate -n <namespace>` | Check cert-manager, renew manually |
+| All pods in CrashLoopBackOff | `kubectl logs <pod> -n <ns> --previous` | Rollback or fix config/secret |
+| OOMKilled pods | `kubectl describe pod <pod> -n <ns>` — look for `OOMKilled` | Increase memory limit in deployment |
+| ImagePullBackOff | `kubectl describe pod <pod> -n <ns>` — look for registry error | Fix image tag or registry credentials |
+| Zero ready replicas | `kubectl get endpoints <svc> -n <ns>` | Check readiness probe path and port |
+| Database connection refused | `kubectl exec -it <pod> -n <ns> -- nc -zv <db-host> 5432` | Check secret, network policy, DB health |
+| Disk pressure on node | `kubectl describe node <node>` | Drain and replace the node |
+| Certificate expired | `kubectl describe certificate -n <ns>` | Check cert-manager, force renewal |
+| HPA not scaling | `kubectl describe hpa <name> -n <ns>` | Check metrics-server, resource requests set |
+| ArgoCD sync failed | `kubectl describe application <app> -n argocd` | Fix manifest error, re-sync |
 
-Cert-manager config: [`cd/kubernetes/cert-manager/`](../../cd/kubernetes/cert-manager/)
+Cert-manager config: [`cd/kubernetes/cert-manager/`](../../cd/kubernetes/cert-manager/)  
+SLO dashboards: [`observability/prometheus/dashboards/`](../../observability/prometheus/dashboards/)
 
 ---
 
@@ -275,14 +326,16 @@ Cert-manager config: [`cd/kubernetes/cert-manager/`](../../cd/kubernetes/cert-ma
 
 | File | Purpose |
 |------|---------|
-| [`scripts/k8s-rollout-check.sh`](../../scripts/k8s-rollout-check.sh) | Check rollout health across all deployments in a namespace |
 | [`observability/prometheus/alerts/`](../../observability/prometheus/alerts/) | Alert rule definitions |
 | [`observability/prometheus/dashboards/`](../../observability/prometheus/dashboards/) | Grafana dashboards |
+| [`observability/loki/dashboards/log-explorer.json`](../../observability/loki/dashboards/log-explorer.json) | Log explorer dashboard |
 | [`notifications/pagerduty-notify.yml`](../../notifications/pagerduty-notify.yml) | PagerDuty alert routing |
 | [`notifications/slack-notify.yml`](../../notifications/slack-notify.yml) | Slack alert routing |
 | [`backup/velero/namespace-backup.yaml`](../../backup/velero/namespace-backup.yaml) | Namespace restore source |
+| [`backup/velero/schedule.yaml`](../../backup/velero/schedule.yaml) | Scheduled backup config |
 | [`docs/guides/disaster-recovery.md`](../guides/disaster-recovery.md) | Cluster and database recovery |
 | [`docs/runbooks/template.md`](../runbooks/template.md) | New runbook template |
+| [`cd/gitops/argocd/application.yaml`](../../cd/gitops/argocd/application.yaml) | ArgoCD app config |
 
 ---
 
