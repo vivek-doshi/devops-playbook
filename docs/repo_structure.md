@@ -10,9 +10,10 @@ This document provides a complete, n-level overview of the repository structure,
 ├── .devcontainer/         # VS Code dev container configuration
 ├── .git/                  # Git version control metadata (hidden)
 ├── .github/               # GitHub workflows, issue templates, and skills
+├── .kiro/                 # Kiro configuration (if present)
 ├── .pre-commit-config.yaml # Pre-commit hook configuration
 ├── backup/
-│   ├── terraform/         # Terraform modules for DB backups
+│   ├── terraform/
 │   │   ├── aws-rds-backup.tf         # AWS RDS backup config
 │   │   ├── azure-postgres-backup.tf  # Azure PostgreSQL backup config
 │   │   └── gcp-cloudsql-backup.tf    # GCP Cloud SQL backup config
@@ -112,6 +113,7 @@ This document provides a complete, n-level overview of the repository structure,
 │   ├── python-postgres-redis/       # Python + Postgres + Redis Compose
 │   ├── README.md                    # Compose usage and docs
 │   └── _templates/                  # Compose file templates
+│       └── docker-compose.base.yml  # Base Compose template
 ├── docker/
 │   ├── angular/                     # Angular Dockerfiles
 │   ├── dotnet/                      # .NET Dockerfiles
@@ -122,7 +124,9 @@ This document provides a complete, n-level overview of the repository structure,
 │   ├── react/                       # React Dockerfiles
 │   ├── ruby/                        # Ruby Dockerfiles
 │   ├── README.md                    # Docker usage and docs
-│   └── _base/                       # Base Dockerfiles
+│   └── _base/
+│       ├── Dockerfile.multistage    # Multistage base Dockerfile
+│       └── security-hardened.Dockerfile # Security-hardened base Dockerfile
 ├── docs/
 │   ├── ARCHITECTURE_DECISION_GUIDE.md # Architecture decision guide
 │   ├── ARCHITECTURE_DECISION_GUIDE.pdf # Architecture decision PDF
@@ -137,9 +141,12 @@ This document provides a complete, n-level overview of the repository structure,
 │   │   └── pipeline-overview.svg        # SVG pipeline diagram
 │   ├── golden-paths/
 │   │   ├── data-pipeline.md             # Data pipeline golden path
+│   │   ├── database-migrations.md       # Database migrations golden path
 │   │   ├── frontend-spa.md              # Frontend SPA golden path
 │   │   ├── incident-response.md         # Incident response golden path
 │   │   ├── kubernetes-microservice.md   # Kubernetes microservice golden path
+│   │   ├── mobile-backend.md            # Mobile backend golden path
+│   │   ├── multi-tenant-saas.md         # Multi-tenant SaaS golden path
 │   │   ├── platform-onboarding.md       # Platform onboarding golden path
 │   │   └── serverless-app.md            # Serverless app golden path
 │   ├── guides/
@@ -184,6 +191,7 @@ This document provides a complete, n-level overview of the repository structure,
 │   ├── kyverno/                         # Kyverno policy files
 │   └── README.md                        # Policy usage and docs
 ├── quality/
+│   ├── .editorconfig                    # EditorConfig for quality
 │   ├── dotnet/                          # .NET quality configs
 │   ├── javascript/                      # JavaScript quality configs
 │   ├── python/                          # Python quality configs
@@ -216,18 +224,25 @@ This document provides a complete, n-level overview of the repository structure,
 ├── SETUP_GITHUB_PAGES.md                # GitHub Pages setup
 ├── Taskfile.yml                         # Alternative task runner
 ├── terraform/
-│   ├── aws-ecs/                         # AWS ECS Terraform modules
-│   ├── aws-eks/                         # AWS EKS Terraform modules
-│   ├── aws-lambda/                      # AWS Lambda Terraform modules
-│   ├── azure-aks/                       # Azure AKS Terraform modules
-│   ├── azure-app-service/               # Azure App Service Terraform modules
-│   ├── gcp-gke/                         # GCP GKE Terraform modules
+│   ├── aws-ecs/
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   ├── aws-eks/
+│   ├── aws-lambda/
+│   ├── azure-aks/
+│   ├── azure-app-service/
+│   ├── gcp-gke/
 │   ├── README.md                        # Terraform usage and docs
 │   ├── tests/                           # Terraform test modules
 │   ├── _bootstrap/                      # Bootstrap Terraform configs
 │   └── _testing/                        # Terraform testing utilities
 ├── website/
+│   ├── .gitignore                       # Website .gitignore
+│   ├── dist/                            # Website build output
 │   ├── index.html                       # Website entry point
+│   ├── node_modules/                    # Website dependencies
+│   ├── package-lock.json                # Website lock file
 │   ├── package.json                     # Website dependencies
 │   ├── public/                          # Website static assets
 │   ├── README.md                        # Website usage and docs
