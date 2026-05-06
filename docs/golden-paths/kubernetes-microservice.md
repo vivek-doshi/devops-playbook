@@ -14,6 +14,9 @@ Not the right path? See:
 - [frontend-spa.md](frontend-spa.md) — React or Angular app
 - [serverless-app.md](serverless-app.md) — Lambda / Cloud Run
 - [data-pipeline.md](data-pipeline.md) — batch jobs and scheduled tasks
+- [mobile-backend.md](mobile-backend.md) — BFF for mobile apps (API versioning, OAuth/OIDC, push notifications, rate limiting)
+- [database-migrations.md](database-migrations.md) — end-to-end workflow for zero-downtime schema migrations
+- [multi-tenant-saas.md](multi-tenant-saas.md) — namespace-per-tenant isolation, automated onboarding, billing instrumentation
 
 ---
 
