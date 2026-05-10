@@ -23,6 +23,7 @@ It provides:
 - **Infrastructure as Code**: Terraform, Pulumi, Helm, Kustomize
 - **Security & compliance**: Built-in scanning, policies, and secret management
 - **Observability**: Prometheus, Grafana, Loki, OpenTelemetry, alerting integrations
+- **FinOps & cost governance**: Cost monitoring, budget alerting, rightsizing, chargeback, and CI/CD cost-gating with Infracost
 - **Runbooks & guides**: For onboarding, incident response, disaster recovery, and more
 
 
@@ -80,6 +81,21 @@ It provides:
 **"I need to deploy infrastructure with Pulumi instead of Terraform"**
 → Go to [cd/pulumi/](cd/pulumi/)
 
+**"I need to understand the cost impact of my Terraform PR"**
+→ Copy [finops/infracost/.infracost.yml](finops/infracost/.infracost.yml) into your repo and use the CI template for your platform
+
+**"I need to enforce cost labels and resource limits across my cluster"**
+→ Deploy the Kyverno policies from [finops/policies/](finops/policies/)
+
+**"I need Grafana dashboards for cloud cost visibility"**
+→ Run [finops/scripts/deploy-dashboards.sh](finops/scripts/deploy-dashboards.sh)
+
+**"I need to set up budget alerting in Prometheus"**
+→ See [finops/prometheus/budget-alerts.yaml](finops/prometheus/budget-alerts.yaml) and [finops/config/budgets.yaml](finops/config/budgets.yaml)
+
+**"I need to find over-provisioned workloads to cut costs"**
+→ Run `python finops/scripts/analyze-rightsizing.py --all-namespaces`
+
 ---
 
 ## Golden Paths
@@ -118,6 +134,16 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 ├── quality/              # Code quality configs (SonarQube, linters, formatters)
 ├── notifications/        # Slack, Teams, PagerDuty alert templates
 ├── scripts/              # Utility shell scripts
+├── finops/               # FinOps: cost monitoring, governance, alerting, reporting
+│   ├── dashboards/       #   Grafana dashboards (9 JSON files)
+│   ├── policies/         #   Kyverno cost governance policies
+│   ├── prometheus/       #   Budget & anomaly alerting rules + Alertmanager configs
+│   ├── scripts/          #   Rightsizing, cost reports, tag validation, optimization
+│   ├── cicd/             #   Infracost templates (GitHub Actions, Azure Pipelines, GitLab)
+│   ├── helm/             #   Kubecost / OpenCost / VPA Helm values
+│   ├── kubernetes/       #   CronJob for monthly cost reports
+│   ├── config/           #   Budget thresholds per cost center
+│   └── docs/             #   Installation, runbooks, workflow guides
 ├── docs/                 # Guides, ADRs, diagrams
 └── ...
 ```
@@ -154,11 +180,101 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 - **Observability**: Prometheus rules, Grafana dashboards, SLOs, alert routing
 - **Disaster recovery**: Velero, DB PITR, runbooks for cluster and DB restore
 - **Platform guardrails**: Enforced via Kyverno, IaC, and CI checks
+- **FinOps governance**: Cost labels enforced at admission, resource limits required, GPU workloads gated, budget alerts at 80/100/120%, PR-level cost estimation via Infracost
+
+---
+
+
+## 💰 FinOps — Cloud Cost Governance
+
+This repository includes a **production-grade FinOps system** that brings cost visibility, governance, and optimization into the CI/CD lifecycle — from Terraform PRs all the way through to monthly chargeback reports.
+
+### Architecture
+
+```
+ CI/CD Pipelines  (GitHub Actions / Azure Pipelines / GitLab CI)
+  └── Infracost ──► Shows monthly cost impact on every Terraform PR
+
+ Kubernetes Cluster
+  ├── Kyverno Policies         Admission-time cost governance
+  │    ├── require-cost-labels       blocks pods missing finops.org/* labels
+  │    ├── enforce-resource-limits   blocks unconstrained containers
+  │    ├── gpu-approval-gate         requires explicit GPU approval annotation
+  │    └── require-pdb-large-wkld   PDB required for workloads > 4 CPU / 8Gi
+  │
+  ├── Kubecost / OpenCost      Real-time cost per namespace / workload
+  ├── VPA Recommender          CPU & memory rightsizing recommendations
+  └── CronJob                  Monthly chargeback/showback reports → S3/Blob/GCS
+
+ Prometheus + Alertmanager
+  ├── budget-alerts            80% / 100% / 120% threshold alerts per cost center
+  ├── anomaly-alerts           Cost spike detection vs 7-day baseline
+  └── tag-compliance-alerts    Fires when > 5% pods lack required cost labels
+
+ Grafana  (9 dashboards)
+  ├── Cost Overview            ├── Budget Tracking
+  ├── Cost Breakdown           ├── Anomaly Detection
+  ├── Rightsizing Opportunities├── Tag Compliance
+  ├── Multi-Cloud Comparison   ├── Reserved Capacity
+  └── Optimization Opportunities
+```
+
+### Components
+
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| **Kubecost / OpenCost** | Real-time cost monitoring per workload | [`finops/helm/`](finops/helm/) |
+| **VPA** | Rightsizing recommendations (recommender-only) | [`finops/helm/vpa-values.yaml`](finops/helm/vpa-values.yaml) |
+| **Kyverno Policies** | Admission-time cost governance (4 policies) | [`finops/policies/`](finops/policies/) |
+| **Infracost CI/CD** | PR-level Terraform cost estimation (3 platforms) | [`finops/cicd/`](finops/cicd/) |
+| **Budget Alerts** | Prometheus rules at 80 / 100 / 120% spend | [`finops/prometheus/budget-alerts.yaml`](finops/prometheus/budget-alerts.yaml) |
+| **Anomaly Detection** | Cost spike vs 7-day baseline + new namespace | [`finops/prometheus/anomaly-alerts.yaml`](finops/prometheus/anomaly-alerts.yaml) |
+| **Alertmanager Routing** | Slack + PagerDuty per severity / cost center | [`finops/prometheus/alertmanager-budget-config.yaml`](finops/prometheus/alertmanager-budget-config.yaml) |
+| **Cost Reports** | Monthly CSV + JSON chargeback with export | [`finops/scripts/generate-cost-report.py`](finops/scripts/generate-cost-report.py) |
+| **Grafana Dashboards** | 9 dashboards — full cost visibility | [`finops/dashboards/`](finops/dashboards/) |
+| **Optimization Scripts** | Rightsizing, idle volumes, reserved capacity | [`finops/scripts/`](finops/scripts/) |
+
+### FinOps Quick Start
+
+```bash
+# 1. Install cost monitoring
+./finops/scripts/install-cost-monitoring.sh --tool kubecost
+
+# 2. Deploy Kyverno policies (audit mode first — non-blocking)
+./finops/scripts/deploy-policies.sh --audit-mode
+
+# 3. Import all 9 Grafana dashboards
+export GRAFANA_API_KEY=your-key
+./finops/scripts/deploy-dashboards.sh
+
+# 4. Validate cost label compliance
+python finops/scripts/validate-cost-tags.py --all-namespaces
+
+# 5. Find rightsizing opportunities
+python finops/scripts/analyze-rightsizing.py --all-namespaces
+```
+
+### Required Cost Labels
+
+All pods **must** carry these labels — enforced at admission by Kyverno:
+
+```yaml
+metadata:
+  labels:
+    finops.org/costcenter: "engineering"    # must match an entry in finops/config/budgets.yaml
+    finops.org/environment: "production"    # dev | staging | production
+```
+
+> 📖 **Full FinOps documentation:** [finops/README.md](finops/README.md)  
+> 🏷️ **Cost tagging schema:** [finops/docs/cost-tagging-schema.md](finops/docs/cost-tagging-schema.md)  
+> 🚀 **Installation guide:** [finops/docs/installation.md](finops/docs/installation.md)  
+> 🔍 **Investigate a cost spike:** [finops/docs/runbooks/investigate-cost-spike.md](finops/docs/runbooks/investigate-cost-spike.md)
 
 ---
 
 
 ## Documentation
+
 
 - **[docs/golden-paths/](docs/golden-paths/)** — Start here for all workflows, including the new MLOps path
 - **[docs/guides/](docs/guides/)** — Deep dives: onboarding, secrets, environments, migrations, DR
@@ -166,6 +282,7 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 - **[docs/ARCHITECTURE_DECISION_GUIDE.md](docs/ARCHITECTURE_DECISION_GUIDE.md)** — How decisions are made
 - **[docs/repo_structure.md](docs/repo_structure.md)** — Full n-level repo tree with explanations
 - **[.devcontainer/gpu/README.md](.devcontainer/gpu/README.md)** — Local CUDA/GPU devcontainer usage
+- **[finops/README.md](finops/README.md)** — FinOps architecture, components, quick-start, and full documentation index
 
 ---
 

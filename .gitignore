@@ -1,0 +1,138 @@
+# ─── IDE & Editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# ─── Kiro (AI assistant workspace) ───────────────────────────────────────────
+.kiro/
+
+# ─── OS generated ─────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── Secrets & credentials ────────────────────────────────────────────────────
+*.env
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+**/secrets.yaml
+**/secrets.yml
+**/*secret*.yaml
+**/*secret*.yml
+
+# ─── Terraform ────────────────────────────────────────────────────────────────
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform.lock.hcl
+terraform.tfvars
+!terraform.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log
+
+# ─── Pulumi ───────────────────────────────────────────────────────────────────
+.pulumi/
+
+# ─── Node / JavaScript / TypeScript ──────────────────────────────────────────
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+*.egg
+MANIFEST
+
+# ─── Go ───────────────────────────────────────────────────────────────────────
+*.exe
+*.test
+*.out
+vendor/
+
+# ─── Java / Maven / Gradle ────────────────────────────────────────────────────
+*.class
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+build/
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.docker/
+
+# ─── Helm ─────────────────────────────────────────────────────────────────────
+charts/*.tgz
+
+# ─── FinOps reports (generated output — do not commit) ────────────────────────
+finops/reports/
+finops/output/
+*.cost-report.json
+*.cost-report.csv
+
+# ─── Logs & temp files ────────────────────────────────────────────────────────
+*.log
+logs/
+tmp/
+temp/
+.tmp/
+
+# ─── Test output ──────────────────────────────────────────────────────────────
+test-results/
+junit*.xml
+coverage/
