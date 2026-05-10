@@ -1,0 +1,125 @@
+# finops/prometheus/anomaly-alerts.yaml
+# Prometheus alerting rules for cost anomaly detection.
+# Triggers when costs spike >50% vs 7-day average or new namespaces exceed $100/24h.
+#
+# Apply: kubectl apply -f finops/prometheus/anomaly-alerts.yaml -n monitoring
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: finops-anomaly-alerts
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+    finops.org/component: anomaly-detection
+spec:
+  groups:
+    - name: finops.cost.anomalies
+      interval: 5m
+      rules:
+        # ── Cost spike: >50% above 7-day rolling average ─────────────────────
+        - alert: CostAnomalySpike
+          expr: |
+            (
+              sum by (namespace, cost_center) (kubecost_namespace_cost_hourly)
+              -
+              sum by (namespace, cost_center) (avg_over_time(kubecost_namespace_cost_hourly[7d]))
+            )
+            /
+            sum by (namespace, cost_center) (avg_over_time(kubecost_namespace_cost_hourly[7d]))
+            > 0.50
+          for: 30m
+          labels:
+            severity: warning
+            component: finops
+            type: cost-anomaly
+            anomaly_type: spike
+          annotations:
+            summary: "Cost spike detected in namespace {{ $labels.namespace }}"
+            description: |
+              Namespace {{ $labels.namespace }} (cost center: {{ $labels.cost_center }}) has a
+              cost spike of {{ printf "%.1f" (mulf $value 100) }}% above its 7-day baseline.
+
+              Current hourly cost : ${{ printf "%.2f" (query "sum(kubecost_namespace_cost_hourly{namespace=\"" $labels.namespace "\"})" | first | value) }}/hr
+              7-day average       : ${{ printf "%.2f" (query "sum(avg_over_time(kubecost_namespace_cost_hourly{namespace=\"" $labels.namespace "\"}[7d]))" | first | value) }}/hr
+
+              Investigate at: {{ $externalURL }}/d/finops-anomaly-detection?var-namespace={{ $labels.namespace }}
+            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            dashboard_url: "{{ $externalURL }}/d/finops-anomaly-detection?var-namespace={{ $labels.namespace }}"
+
+        # ── Critical: >100% above 7-day average ─────────────────────────────
+        - alert: CostAnomalyCritical
+          expr: |
+            (
+              sum by (namespace, cost_center) (kubecost_namespace_cost_hourly)
+              -
+              sum by (namespace, cost_center) (avg_over_time(kubecost_namespace_cost_hourly[7d]))
+            )
+            /
+            sum by (namespace, cost_center) (avg_over_time(kubecost_namespace_cost_hourly[7d]))
+            > 1.00
+          for: 15m
+          labels:
+            severity: critical
+            component: finops
+            type: cost-anomaly
+            anomaly_type: critical-spike
+          annotations:
+            summary: "CRITICAL cost spike in namespace {{ $labels.namespace }} — doubled vs baseline"
+            description: |
+              Namespace {{ $labels.namespace }} costs have more than DOUBLED vs the 7-day baseline.
+              Spike: {{ printf "%.1f" (mulf $value 100) }}% above baseline.
+              Immediate investigation required.
+            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            dashboard_url: "{{ $externalURL }}/d/finops-anomaly-detection?var-namespace={{ $labels.namespace }}"
+
+        # ── New namespace: >$100 cost within 24 hours of creation ────────────
+        - alert: CostAnomalyNewNamespace
+          expr: |
+            sum by (namespace) (
+              increase(kubecost_namespace_cost_hourly[24h])
+            ) > 100
+            and on (namespace) (
+              (time() - kube_namespace_created) < 86400
+            )
+          for: 10m
+          labels:
+            severity: warning
+            component: finops
+            type: cost-anomaly
+            anomaly_type: new-namespace-high-cost
+          annotations:
+            summary: "New namespace {{ $labels.namespace }} exceeded $100 cost in first 24 hours"
+            description: |
+              Namespace {{ $labels.namespace }} was created within the last 24 hours and has
+              already incurred more than $100 in costs.
+              24h spend: ${{ printf "%.2f" $value }}
+
+              This may indicate an accidental deployment or runaway resource allocation.
+              Verify: {{ $externalURL }}/d/finops-cost-overview?var-namespace={{ $labels.namespace }}
+            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+
+        # ── Cluster-wide unusual cost growth ────────────────────────────────
+        - alert: ClusterCostAnomalyGrowth
+          expr: |
+            (
+              sum(kubecost_namespace_cost_hourly)
+              -
+              sum(avg_over_time(kubecost_namespace_cost_hourly[7d]))
+            )
+            /
+            sum(avg_over_time(kubecost_namespace_cost_hourly[7d]))
+            > 0.30
+          for: 60m
+          labels:
+            severity: warning
+            component: finops
+            type: cost-anomaly
+            anomaly_type: cluster-growth
+          annotations:
+            summary: "Cluster-wide cost has grown >30% vs 7-day average"
+            description: |
+              Total cluster costs are {{ printf "%.1f" (mulf $value 100) }}% higher than
+              the 7-day rolling average. This may indicate cluster-wide resource sprawl.
+              Review: {{ $externalURL }}/d/finops-cost-overview

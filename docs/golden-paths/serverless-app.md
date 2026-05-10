@@ -219,6 +219,39 @@ Environment strategy: [docs/guides/environment-strategy.md](../guides/environmen
 
 ---
 
+## FinOps Checkpoints
+
+> Complete these steps for every PR that changes infrastructure or function configuration.
+
+### FinOps Checkpoint — Review Infracost estimate
+
+Infracost runs automatically when your PR modifies Terraform files. Before merging:
+
+1. **Check the Infracost comment** on your PR — it shows the monthly cost impact
+2. **Review the cost breakdown** for any surprising increases
+3. **If cost increases > 20% or > $500/month**:
+   - Document the business justification in the PR description
+   - Tag the FinOps team for approval (`@finops-team` or `#finops-requests` in Slack)
+   - The CI check will block the PR until the threshold is met or manually overridden
+
+```yaml
+# To adjust thresholds for your repo, edit .infracost.yml:
+cost_thresholds:
+  percentage_increase: 20    # Default: 20%
+  absolute_increase_usd: 500  # Default: $500/month
+```
+
+Infracost setup: [`finops/docs/infracost-integration.md`](../../finops/docs/infracost-integration.md)
+
+---
+
+### FinOps PR Checklist
+
+Include the FinOps checklist in your PR:  
+[`finops/templates/pr-checklist.md`](../../finops/templates/pr-checklist.md)
+
+---
+
 ## Guardrails
 
 | Rule | Enforced by |

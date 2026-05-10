@@ -1,0 +1,93 @@
+# finops/config/budgets.yaml
+# Budget configuration for FinOps cost alerts.
+# Each entry defines a monthly spending threshold for a cost center.
+# Prometheus alerting rules use these thresholds to trigger alerts at
+# 80% (warning), 100% (critical), and 120% (emergency) of the threshold.
+#
+# Deploy budget alerts:
+#   ./finops/scripts/deploy-budget-alerts.sh --config finops/config/budgets.yaml
+
+# Schema version — update when the schema changes
+apiVersion: finops.org/v1
+kind: BudgetConfiguration
+
+budgets:
+  # ─── Engineering ────────────────────────────────────────────────────────────
+  - cost_center: "engineering"
+    display_name: "Engineering Platform"
+    monthly_threshold_usd: 10000
+    alert_channels:
+      slack: "#finops-engineering"
+      email: "engineering-leads@company.com"
+    # Namespaces attributed to this cost center
+    namespaces:
+      - "team-platform"
+      - "team-backend"
+      - "team-api"
+    # Optional: override default alert thresholds for this cost center (percent)
+    thresholds:
+      warning: 80
+      critical: 100
+      emergency: 120
+
+  # ─── Data Science ────────────────────────────────────────────────────────────
+  - cost_center: "data-science"
+    display_name: "Data Science & ML"
+    monthly_threshold_usd: 25000
+    alert_channels:
+      slack: "#finops-data-science"
+      pagerduty: "data-science-oncall"
+      email: "data-leads@company.com"
+    namespaces:
+      - "team-ml"
+      - "team-data-engineering"
+      - "jupyter"
+    thresholds:
+      warning: 75
+      critical: 100
+      emergency: 110
+
+  # ─── Frontend / UX ───────────────────────────────────────────────────────────
+  - cost_center: "frontend"
+    display_name: "Frontend & UX"
+    monthly_threshold_usd: 3000
+    alert_channels:
+      slack: "#finops-frontend"
+      email: "frontend-leads@company.com"
+    namespaces:
+      - "team-frontend"
+      - "team-ux"
+    thresholds:
+      warning: 80
+      critical: 100
+      emergency: 120
+
+  # ─── Shared Infrastructure ────────────────────────────────────────────────────
+  - cost_center: "platform-infra"
+    display_name: "Shared Platform Infrastructure"
+    monthly_threshold_usd: 15000
+    alert_channels:
+      slack: "#platform-alerts"
+      pagerduty: "platform-oncall"
+      email: "platform-team@company.com"
+    namespaces:
+      - "monitoring"
+      - "logging"
+      - "finops"
+      - "kube-system"
+      - "argocd"
+    thresholds:
+      warning: 80
+      critical: 100
+      emergency: 120
+
+# ─── Global Alert Settings ────────────────────────────────────────────────────
+global_settings:
+  # How often Prometheus re-evaluates budget rules (in minutes)
+  evaluation_interval_minutes: 5
+  # Grafana dashboard base URL for alert links
+  grafana_base_url: "https://grafana.internal.company.com"
+  # Grafana budget tracking dashboard UID
+  budget_dashboard_uid: "finops-budget-tracking"
+  # Currency for all thresholds
+  currency: "USD"

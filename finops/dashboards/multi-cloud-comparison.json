@@ -1,0 +1,114 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "bargauge", "name": "Bar gauge", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "piechart", "name": "Pie chart", "version": "" }
+  ],
+  "description": "Multi-cloud cost comparison across AWS, Azure, and GCP in normalized USD. Includes cost breakdown by cloud provider, service, and region.",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "10m",
+  "schemaVersion": 38,
+  "tags": ["finops", "multi-cloud"],
+  "time": { "from": "now-30d", "to": "now" },
+  "timezone": "browser",
+  "title": "FinOps - Multi-Cloud Cost Comparison",
+  "uid": "finops-multi-cloud",
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kubecost_namespace_cost_hourly, cloud_provider)",
+        "hide": 0, "includeAll": true, "allValue": ".*", "label": "Cloud Provider", "multi": true, "name": "cloud_provider",
+        "query": { "query": "label_values(kubecost_namespace_cost_hourly, cloud_provider)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kubecost_namespace_cost_hourly, cluster_name)",
+        "hide": 0, "includeAll": true, "allValue": ".*", "label": "Cluster", "multi": true, "name": "cluster_name",
+        "query": { "query": "label_values(kubecost_namespace_cost_hourly, cluster_name)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    { "id": 1, "title": "Cloud Provider Summary (USD/hr)", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 2, "title": "AWS Total Cost", "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "#FF9900" }, "unit": "currencyUSD", "decimals": 2 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"aws\", cluster_name=~\"$cluster_name\"})", "legendFormat": "AWS Cost/hr", "refId": "A" }]
+    },
+    {
+      "id": 3, "title": "Azure Total Cost", "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "#0078D4" }, "unit": "currencyUSD", "decimals": 2 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"azure\", cluster_name=~\"$cluster_name\"})", "legendFormat": "Azure Cost/hr", "refId": "A" }]
+    },
+    {
+      "id": 4, "title": "GCP Total Cost", "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "#4285F4" }, "unit": "currencyUSD", "decimals": 2 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"gcp\", cluster_name=~\"$cluster_name\"})", "legendFormat": "GCP Cost/hr", "refId": "A" }]
+    },
+    {
+      "id": 5, "title": "Cost by Cloud Provider — Trend (USD, normalized)", "type": "timeseries",
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 15 }, "unit": "currencyUSD", "decimals": 2 } },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean"] } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"aws\", cluster_name=~\"$cluster_name\"})", "legendFormat": "AWS", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"azure\", cluster_name=~\"$cluster_name\"})", "legendFormat": "Azure", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"gcp\", cluster_name=~\"$cluster_name\"})", "legendFormat": "GCP", "refId": "C" }
+      ]
+    },
+    {
+      "id": 6, "title": "Cloud Provider Cost Share", "type": "piechart",
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "currencyUSD", "decimals": 2 } },
+      "options": { "pieType": "donut", "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"aws\"})", "legendFormat": "AWS", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"azure\"})", "legendFormat": "Azure", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kubecost_namespace_cost_hourly{cloud_provider=\"gcp\"})", "legendFormat": "GCP", "refId": "C" }
+      ]
+    },
+    { "id": 10, "title": "Cost by Cluster", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 } },
+    {
+      "id": 11, "title": "Cost Per Cluster (USD/hr)", "type": "bargauge",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "currencyUSD", "decimals": 2 } },
+      "options": { "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] }, "displayMode": "gradient" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum by (cluster_name, cloud_provider) (kubecost_namespace_cost_hourly{cloud_provider=~\"$cloud_provider\", cluster_name=~\"$cluster_name\"})", "legendFormat": "{{cluster_name}} ({{cloud_provider}})", "refId": "A" }]
+    },
+    { "id": 20, "title": "Detailed Breakdown", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 } },
+    {
+      "id": 21, "title": "Cluster Cost Summary Table", "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 100 }, { "color": "red", "value": 500 }] }, "unit": "currencyUSD", "decimals": 2 } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum by (cluster_name, cloud_provider) (kubecost_namespace_cost_hourly{cloud_provider=~\"$cloud_provider\", cluster_name=~\"$cluster_name\"})", "legendFormat": "", "refId": "A", "instant": true, "format": "table" }],
+      "transformations": [
+        { "id": "organize", "options": { "renameByName": { "cluster_name": "Cluster", "cloud_provider": "Cloud Provider", "Value": "Total Cost (USD/hr)" } } },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Total Cost (USD/hr)", "desc": true }] } }
+      ]
+    }
+  ]
+}

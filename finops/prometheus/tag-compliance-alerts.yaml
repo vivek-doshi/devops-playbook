@@ -1,0 +1,91 @@
+# finops/prometheus/tag-compliance-alerts.yaml
+# Prometheus alerting rules for cost tag compliance.
+# Triggers when >5% of pods lack required finops.org labels.
+#
+# Apply: kubectl apply -f finops/prometheus/tag-compliance-alerts.yaml -n monitoring
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: finops-tag-compliance-alerts
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+    finops.org/component: tag-compliance
+spec:
+  groups:
+    - name: finops.tag.compliance
+      interval: 15m
+      rules:
+        # ── Missing cost center label ─────────────────────────────────────────
+        - alert: CostTagComplianceLow
+          expr: |
+            (
+              1 - (
+                count(kube_pod_labels{label_finops_org_costcenter!=""})
+                /
+                count(kube_pod_info)
+              )
+            ) * 100 > 5
+          for: 30m
+          labels:
+            severity: warning
+            component: finops
+            type: tag-compliance
+          annotations:
+            summary: "Cost tag compliance below 95% — {{ printf \"%.1f\" $value }}% of pods missing finops.org/costcenter"
+            description: |
+              {{ printf "%.1f" $value }}% of pods in the cluster are missing the required
+              'finops.org/costcenter' label. This degrades chargeback reporting accuracy.
+
+              Threshold: 5% non-compliance triggers this alert.
+              Action: Run tag validation: kubectl exec -n finops deploy/finops-tools -- \
+                python validate-cost-tags.py --all-namespaces
+
+              See tagging schema: https://github.com/your-org/cicd-reference/blob/main/finops/docs/cost-tagging-schema.md
+            dashboard_url: "{{ $externalURL }}/d/finops-tag-compliance"
+
+        # ── Missing environment label ─────────────────────────────────────────
+        - alert: EnvironmentTagComplianceLow
+          expr: |
+            (
+              1 - (
+                count(kube_pod_labels{label_finops_org_environment!=""})
+                /
+                count(kube_pod_info)
+              )
+            ) * 100 > 5
+          for: 30m
+          labels:
+            severity: warning
+            component: finops
+            type: tag-compliance
+          annotations:
+            summary: "Environment tag compliance below 95% — {{ printf \"%.1f\" $value }}% missing finops.org/environment"
+            description: |
+              {{ printf "%.1f" $value }}% of pods are missing the 'finops.org/environment' label.
+              Valid values: dev, staging, production.
+            dashboard_url: "{{ $externalURL }}/d/finops-tag-compliance"
+
+        # ── Per-namespace compliance warning ──────────────────────────────────
+        - alert: NamespaceTagNonCompliant
+          expr: |
+            (
+              1 - (
+                sum by (namespace) (kube_pod_labels{label_finops_org_costcenter!=""})
+                /
+                sum by (namespace) (kube_pod_info)
+              )
+            ) * 100 > 20
+          for: 15m
+          labels:
+            severity: warning
+            component: finops
+            type: tag-compliance
+          annotations:
+            summary: "Namespace {{ $labels.namespace }} has >20% pods missing cost labels"
+            description: |
+              Namespace {{ $labels.namespace }}: {{ printf "%.1f" $value }}% of pods are
+              missing finops.org/costcenter labels. This namespace will appear as 'untagged'
+              in cost reports.

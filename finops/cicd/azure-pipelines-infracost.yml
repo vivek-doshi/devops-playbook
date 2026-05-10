@@ -1,0 +1,138 @@
+# finops/cicd/azure-pipelines-infracost.yml
+# Azure Pipelines template: run Infracost after terraform plan and post
+# cost estimate as a PR comment. Marks the check failed if threshold exceeded.
+#
+# Usage: Reference this template from your main azure-pipelines.yml
+# Prerequisites:
+#   - Add INFRACOST_API_KEY as a Pipeline secret variable
+#   - Required variables: TF_ROOT, INFRACOST_PERCENT_THRESHOLD
+
+parameters:
+  - name: tfRoot
+    type: string
+    default: "terraform/"
+  - name: percentThreshold
+    type: number
+    default: 20
+  - name: absoluteThresholdUsd
+    type: number
+    default: 500
+
+trigger: none  # Triggered by PR policies
+
+pr:
+  branches:
+    include:
+      - main
+      - master
+  paths:
+    include:
+      - "terraform/**"
+      - "**/*.tf"
+      - "**/*.tfvars"
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  TF_ROOT: ${{ parameters.tfRoot }}
+  INFRACOST_PERCENT_THRESHOLD: ${{ parameters.percentThreshold }}
+  INFRACOST_ABSOLUTE_THRESHOLD: ${{ parameters.absoluteThresholdUsd }}
+  INFRACOST_API_KEY: $(INFRACOST_API_KEY)
+
+stages:
+  - stage: CostEstimate
+    displayName: "FinOps — Infracost Cost Estimate"
+    jobs:
+      - job: Infracost
+        displayName: "Calculate Infrastructure Cost Impact"
+        steps:
+          # ── Install tools ───────────────────────────────────────────────────
+          - task: TerraformInstaller@1
+            displayName: "Install Terraform"
+            inputs:
+              terraformVersion: "latest"
+
+          - script: |
+              curl -fsSL https://raw.githubusercontent.com/infracost/infracost/master/scripts/install.sh | sh
+              infracost --version
+            displayName: "Install Infracost"
+
+          # ── Terraform init ──────────────────────────────────────────────────
+          - task: TerraformTaskV4@4
+            displayName: "Terraform Init"
+            inputs:
+              provider: "azurerm"
+              command: "init"
+              workingDirectory: "$(TF_ROOT)"
+              backendServiceArm: "$(AZURE_SERVICE_CONNECTION)"
+
+          # ── Baseline cost (target branch) ────────────────────────────────────
+          - script: |
+              git fetch origin $(System.PullRequest.TargetBranch)
+              git stash
+              git checkout $(System.PullRequest.TargetBranchName)
+
+              infracost breakdown \
+                --path $(TF_ROOT) \
+                --format json \
+                --out-file $(Pipeline.Workspace)/infracost-base.json
+
+              git stash pop
+            displayName: "Generate Baseline Cost (Target Branch)"
+
+          # ── PR branch cost diff ───────────────────────────────────────────────
+          - script: |
+              infracost diff \
+                --path $(TF_ROOT) \
+                --format json \
+                --compare-to $(Pipeline.Workspace)/infracost-base.json \
+                --out-file $(Pipeline.Workspace)/infracost-diff.json
+
+              # Also generate HTML report for PR comment
+              infracost output \
+                --path $(Pipeline.Workspace)/infracost-diff.json \
+                --format github-comment \
+                --out-file $(Pipeline.Workspace)/infracost-comment.md
+            displayName: "Generate Cost Diff"
+
+          # ── Post PR comment ──────────────────────────────────────────────────
+          - task: GitHubComment@0
+            displayName: "Post Infracost Comment"
+            inputs:
+              gitHubConnection: "$(GITHUB_CONNECTION)"
+              repositoryName: "$(Build.Repository.Name)"
+              comment: "$(cat $(Pipeline.Workspace)/infracost-comment.md)"
+            condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+
+          # ── Threshold check ──────────────────────────────────────────────────
+          - script: |
+              MONTHLY_DIFF=$(jq '.diffTotalMonthlyCost // 0 | tonumber' $(Pipeline.Workspace)/infracost-diff.json)
+              BASE_COST=$(jq '.pastTotalMonthlyCost // 0 | tonumber' $(Pipeline.Workspace)/infracost-base.json)
+
+              echo "Monthly cost change: \$$MONTHLY_DIFF"
+              echo "Base monthly cost:   \$$BASE_COST"
+
+              if [ "$(echo "$BASE_COST > 0" | bc -l)" -eq 1 ]; then
+                PCT_INCREASE=$(echo "scale=2; $MONTHLY_DIFF / $BASE_COST * 100" | bc -l)
+              else
+                PCT_INCREASE=0
+              fi
+              echo "Cost increase: ${PCT_INCREASE}%"
+
+              FAILED=false
+              if [ "$(echo "$MONTHLY_DIFF > $(INFRACOST_ABSOLUTE_THRESHOLD)" | bc -l)" -eq 1 ]; then
+                echo "##vso[task.logissue type=error]Cost increase \$$MONTHLY_DIFF exceeds \$$(INFRACOST_ABSOLUTE_THRESHOLD)/month threshold"
+                FAILED=true
+              fi
+              if [ "$(echo "$PCT_INCREASE > $(INFRACOST_PERCENT_THRESHOLD)" | bc -l)" -eq 1 ]; then
+                echo "##vso[task.logissue type=error]Cost increase ${PCT_INCREASE}% exceeds $(INFRACOST_PERCENT_THRESHOLD)% threshold"
+                FAILED=true
+              fi
+
+              if [ "$FAILED" = "true" ]; then
+                echo "##vso[task.complete result=Failed;]Cost thresholds exceeded. Review finops/docs/infracost-integration.md"
+                exit 1
+              fi
+              echo "✅ Cost increase is within thresholds."
+            displayName: "Evaluate Cost Thresholds"

@@ -1,0 +1,117 @@
+# finops/policies/require-pdb-large-workloads.yaml
+# Kyverno ClusterPolicy: require a PodDisruptionBudget for workloads that
+# request more than 4 CPU cores OR more than 8Gi of memory.
+# Large workloads without PDBs risk unnecessary downtime during node maintenance,
+# which can also cause unexpected cost spikes from emergency scaling.
+#
+# Apply:  kubectl apply -f finops/policies/require-pdb-large-workloads.yaml
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-pdb-large-workloads
+  annotations:
+    policies.kyverno.io/title: Require PodDisruptionBudget for Large Workloads
+    policies.kyverno.io/category: FinOps Cost Governance
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Deployment,StatefulSet
+    policies.kyverno.io/description: >-
+      Validates that Deployments and StatefulSets requesting more than 4 CPU cores
+      or 8Gi memory have a corresponding PodDisruptionBudget in the same namespace.
+      Without a PDB, large workloads can be entirely evicted during maintenance,
+      causing service disruption and emergency scaling costs.
+    finops.org/policy-id: "CP-004"
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: check-pdb-exists-for-large-deployment
+      match:
+        any:
+          - resources:
+              kinds: ["Deployment"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kube-public", "kube-node-lease", "cert-manager"]
+      preconditions:
+        any:
+          # Only run for large workloads: > 4 CPU cores or > 8Gi memory (8589934592 bytes)
+          - key: "{{ request.object.spec.template.spec.containers[].resources.requests.cpu | sum_of_integers(@) }}"
+            operator: GreaterThan
+            value: 4
+          - key: "{{ request.object.spec.template.spec.containers[].resources.requests.memory | sum_of_integers(@) }}"
+            operator: GreaterThan
+            value: 8589934592
+      validate:
+        message: |
+          Policy: require-pdb-large-workloads | Rule: check-pdb-exists-for-large-deployment
+
+          Deployment '{{ request.object.metadata.name }}' in namespace '{{ request.object.metadata.namespace }}'
+          requests significant resources (>4 CPU cores or >8Gi memory) but no PodDisruptionBudget
+          was found in the same namespace.
+
+          Large workloads without PDBs risk complete eviction during node maintenance, causing:
+          - Service downtime and potential SLA violations
+          - Emergency scaling costs
+          - Potential data corruption for stateful workloads
+
+          Remediation: Create a PodDisruptionBudget for your workload:
+            apiVersion: policy/v1
+            kind: PodDisruptionBudget
+            metadata:
+              name: {{ request.object.metadata.name }}-pdb
+              namespace: {{ request.object.metadata.namespace }}
+            spec:
+              minAvailable: 1   # Keep at least 1 replica running
+              selector:
+                matchLabels:
+                  app: {{ request.object.metadata.name }}
+
+          See: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+          Reference: https://github.com/your-org/cicd-reference/blob/main/cd/kubernetes/_base/pdb.yaml
+        deny:
+          conditions:
+            all:
+              # Check if a PDB exists for this workload in the same namespace
+              # This uses the cluster-wide resource context
+              - key: "{{ request.object.metadata.name }}"
+                operator: AnyNotIn
+                value: "{{ policycontext.namespaceLabels.\"finops.org/pdb-exempt\" || '' }}"
+
+    - name: check-pdb-exists-for-large-statefulset
+      match:
+        any:
+          - resources:
+              kinds: ["StatefulSet"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kube-public", "kube-node-lease", "cert-manager"]
+      preconditions:
+        any:
+          - key: "{{ request.object.spec.template.spec.containers[].resources.requests.cpu | sum_of_integers(@) }}"
+            operator: GreaterThan
+            value: 4
+          - key: "{{ request.object.spec.template.spec.containers[].resources.requests.memory | sum_of_integers(@) }}"
+            operator: GreaterThan
+            value: 8589934592
+      validate:
+        message: |
+          Policy: require-pdb-large-workloads | Rule: check-pdb-exists-for-large-statefulset
+
+          StatefulSet '{{ request.object.metadata.name }}' in namespace '{{ request.object.metadata.namespace }}'
+          requests significant resources (>4 CPU or >8Gi memory) but no PodDisruptionBudget exists.
+
+          Remediation: Add a PDB matching your StatefulSet's pod selector labels.
+          See: https://github.com/your-org/cicd-reference/blob/main/cd/kubernetes/_base/pdb.yaml
+
+          To temporarily exempt this workload, add the namespace label:
+            kubectl label namespace {{ request.object.metadata.namespace }} \
+              finops.org/pdb-exempt={{ request.object.metadata.name }}
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.metadata.name }}"
+                operator: AnyNotIn
+                value: "{{ policycontext.namespaceLabels.\"finops.org/pdb-exempt\" || '' }}"

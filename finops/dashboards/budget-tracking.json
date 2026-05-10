@@ -1,0 +1,116 @@
+﻿{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus data source for FinOps cost metrics",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "bargauge", "name": "Bar gauge", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "row", "name": "Row", "version": "" }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "enable": true,
+        "expr": "ALERTS{alertname=~\"BudgetThreshold.*\", alertstate=\"firing\"}",
+        "hide": false,
+        "iconColor": "red",
+        "name": "Budget Alerts",
+        "step": "60s",
+        "titleFormat": "{{alertname}} - {{cost_center}}"
+      }
+    ]
+  },
+  "description": "Budget tracking dashboard showing current spend vs budget by cost center, month-end forecasts, threshold indicators at 80%/100%/120%, and alert status.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": ["finops"],
+      "targetBlank": false,
+      "title": "FinOps Dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 38,
+  "tags": ["finops", "budget", "cost-management"],
+  "time": { "from": "now/M", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "FinOps - Budget Tracking",
+  "uid": "finops-budget-tracking",
+  "version": 1,
+  "weekStart": "",
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(finops_budget_current_spend, cost_center)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cost Center",
+        "multi": true,
+        "name": "cost_center",
+        "options": [],
+        "query": {
+          "query": "label_values(finops_budget_current_spend, cost_center)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kubecost_namespace_cost_hourly, namespace)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Namespace",
+        "multi": true,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "query": "label_values(kubecost_namespace_cost_hourly, namespace)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [

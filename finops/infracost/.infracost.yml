@@ -1,0 +1,45 @@
+# finops/infracost/.infracost.yml
+# Per-repository Infracost configuration template.
+# Copy this file to the root of your Terraform repository as .infracost.yml
+# and customize the paths and thresholds.
+#
+# Documentation: finops/docs/infracost-integration.md
+
+version: 0.1
+
+# ─── Projects ─────────────────────────────────────────────────────────────────
+# List each Terraform root module to be estimated.
+projects:
+  - path: terraform/
+    name: production-infrastructure
+    # Optional: Terraform workspace (if using workspaces)
+    # terraform_workspace: production
+    # Optional: Terraform var files to apply
+    # terraform_var_files:
+    #   - terraform/production.tfvars
+
+  # Add additional modules if needed:
+  # - path: terraform/networking/
+  #   name: networking-module
+
+# ─── Cost Thresholds ──────────────────────────────────────────────────────────
+# CI pipelines (GitHub Actions, Azure Pipelines, GitLab CI) will fail
+# the PR/MR check if either threshold is exceeded.
+cost_thresholds:
+  # Fail if monthly cost increases by more than this percentage
+  percentage_increase: 20    # 20% is a reasonable default for most teams
+
+  # Fail if monthly cost increases by more than this absolute USD amount
+  absolute_increase_usd: 500  # $500/month hard cap on surprise increases
+
+# ─── Currency ─────────────────────────────────────────────────────────────────
+currency: USD
+
+# ─── Usage Data ───────────────────────────────────────────────────────────────
+# Uncomment to provide usage estimates for resources Infracost cannot infer.
+# This improves estimate accuracy significantly.
+# usage_file: infracost-usage.yml
+
+# ─── Custom Prices ────────────────────────────────────────────────────────────
+# Uncomment to override pricing with negotiated enterprise discount rates.
+# custom_price_overrides: {}

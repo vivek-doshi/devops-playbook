@@ -1,0 +1,90 @@
+# finops/helm/vpa-values.yaml
+# Helm values for the Vertical Pod Autoscaler (VPA) chart.
+# Chart: https://github.com/FairwindsOps/charts/tree/master/stable/vpa
+#
+# Deploy with:
+#   helm repo add fairwinds-stable https://charts.fairwinds.com/stable
+#   helm upgrade --install vpa fairwinds-stable/vpa \
+#     --namespace kube-system \
+#     --values finops/helm/vpa-values.yaml
+
+# ─── Recommender ──────────────────────────────────────────────────────────────
+# The VPA recommender watches pod resource usage and generates recommendations.
+# Run in recommendation-only mode: updater and admission controller are disabled
+# so no automatic resource changes are made.
+recommender:
+  enabled: true
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 100Mi
+    limits:
+      cpu: 200m
+      memory: 500Mi
+
+  # Tune recommender behaviour
+  extraArgs:
+    # Minimum data duration before generating recommendations (24 hours)
+    recommendation-margin-fraction: "0.15"
+    # History length used for computing recommendations (7 days)
+    recommender-interval: "1m"
+    # Prometheus integration for historical metrics
+    storage: "prometheus"
+    prometheus-address: "http://prometheus-operated.monitoring.svc.cluster.local:9090"
+    prometheus-cadvisor-job-name: "kubelet"
+    # Decay factor for histograms — controls how quickly old data fades
+    cpu-histogram-decay-half-life: "24h"
+    memory-histogram-decay-half-life: "24h"
+
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8942"
+
+# ─── Updater ──────────────────────────────────────────────────────────────────
+# DISABLED: We use VPA in recommendation-only mode (Off/Initial).
+# The updater would restart pods to apply resource changes — not desired here.
+updater:
+  enabled: false
+
+# ─── Admission Controller ─────────────────────────────────────────────────────
+# DISABLED: We do not want VPA to automatically mutate resource requests
+# at pod admission time. Teams review recommendations manually.
+admissionController:
+  enabled: false
+
+# ─── CRDs ─────────────────────────────────────────────────────────────────────
+crds:
+  # Install the VerticalPodAutoscaler CRD if not already present
+  create: true
+
+# ─── RBAC ─────────────────────────────────────────────────────────────────────
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: vpa-recommender
+
+# ─── Metrics ──────────────────────────────────────────────────────────────────
+# ServiceMonitor for Prometheus scraping (requires kube-prometheus-stack)
+metrics:
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    labels:
+      release: kube-prometheus-stack
+    interval: 60s
+
+# ─── Pod Security ─────────────────────────────────────────────────────────────
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  fsGroup: 65534
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]

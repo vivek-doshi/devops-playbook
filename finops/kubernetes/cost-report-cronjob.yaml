@@ -1,0 +1,196 @@
+# finops/kubernetes/cost-report-cronjob.yaml
+# CronJob that generates and exports monthly FinOps cost reports.
+# Runs on the 1st of each month at 02:00 UTC.
+#
+# Apply: kubectl apply -f finops/kubernetes/cost-report-cronjob.yaml -n finops
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: finops
+  labels:
+    app.kubernetes.io/name: finops
+    finops.org/component: cost-reporting
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cost-report-sa
+  namespace: finops
+  labels:
+    app.kubernetes.io/name: cost-report-cronjob
+    finops.org/component: cost-reporting
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: finops-cost-reader
+  labels:
+    finops.org/component: cost-reporting
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "persistentvolumes", "persistentvolumeclaims"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: finops-cost-reader
+  labels:
+    finops.org/component: cost-reporting
+subjects:
+  - kind: ServiceAccount
+    name: cost-report-sa
+    namespace: finops
+roleRef:
+  kind: ClusterRole
+  name: finops-cost-reader
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-report-scripts
+  namespace: finops
+  labels:
+    app.kubernetes.io/name: cost-report-cronjob
+data:
+  # The scripts are mounted from the repository; this ConfigMap holds the
+  # entrypoint wrapper that orchestrates report generation + export.
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    MONTH="${REPORT_MONTH:-$(date -u +'%Y-%m' -d '1 month ago')}"
+    PROVIDER="${CLOUD_PROVIDER:-aws}"
+    BUCKET="${REPORT_BUCKET:-}"
+    KUBECOST_URL="${KUBECOST_URL:-http://kubecost.finops.svc.cluster.local:9090}"
+    CLUSTER_NAME="${CLUSTER_NAME:-production}"
+
+    echo "==> Generating cost report for $MONTH ..."
+    python /scripts/generate-cost-report.py \
+      --month "$MONTH" \
+      --kubecost-url "$KUBECOST_URL" \
+      --cluster "$CLUSTER_NAME" \
+      --provider "$PROVIDER" \
+      --format json \
+      --output "/tmp/cost-report-${MONTH}.json"
+
+    python /scripts/generate-cost-report.py \
+      --month "$MONTH" \
+      --kubecost-url "$KUBECOST_URL" \
+      --cluster "$CLUSTER_NAME" \
+      --provider "$PROVIDER" \
+      --format csv \
+      --output "/tmp/cost-report-${MONTH}.csv"
+
+    echo "==> Exporting reports to cloud storage ..."
+    if [ -n "$BUCKET" ]; then
+      /scripts/export-cost-report.sh \
+        --provider "$PROVIDER" \
+        --bucket "$BUCKET" \
+        --cluster "$CLUSTER_NAME" \
+        --file "/tmp/cost-report-${MONTH}.json"
+
+      /scripts/export-cost-report.sh \
+        --provider "$PROVIDER" \
+        --bucket "$BUCKET" \
+        --cluster "$CLUSTER_NAME" \
+        --file "/tmp/cost-report-${MONTH}.csv"
+    else
+      echo "WARNING: REPORT_BUCKET not set — skipping cloud export."
+      echo "Reports generated locally:"
+      ls -la /tmp/cost-report-${MONTH}.*
+    fi
+
+    echo "==> Cost report job complete."
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: finops-cost-report
+  namespace: finops
+  labels:
+    app.kubernetes.io/name: cost-report-cronjob
+    finops.org/component: cost-reporting
+spec:
+  # Run at 02:00 UTC on the 1st of every month
+  schedule: "0 2 1 * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800  # 30 minutes max
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: cost-report-cronjob
+            finops.org/costcenter: platform-infra
+            finops.org/environment: production
+        spec:
+          serviceAccountName: cost-report-sa
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            fsGroup: 65534
+
+          containers:
+            - name: cost-report
+              image: python:3.12-slim
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/bash", "/config/entrypoint.sh"]
+
+              env:
+                - name: CLOUD_PROVIDER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: finops-config
+                      key: cloud_provider
+                      optional: true
+                - name: REPORT_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: finops-export-credentials
+                      key: report_bucket
+                      optional: true
+                - name: CLUSTER_NAME
+                  valueFrom:
+                    configMapKeyRef:
+                      name: finops-config
+                      key: cluster_name
+                      optional: true
+                - name: KUBECOST_URL
+                  value: "http://kubecost.finops.svc.cluster.local:9090"
+
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+
+              volumeMounts:
+                - name: scripts
+                  mountPath: /config
+                - name: tmp
+                  mountPath: /tmp
+
+          volumes:
+            - name: scripts
+              configMap:
+                name: cost-report-scripts
+                defaultMode: 0755
+            - name: tmp
+              emptyDir: {}
