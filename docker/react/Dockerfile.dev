@@ -10,7 +10,7 @@
 # ============================================================
 
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM node:25-alpine
+FROM node:26-alpine
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
