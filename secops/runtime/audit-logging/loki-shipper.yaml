@@ -1,0 +1,358 @@
+# Promtail DaemonSet - Kubernetes Audit Log Shipper
+# Requirements: 3.6, 3.7, 3.8, 19.1–19.8
+#
+# Ships Kubernetes API server audit logs to Loki for security analysis.
+# Runs as a DaemonSet on control plane nodes only (where audit logs are written).
+#
+# Pre-requisites:
+#   - Loki installed (see observability/loki/values.yaml for endpoint)
+#   - Kubernetes API server configured with:
+#       --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+#       --audit-log-path=/var/log/kubernetes/audit/audit.log
+#       --audit-log-maxage=30
+#       --audit-log-maxbackup=10
+#       --audit-log-maxsize=100
+#
+# Deploy:
+#   kubectl apply -f secops/runtime/audit-logging/loki-shipper.yaml
+#
+# Verify:
+#   kubectl get pods -n secops -l app=promtail-audit
+#   kubectl logs -n secops -l app=promtail-audit --tail=20
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secops
+  labels:
+    app.kubernetes.io/managed-by: secops
+    pod-security.kubernetes.io/enforce: privileged
+
+---
+# ServiceAccount for Promtail
+# Requirements: 19.1
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail-audit
+  namespace: secops
+  labels:
+    app: promtail-audit
+    component: audit-log-shipper
+
+---
+# ClusterRole for Promtail to read pod metadata for log enrichment
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: promtail-audit
+  labels:
+    app: promtail-audit
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "watch", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: promtail-audit
+  labels:
+    app: promtail-audit
+subjects:
+  - kind: ServiceAccount
+    name: promtail-audit
+    namespace: secops
+roleRef:
+  kind: ClusterRole
+  name: promtail-audit
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Promtail ConfigMap
+# Defines scrape configs for Kubernetes API server audit logs
+# Requirements: 19.3 (read audit log path), 19.4 (parse JSON), 19.5 (add labels), 19.6 (Loki endpoint)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-audit-config
+  namespace: secops
+  labels:
+    app: promtail-audit
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    positions:
+      # Position file tracks progress through audit log file
+      # Stored on host to survive pod restarts
+      filename: /run/promtail/positions.yaml
+
+    clients:
+      # Loki endpoint - sourced from observability/loki/values.yaml
+      # Requirement 19.6
+      - url: http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push
+        # Batch settings for efficient log shipping
+        batchwait: 1s
+        batchsize: 1048576  # 1 MiB
+        timeout: 10s
+        # Retry during Loki unavailability (Requirement 19.7)
+        backoff_config:
+          min_period: 500ms
+          max_period: 5m
+          max_retries: 10
+        # Authentication (if Loki requires auth)
+        # tenant_id: secops
+        # basic_auth:
+        #   username: loki
+        #   password_file: /var/secrets/loki-password
+
+    scrape_configs:
+      # Kubernetes API Server Audit Logs
+      # Requirement 19.2, 19.3
+      - job_name: kubernetes-audit
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              # Static labels added to all audit log entries
+              # Requirement 19.5
+              job: kubernetes-audit
+              source: k8s-audit                    # Log source identifier
+              cluster: ${CLUSTER_NAME}             # Set via env var (see DaemonSet spec)
+              environment: ${ENVIRONMENT}          # Set via env var (see DaemonSet spec)
+              __path__: /var/log/kubernetes/audit/audit.log
+
+        # JSON log parsing for Kubernetes audit events
+        # Requirement 19.4
+        pipeline_stages:
+          # Parse the JSON audit event
+          - json:
+              expressions:
+                # Extract key fields from audit log JSON for label indexing
+                verb: verb
+                resource: 'objectRef.resource'
+                namespace: 'objectRef.namespace'
+                user: 'user.username'
+                response_code: 'responseStatus.code'
+                audit_level: level
+                stage: stage
+                request_uri: requestURI
+
+          # Create Loki labels from extracted JSON fields
+          # Keep label cardinality low for Loki performance
+          - labels:
+              verb:           # HTTP verb (get, create, update, patch, delete)
+              resource:       # Kubernetes resource type (pods, secrets, etc.)
+              namespace:      # Kubernetes namespace (for namespace-scoped resources)
+              audit_level:    # Audit level (Metadata, Request, RequestResponse)
+
+          # Extract timestamp from audit event for accurate log ordering
+          - timestamp:
+              source: requestReceivedTimestamp
+              format: RFC3339Nano
+              action_on_failure: skip
+
+          # Drop RequestReceived stage logs (duplicate - ResponseComplete has more data)
+          - drop:
+              expression: '\"stage\":\"RequestReceived\"'
+              drop_counter_reason: request_received_stage
+
+          # Metrics for monitoring log shipping health
+          - metrics:
+              audit_logs_total:
+                type: Counter
+                description: Total audit log lines shipped
+                prefix: promtail_audit_
+                source: verb
+                config:
+                  action: inc
+
+---
+# Promtail DaemonSet - runs on control plane nodes only
+# Requirements: 19.1 (DaemonSet), 19.2 (control plane nodes), 19.8 (resource limits)
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail-audit
+  namespace: secops
+  labels:
+    app: promtail-audit
+    component: audit-log-shipper
+    version: "2.9.0"
+spec:
+  selector:
+    matchLabels:
+      app: promtail-audit
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: promtail-audit
+        component: audit-log-shipper
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: promtail-audit
+
+      # Run ONLY on control plane nodes where audit logs are written
+      # Requirement 19.2
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+
+      tolerations:
+        # Control plane nodes are typically tainted - tolerate to schedule there
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+
+      # Ensure only one pod at a time is rescheduled during updates
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: promtail
+          image: grafana/promtail:2.9.0
+          args:
+            - -config.file=/etc/promtail/promtail.yaml
+            - -config.expand-env=true  # Enable environment variable substitution
+
+          env:
+            # Cluster and environment labels for log enrichment
+            # Override these when deploying to specific clusters
+            - name: CLUSTER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName  # Fallback to node name
+            - name: ENVIRONMENT
+              value: "production"  # Override via kustomize/helm values
+
+            # Node name for local log path discovery
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+          # Resource requirements (Requirement 19.8)
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+          ports:
+            - name: http-metrics
+              containerPort: 9080
+              protocol: TCP
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsGroup: 0        # Run as root to read audit log files
+            runAsUser: 0         # Audit logs typically require root read access
+            allowPrivilegeEscalation: false
+
+          volumeMounts:
+            # Promtail configuration
+            - name: config
+              mountPath: /etc/promtail
+
+            # Audit log file from host filesystem
+            # Requirement 19.3
+            - name: audit-log
+              mountPath: /var/log/kubernetes/audit
+              readOnly: true
+
+            # Position tracking file (survives pod restarts)
+            # Requirement 19.7 - local buffering via position tracking
+            - name: positions
+              mountPath: /run/promtail
+
+      volumes:
+        # Promtail configuration from ConfigMap
+        - name: config
+          configMap:
+            name: promtail-audit-config
+
+        # Host audit log directory (read-only)
+        # Kubernetes API server writes audit logs here
+        - name: audit-log
+          hostPath:
+            path: /var/log/kubernetes/audit
+            type: DirectoryOrCreate
+
+        # Position file storage (survives pod restarts for resume capability)
+        # Requirement 19.7 - buffer during unavailability via position tracking
+        - name: positions
+          hostPath:
+            path: /run/promtail-audit
+            type: DirectoryOrCreate
+
+---
+# Service for Prometheus scraping of Promtail metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: promtail-audit
+  namespace: secops
+  labels:
+    app: promtail-audit
+    monitoring: "true"
+spec:
+  selector:
+    app: promtail-audit
+  ports:
+    - name: http-metrics
+      port: 9080
+      targetPort: http-metrics
+  clusterIP: None  # Headless service for per-pod metric scraping
+
+---
+# ServiceMonitor for Prometheus automatic discovery
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: promtail-audit
+  namespace: secops
+  labels:
+    app: promtail-audit
+    monitoring: "true"
+spec:
+  selector:
+    matchLabels:
+      app: promtail-audit
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+      path: /metrics

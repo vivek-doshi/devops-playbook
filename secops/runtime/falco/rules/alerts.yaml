@@ -1,0 +1,179 @@
+# Falco Alertmanager Integration Configuration
+# Requirements: 1.6, 2.1, 2.4, 2.5, 16.1–16.6
+#
+# This file documents the Falcosidekick configuration for routing Falco alerts
+# to Alertmanager. The actual configuration is applied via the Falco Helm chart
+# values in secops/runtime/falco/values.yaml under `falcosidekick.config`.
+#
+# Falcosidekick acts as a relay between Falco and downstream notification systems.
+# It enriches alerts with custom fields, formats them for each destination,
+# and handles retry logic for failed deliveries.
+#
+# Alert Routing:
+#   CRITICAL / ERROR → Alertmanager → PagerDuty (via notifications/pagerduty-notify.yml)
+#   WARNING / NOTICE → Alertmanager → Slack (via notifications/slack-notify.yml)
+#
+# Reference: https://github.com/falcosecurity/falcosidekick/blob/master/config.yaml
+
+# ─── Alertmanager Endpoint Configuration ─────────────────────────────────────
+
+alertmanager:
+  # Alertmanager service endpoint
+  # Replace with your Alertmanager FQDN (kube-prometheus-stack default shown)
+  # Requirement 16.2
+  hostport: "http://kube-prometheus-stack-alertmanager.monitoring:9093"
+  endpoint: "/api/v1/alerts"
+
+  # Minimum Falco priority to forward to Alertmanager
+  # Falco priorities: emergency, alert, critical, error, warning, notice, informational, debug
+  # Requirement 16.3 - route based on severity
+  minimumpriority: "warning"
+
+  # TLS configuration for secure communication with Alertmanager
+  # Requirement 16.5 - enable TLS
+  mutualtls: false     # Set to true when mTLS certificates are provisioned
+  checkcert: true      # Validate Alertmanager TLS certificate
+
+  # Custom labels added to all Falco alerts sent to Alertmanager
+  # These labels are used by Alertmanager routing rules to direct alerts
+  # to PagerDuty (critical/high) or Slack (medium/low)
+  # Requirement 16.3 - alert labels
+  customfields:
+    source: "falco-runtime-security"
+    cluster: ""         # Populated at runtime via FALCOSIDEKICK_CONFIG_CUSTOMFIELDS_CLUSTER env var
+    environment: ""     # Populated at runtime via FALCOSIDEKICK_CONFIG_CUSTOMFIELDS_ENVIRONMENT env var
+
+# ─── Alert Format and Labels ──────────────────────────────────────────────────
+#
+# Falcosidekick automatically maps Falco alert fields to Alertmanager format.
+# The resulting Alertmanager payload looks like:
+#
+# POST http://alertmanager.monitoring:9093/api/v1/alerts
+# [
+#   {
+#     "labels": {
+#       "alertname": "FalcoAlert",
+#       "severity": "<high|medium|low>",        ← mapped from Falco priority
+#       "rule": "<falco-rule-name>",             ← Falco rule that fired
+#       "priority": "<CRITICAL|ERROR|WARNING>",  ← original Falco priority
+#       "pod": "<pod-name>",                     ← k8s.pod.name
+#       "namespace": "<namespace>",              ← k8s.ns.name
+#       "container": "<container-name>",         ← container.name
+#       "node": "<node-name>",                   ← k8s.node.name
+#       "source": "falco-runtime-security",      ← custom field
+#       "cluster": "<cluster-name>",             ← custom field
+#       "environment": "<production|staging>",   ← custom field
+#       "tags": "<comma-separated-tags>"         ← Falco rule tags
+#     },
+#     "annotations": {
+#       "summary": "<brief description>",
+#       "description": "<full Falco output message>",
+#       "runbook_url": "<link to secops/runbooks/>",
+#       "command": "<command that triggered alert>",
+#       "user": "<user who triggered alert>"
+#     },
+#     "startsAt": "2024-01-15T10:30:00Z"
+#   }
+# ]
+#
+# Requirement 2.4 - alert payload includes pod, namespace, rule, severity, timestamp
+# Requirement 2.5 - alert includes runbook URL
+
+# ─── Alertmanager Routing Rules ───────────────────────────────────────────────
+#
+# The following Alertmanager routing configuration should be added to your
+# Alertmanager configuration (typically in observability/alertmanager/values.yaml
+# or the kube-prometheus-stack values). This routes Falco alerts based on severity:
+#
+# route:
+#   routes:
+#     # Critical and high severity → PagerDuty (immediate response)
+#     - match_re:
+#         alertname: "FalcoAlert"
+#         severity: "critical|high"
+#       receiver: pagerduty-secops
+#       continue: true
+#
+#     # Medium and low severity → Slack (informational)
+#     - match:
+#         alertname: "FalcoAlert"
+#         severity: "medium"
+#       receiver: slack-secops
+#
+# receivers:
+#   - name: pagerduty-secops
+#     pagerduty_configs:
+#       - routing_key: <PAGERDUTY_INTEGRATION_KEY>  # See notifications/pagerduty-notify.yml
+#         severity: "{{ .CommonLabels.severity }}"
+#         description: "{{ .CommonAnnotations.description }}"
+#         details:
+#           rule: "{{ .CommonLabels.rule }}"
+#           pod: "{{ .CommonLabels.pod }}"
+#           namespace: "{{ .CommonLabels.namespace }}"
+#           runbook: "{{ .CommonAnnotations.runbook_url }}"
+#
+#   - name: slack-secops
+#     slack_configs:
+#       - api_url: <SLACK_WEBHOOK_URL>  # See notifications/slack-notify.yml
+#         channel: "#security-alerts"
+#         title: "🚨 Falco Security Alert: {{ .CommonLabels.rule }}"
+#         text: |
+#           *Severity:* {{ .CommonLabels.severity }}
+#           *Pod:* {{ .CommonLabels.pod }} ({{ .CommonLabels.namespace }})
+#           *Description:* {{ .CommonAnnotations.description }}
+#           *Runbook:* {{ .CommonAnnotations.runbook_url }}
+
+# ─── Retry Configuration ──────────────────────────────────────────────────────
+#
+# Falcosidekick retry behavior for failed Alertmanager deliveries:
+# Requirement 16.6
+#
+# The following environment variables control retry behavior when deploying
+# Falcosidekick. Add to the falcosidekick deployment spec:
+#
+# env:
+#   - name: ALERTMANAGER_CHECKCERT
+#     value: "true"
+#   - name: ALERTMANAGER_MINIMUMPRIORITY
+#     value: "warning"
+#   - name: DEBUG
+#     value: "false"
+#
+# Falcosidekick uses exponential backoff retry with the following defaults:
+#   - Initial retry delay: 500ms
+#   - Max retry attempts: 3
+#   - Backoff multiplier: 2x
+#   - Max retry delay: 4s
+#
+# If all retries fail, the alert is logged to stderr and the event is dropped.
+# Enable DEBUG=true during initial setup to trace alert delivery.
+
+# ─── Runbook URL Mapping ──────────────────────────────────────────────────────
+#
+# Falco alerts include runbook URLs based on the rule's tags.
+# The following mapping is used (configure via custom Falcosidekick annotations):
+#
+# Tag: compromise, shell, execution → secops/runbooks/compromised-pod.md
+# Tag: credentials, secrets         → secops/runbooks/secret-exposure.md
+# Tag: supply_chain, unsigned_image → secops/runbooks/supply-chain-incident.md
+# Tag: node, escape                 → secops/runbooks/node-compromise.md
+#
+# Base URL: https://github.com/<ORG>/<REPO>/blob/main/
+#
+# Example runbook_url annotation value:
+#   https://github.com/org/repo/blob/main/secops/runbooks/compromised-pod.md
+
+# ─── Severity Priority Mapping ────────────────────────────────────────────────
+#
+# Falco priority → Alertmanager severity label:
+#
+# EMERGENCY  → critical  (immediate PagerDuty escalation)
+# ALERT      → critical  (immediate PagerDuty escalation)
+# CRITICAL   → critical  (immediate PagerDuty escalation)
+# ERROR      → high      (PagerDuty, business hours acknowledgment)
+# WARNING    → medium    (Slack notification)
+# NOTICE     → low       (Slack notification, informational)
+# INFO       → info      (not forwarded by default)
+# DEBUG      → info      (not forwarded by default)
+#
+# This mapping is implemented in Alertmanager routing rules using severity labels.

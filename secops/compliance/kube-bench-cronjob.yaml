@@ -1,0 +1,344 @@
+# kube-bench Scheduled CIS Benchmark CronJob
+# Requirements: 7.7, 8.1–8.4
+#
+# Runs automated weekly CIS Kubernetes Benchmark scans every Sunday at 02:00 UTC.
+# Compares results to the previous scan and alerts on new failures.
+# Sends a summary notification to Slack on scan completion.
+#
+# Deploy:
+#   kubectl apply -f secops/compliance/kube-bench-cronjob.yaml
+#
+# Monitor:
+#   kubectl get cronjob kube-bench-scheduled -n secops
+#   kubectl get jobs -n secops -l app=kube-bench
+#   kubectl logs -n secops -l app=kube-bench --tail=50
+#
+# Manual trigger:
+#   kubectl create job -n secops --from=cronjob/kube-bench-scheduled kube-bench-manual-$(date +%s)
+#
+# Prerequisites:
+#   - secops namespace exists
+#   - kube-bench ServiceAccount and RBAC from kube-bench-job.yaml applied
+#   - Alertmanager accessible at kube-prometheus-stack-alertmanager.monitoring:9093
+#   - Slack webhook URL configured in notifications/slack-notify.yml
+
+---
+# CronJob for weekly CIS Benchmark scans
+# Requirements: 8.1, 8.2
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kube-bench-scheduled
+  namespace: secops
+  labels:
+    app: kube-bench
+    component: compliance-scanner
+    scan-type: cis-benchmark
+  annotations:
+    description: "Weekly automated CIS Kubernetes Benchmark scan. Runs every Sunday at 02:00 UTC."
+    secops.requirements: "7.7, 8.1, 8.2, 8.3, 8.4"
+spec:
+  # Run every Sunday at 02:00 UTC (Requirement 8.2)
+  schedule: "0 2 * * 0"
+  timeZone: "UTC"
+
+  # Retain last 3 successful scan records (Requirement 8.3)
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
+
+  # Prevent concurrent scans if a previous one is still running
+  concurrencyPolicy: Forbid
+
+  # Start deadline: if missed by more than 1 hour, skip this run
+  startingDeadlineSeconds: 3600
+
+  jobTemplate:
+    metadata:
+      labels:
+        app: kube-bench
+        component: compliance-scanner
+        scan-type: cis-benchmark
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 604800  # Clean up after 7 days
+      template:
+        metadata:
+          labels:
+            app: kube-bench
+            component: compliance-scanner
+        spec:
+          serviceAccountName: kube-bench
+          restartPolicy: OnFailure
+
+          # Run on control plane node for full access
+          nodeSelector:
+            node-role.kubernetes.io/control-plane: ""
+
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+            - key: node-role.kubernetes.io/master
+              operator: Exists
+              effect: NoSchedule
+
+          containers:
+            - name: kube-bench-scheduled
+              image: aquasec/kube-bench:v0.7.0
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  SCAN_DATE=$(date +%Y-%m-%d)
+                  SCAN_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                  PREV_SCAN_DATE=$(date -u -d '7 days ago' +%Y-%m-%d 2>/dev/null || date -v-7d +%Y-%m-%d)
+                  ALERTMANAGER_URL="http://kube-prometheus-stack-alertmanager.monitoring:9093/api/v1/alerts"
+                  SLACK_WEBHOOK="${SLACK_WEBHOOK_URL}"
+
+                  echo "=== kube-bench Scheduled Scan: ${SCAN_DATE} ==="
+
+                  # ── Step 1: Run kube-bench scan ────────────────────────────
+                  echo "Running CIS Kubernetes Benchmark scan..."
+                  /usr/local/bin/kube-bench run \
+                    --targets=master,etcd,controlplane,policies,node \
+                    --json \
+                    --outputfile /tmp/results-raw.json \
+                    || true  # Non-zero exit when failures found
+
+                  # ── Step 2: Process and aggregate results ──────────────────
+                  python3 << 'EOF'
+                  import json, sys
+
+                  with open('/tmp/results-raw.json') as f:
+                      data = json.load(f)
+
+                  totals = {'total_pass': 0, 'total_fail': 0, 'total_warn': 0, 'total_info': 0}
+                  failed_checks = []
+
+                  for control in data.get('Controls', []):
+                      for test in control.get('tests', []):
+                          for result in test.get('results', []):
+                              status = result.get('status', '').upper()
+                              if status == 'PASS': totals['total_pass'] += 1
+                              elif status == 'FAIL':
+                                  totals['total_fail'] += 1
+                                  failed_checks.append({
+                                      'test_number': result.get('test_number', ''),
+                                      'test_desc': result.get('test_desc', ''),
+                                      'remediation': result.get('remediation', ''),
+                                  })
+                              elif status == 'WARN': totals['total_warn'] += 1
+                              elif status == 'INFO': totals['total_info'] += 1
+
+                  data['Totals'] = totals
+                  data['FailedChecks'] = failed_checks
+
+                  with open('/tmp/results.json', 'w') as f:
+                      json.dump(data, f, indent=2)
+
+                  with open('/tmp/failed-checks.json', 'w') as f:
+                      json.dump(failed_checks, f)
+
+                  print(f"Scan complete: PASS={totals['total_pass']} FAIL={totals['total_fail']} WARN={totals['total_warn']}")
+                  EOF
+
+                  # ── Step 3: Store results as ConfigMap (Requirement 8.1) ───
+                  kubectl create configmap kube-bench-results-${SCAN_DATE} \
+                    -n secops \
+                    --from-file=results.json=/tmp/results.json \
+                    --dry-run=client -o yaml | kubectl apply -f -
+
+                  kubectl label configmap kube-bench-results-${SCAN_DATE} \
+                    -n secops \
+                    scan-type=cis-benchmark \
+                    scan-date="${SCAN_DATE}" \
+                    scheduled=true \
+                    --overwrite=true
+
+                  kubectl annotate configmap kube-bench-results-${SCAN_DATE} \
+                    -n secops \
+                    scan-timestamp="${SCAN_TIMESTAMP}" \
+                    --overwrite=true
+
+                  # ── Step 4: Compare with previous scan (Requirement 8.4) ──
+                  NEW_FAILURES=""
+                  PREV_FAIL_COUNT=0
+                  CURR_FAIL_COUNT=$(python3 -c "import json; d=json.load(open('/tmp/results.json')); print(d['Totals']['total_fail'])")
+
+                  PREV_CONFIGMAP="kube-bench-results-${PREV_SCAN_DATE}"
+                  if kubectl get configmap ${PREV_CONFIGMAP} -n secops >/dev/null 2>&1; then
+                    echo "Comparing with previous scan: ${PREV_SCAN_DATE}"
+                    kubectl get configmap ${PREV_CONFIGMAP} -n secops \
+                      -o jsonpath='{.data.results\.json}' > /tmp/prev-results.json 2>/dev/null || true
+
+                    if [ -s /tmp/prev-results.json ]; then
+                      python3 << 'PYEOF'
+                  import json
+
+                  with open('/tmp/results.json') as f:
+                      curr = json.load(f)
+                  with open('/tmp/prev-results.json') as f:
+                      prev = json.load(f)
+
+                  curr_fails = {c['test_number'] for c in curr.get('FailedChecks', [])}
+                  prev_fails = {c['test_number'] for c in prev.get('FailedChecks', [])}
+
+                  new_fails = curr_fails - prev_fails
+                  fixed_fails = prev_fails - curr_fails
+
+                  print(f"Previous failures: {len(prev_fails)}")
+                  print(f"Current failures: {len(curr_fails)}")
+                  print(f"New failures: {len(new_fails)}")
+                  print(f"Fixed since last scan: {len(fixed_fails)}")
+
+                  with open('/tmp/new-failures.txt', 'w') as f:
+                      f.write(str(len(new_fails)))
+
+                  with open('/tmp/new-failure-list.json', 'w') as f:
+                      new_fail_details = [c for c in curr.get('FailedChecks', []) if c['test_number'] in new_fails]
+                      json.dump(new_fail_details, f, indent=2)
+                  PYEOF
+                    fi
+                  else
+                    echo "No previous scan found for ${PREV_SCAN_DATE} - this may be the first scheduled scan"
+                    echo "0" > /tmp/new-failures.txt
+                  fi
+
+                  NEW_FAIL_COUNT=$(cat /tmp/new-failures.txt 2>/dev/null || echo 0)
+
+                  # ── Step 5: Alert on new failures (Requirement 8.4) ───────
+                  if [ "${NEW_FAIL_COUNT}" -gt "0" ]; then
+                    echo "Sending high-severity alert: ${NEW_FAIL_COUNT} new CIS Benchmark failures"
+                    NEW_FAIL_DETAILS=$(cat /tmp/new-failure-list.json 2>/dev/null | python3 -c "
+                  import json, sys
+                  fails = json.load(sys.stdin)
+                  summary = '; '.join([f\"{f['test_number']}: {f['test_desc'][:80]}\" for f in fails[:5]])
+                  print(summary)
+                  " 2>/dev/null || echo "See ConfigMap kube-bench-results-${SCAN_DATE} for details")
+
+                    curl -s -X POST "${ALERTMANAGER_URL}" \
+                      -H 'Content-Type: application/json' \
+                      -d "[{
+                        \"labels\": {
+                          \"alertname\": \"CISBenchmarkNewFailures\",
+                          \"severity\": \"high\",
+                          \"cluster\": \"${CLUSTER_NAME:-unknown}\",
+                          \"scan_date\": \"${SCAN_DATE}\",
+                          \"component\": \"kube-bench\",
+                          \"source\": \"compliance-scanner\"
+                        },
+                        \"annotations\": {
+                          \"summary\": \"CIS Benchmark scan detected ${NEW_FAIL_COUNT} new failures\",
+                          \"description\": \"kube-bench weekly scan found ${NEW_FAIL_COUNT} new failures compared to last week (${PREV_SCAN_DATE}). Total failures: ${CURR_FAIL_COUNT}. New failures: ${NEW_FAIL_DETAILS}\",
+                          \"runbook_url\": \"https://github.com/org/repo/blob/main/secops/compliance/controls/cis-kubernetes.md\",
+                          \"dashboard_url\": \"https://grafana.example.com/d/cis-benchmark\"
+                        },
+                        \"startsAt\": \"${SCAN_TIMESTAMP}\"
+                      }]" || echo "WARNING: Failed to send alert to Alertmanager"
+                  fi
+
+                  # ── Step 6: Send Slack summary (Requirement 7.7) ──────────
+                  if [ -n "${SLACK_WEBHOOK}" ]; then
+                    PASS=$(python3 -c "import json; d=json.load(open('/tmp/results.json')); print(d['Totals']['total_pass'])")
+                    WARN=$(python3 -c "import json; d=json.load(open('/tmp/results.json')); print(d['Totals']['total_warn'])")
+                    STATUS_EMOJI="✅"
+                    if [ "${CURR_FAIL_COUNT}" -gt "0" ]; then STATUS_EMOJI="⚠️"; fi
+                    if [ "${NEW_FAIL_COUNT}" -gt "0" ]; then STATUS_EMOJI="🚨"; fi
+
+                    curl -s -X POST "${SLACK_WEBHOOK}" \
+                      -H 'Content-Type: application/json' \
+                      -d "{
+                        \"text\": \"${STATUS_EMOJI} *CIS Kubernetes Benchmark Scan Complete* - ${SCAN_DATE}\",
+                        \"attachments\": [{
+                          \"color\": \"$([ '${NEW_FAIL_COUNT}' -gt '0' ] && echo '#FF0000' || echo '#36a64f')\",
+                          \"fields\": [
+                            {\"title\": \"Pass\", \"value\": \"${PASS}\", \"short\": true},
+                            {\"title\": \"Fail\", \"value\": \"${CURR_FAIL_COUNT}\", \"short\": true},
+                            {\"title\": \"Warn\", \"value\": \"${WARN}\", \"short\": true},
+                            {\"title\": \"New Failures\", \"value\": \"${NEW_FAIL_COUNT} (since ${PREV_SCAN_DATE})\", \"short\": true}
+                          ],
+                          \"footer\": \"secops/compliance/kube-bench-cronjob.yaml | <https://github.com/org/repo/blob/main/secops/compliance/controls/cis-kubernetes.md|View Controls>\"
+                        }]
+                      }" || echo "WARNING: Failed to send Slack notification"
+                  else
+                    echo "SLACK_WEBHOOK_URL not set - skipping Slack notification"
+                  fi
+
+                  echo "=== Scan complete: PASS=${PASS} FAIL=${CURR_FAIL_COUNT} NEW=${NEW_FAIL_COUNT} ==="
+
+              env:
+                - name: CLUSTER_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.nodeName
+                - name: SLACK_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: slack-webhook
+                      key: url
+                      optional: true  # Slack notification is optional
+
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+
+              volumeMounts:
+                - name: var-lib-etcd
+                  mountPath: /var/lib/etcd
+                  readOnly: true
+                - name: var-lib-kubelet
+                  mountPath: /var/lib/kubelet
+                  readOnly: true
+                - name: var-lib-kube-scheduler
+                  mountPath: /var/lib/kube-scheduler
+                  readOnly: true
+                - name: var-lib-kube-controller-manager
+                  mountPath: /var/lib/kube-controller-manager
+                  readOnly: true
+                - name: etc-systemd
+                  mountPath: /etc/systemd
+                  readOnly: true
+                - name: lib-systemd
+                  mountPath: /lib/systemd
+                  readOnly: true
+                - name: etc-kubernetes
+                  mountPath: /etc/kubernetes
+                  readOnly: true
+                - name: usr-local-mount-kubelet
+                  mountPath: /usr/local/mount-from-host/bin
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+
+          volumes:
+            - name: var-lib-etcd
+              hostPath:
+                path: /var/lib/etcd
+            - name: var-lib-kubelet
+              hostPath:
+                path: /var/lib/kubelet
+            - name: var-lib-kube-scheduler
+              hostPath:
+                path: /var/lib/kube-scheduler
+            - name: var-lib-kube-controller-manager
+              hostPath:
+                path: /var/lib/kube-controller-manager
+            - name: etc-systemd
+              hostPath:
+                path: /etc/systemd
+            - name: lib-systemd
+              hostPath:
+                path: /lib/systemd
+            - name: etc-kubernetes
+              hostPath:
+                path: /etc/kubernetes
+            - name: usr-local-mount-kubelet
+              hostPath:
+                path: /usr/local/bin
+            - name: tmp
+              emptyDir: {}

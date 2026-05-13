@@ -1,0 +1,326 @@
+# Falco Helm Chart Values
+# Chart: falcosecurity/falco (version 4.x)
+#
+# Install:
+#   helm repo add falcosecurity https://falcosecurity.github.io/charts
+#   helm install falco falcosecurity/falco --version 4.0.0 -n falco-system --create-namespace -f values.yaml
+#
+# Falco is a runtime security monitoring tool that detects anomalous behavior in containers
+# and Kubernetes by monitoring system calls at the kernel level using eBPF probes.
+#
+# This configuration:
+#   - Uses eBPF driver for better portability across kernel versions
+#   - Runs as a DaemonSet on all worker nodes
+#   - Exports Prometheus metrics for observability
+#   - Integrates with Alertmanager for security alert routing
+#   - Loads custom detection rules from secops/runtime/falco/rules/custom-rules.yaml
+
+# ─── Driver Configuration ────────────────────────────────────────────────────
+
+driver:
+  # Use eBPF driver instead of kernel module for better portability.
+  # eBPF works on kernel 4.14+ without requiring kernel headers or DKMS.
+  # The driver captures system calls at the kernel level for security monitoring.
+  kind: ebpf
+  
+  ebpf:
+    # Host path where eBPF programs are stored
+    hostNetwork: true
+    
+    # Liveness probe ensures the eBPF driver is functioning
+    liveness:
+      enabled: true
+      initialDelaySeconds: 60
+      timeoutSeconds: 5
+      periodSeconds: 15
+
+# ─── Falco Configuration ─────────────────────────────────────────────────────
+
+falco:
+  # Load priority determines rule evaluation order (lower = higher priority)
+  rules_file:
+    - /etc/falco/falco_rules.yaml          # Default Falco rules
+    - /etc/falco/falco_rules.local.yaml    # Local overrides
+    - /etc/falco/rules.d                   # Custom rules directory
+  
+  # JSON output format for structured logging and easier parsing
+  json_output: true
+  json_include_output_property: true
+  json_include_tags_property: true
+  
+  # Log stderr to capture Falco's own diagnostic messages
+  log_stderr: true
+  log_syslog: false
+  log_level: info
+  
+  # Priority threshold - only emit alerts at this level or higher
+  # Levels: emergency, alert, critical, error, warning, notice, informational, debug
+  priority: warning
+  
+  # Buffered output reduces syscall overhead during high-volume alert periods
+  buffered_outputs: true
+  
+  # Syscall event drop monitoring
+  syscall_event_drops:
+    actions:
+      - log
+      - alert
+    rate: 0.03333  # Alert if drop rate exceeds 3.33% (1 in 30 events)
+    max_burst: 1000
+  
+  # Metadata enrichment - add Kubernetes context to alerts
+  metadata_download:
+    max_mb: 100
+    chunk_wait_us: 1000
+    watch_freq_sec: 1
+
+# ─── Custom Rules Configuration ──────────────────────────────────────────────
+# Requirements: 17.4, 17.5
+
+# Custom rules are loaded from secops/runtime/falco/rules/custom-rules.yaml
+# The customRules field inlines the rules directly into the Falco Helm release.
+# Falco loads these rules from /etc/falco/rules.d/ inside the container.
+#
+# Apply separately as a ConfigMap for live updates without Helm redeploy:
+#   kubectl create configmap falco-custom-rules \
+#     --from-file=custom-rules.yaml=secops/runtime/falco/rules/custom-rules.yaml \
+#     -n falco-system --dry-run=client -o yaml | kubectl apply -f -
+customRules:
+  # Loaded as /etc/falco/rules.d/custom-rules.yaml inside Falco pods
+  # Source: secops/runtime/falco/rules/custom-rules.yaml
+  custom-rules.yaml: |-
+    # Terminal Shell in Production Container (WARNING)
+    # Privilege Escalation via UID/GID Change (CRITICAL)
+    # Container Capability Modification Attempt (ERROR)
+    # Unexpected Outbound Connection from Container (WARNING)
+    # Sensitive File Access in Container (ERROR)
+    # Sensitive File Modified in Container (CRITICAL)
+    # Container Proc Mount Access (CRITICAL)
+    # Namespace Enter in Container (CRITICAL)
+    # Container Running with Host PID Namespace (WARNING)
+    # Cron File Modified in Container (ERROR)
+    # Cryptocurrency Miner Detected (CRITICAL)
+    # kubectl Executed in Container (ERROR)
+    #
+    # See full rules: secops/runtime/falco/rules/custom-rules.yaml
+    # Deploy with: kubectl apply -f secops/runtime/falco/rules/custom-rules.yaml
+
+# ─── Alerting Configuration ──────────────────────────────────────────────────
+# Requirements: 17.5
+# Full alert routing config: secops/runtime/falco/rules/alerts.yaml
+
+# Falcosidekick relays Falco alerts to Alertmanager and other sinks.
+# Priority routing:
+#   CRITICAL/ERROR → Alertmanager → PagerDuty (notifications/pagerduty-notify.yml)
+#   WARNING/NOTICE → Alertmanager → Slack (notifications/slack-notify.yml)
+falcosidekick:
+  enabled: true
+  
+  config:
+    # Alertmanager integration
+    # See secops/runtime/falco/rules/alerts.yaml for full routing documentation
+    alertmanager:
+      # <-- CHANGE THIS to match your Alertmanager service FQDN
+      # Default assumes kube-prometheus-stack in monitoring namespace
+      hostport: "http://kube-prometheus-stack-alertmanager.monitoring:9093"
+      endpoint: "/api/v1/alerts"
+      # Minimum priority level to forward to Alertmanager
+      minimumpriority: "warning"
+      # TLS validation (enable for production)
+      checkcert: true
+      # Mutual TLS (enable when mTLS certificates are provisioned)
+      # mutualtls: true
+      # Retry configuration: 3 retries with exponential backoff
+      # Default: 500ms → 1s → 2s → 4s (see alerts.yaml for details)
+    
+    # Slack integration (optional - alerts also route through Alertmanager)
+    # Uncomment to enable direct Slack integration (bypasses Alertmanager routing):
+    # slack:
+    #   webhookurl: "<SLACK_WEBHOOK_URL>"  # See notifications/slack-notify.yml
+    #   minimumpriority: "warning"
+    
+    # Custom fields added to all alerts sent to Alertmanager
+    # These fields enable Alertmanager routing rules to identify Falco alerts
+    customfields:
+      source: "falco-runtime-security"
+      # Override via environment variables at deploy time:
+      #   FALCOSIDEKICK_CONFIG_CUSTOMFIELDS_CLUSTER=production-us-east-1
+      #   FALCOSIDEKICK_CONFIG_CUSTOMFIELDS_ENVIRONMENT=production
+  
+  # Falcosidekick resources
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  
+  # Prometheus metrics endpoint for Falcosidekick
+  webui:
+    enabled: false  # Web UI is optional, disabled to reduce resource usage
+  
+  podLabels:
+    app: falcosidekick
+    monitoring: "true"
+
+# ─── Resource Configuration ──────────────────────────────────────────────────
+
+resources:
+  requests:
+    cpu: 200m      # Baseline CPU for system call monitoring
+    memory: 512Mi  # Memory for event buffering and rule evaluation
+  limits:
+    cpu: "1"       # Cap at 1 CPU to prevent resource exhaustion
+    memory: 1Gi    # 1 GiB ceiling for high-volume event periods
+
+# ─── DaemonSet Configuration ─────────────────────────────────────────────────
+
+# Falco runs as a DaemonSet - one pod per node for complete coverage
+daemonset:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # Update one node at a time to maintain coverage
+
+# ─── Node Affinity and Tolerations ──────────────────────────────────────────
+
+# Run Falco on all worker nodes (exclude control plane by default)
+# To include control plane nodes, add appropriate tolerations below
+nodeSelector: {}
+
+affinity:
+  nodeAffinity:
+    # Prefer worker nodes, but allow scheduling on any node if needed
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: node-role.kubernetes.io/worker
+              operator: Exists
+      - weight: 50
+        preference:
+          matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
+
+tolerations:
+  # Allow Falco to run on nodes with common taints
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists
+
+# ─── Prometheus Metrics Export ───────────────────────────────────────────────
+
+# Enable Prometheus metrics for Falco monitoring
+metrics:
+  enabled: true
+  
+  # Metrics include:
+  #   - falco_events_total: Total events processed by rule
+  #   - falco_alerts_total: Total alerts generated by priority
+  #   - falco_drop_events_total: Dropped events due to buffer overflow
+  #   - falco_duration_seconds: Rule evaluation latency
+  
+  # ServiceMonitor for automatic Prometheus scraping
+  serviceMonitor:
+    enabled: true
+    labels:
+      monitoring: "true"  # Matches Prometheus serviceMonitorSelector
+    interval: 30s
+    scrapeTimeout: 10s
+
+# ─── Security Context ────────────────────────────────────────────────────────
+
+# Falco requires privileged access to load eBPF programs and read kernel events
+podSecurityPolicy:
+  create: false  # PSPs are deprecated in Kubernetes 1.25+
+
+securityContext:
+  privileged: true  # Required for eBPF probe loading
+
+# ─── Service Account ─────────────────────────────────────────────────────────
+
+serviceAccount:
+  create: true
+  name: falco
+  annotations: {}
+
+# RBAC permissions for Kubernetes API access (pod metadata enrichment)
+rbac:
+  create: true
+
+# ─── Additional Configuration ────────────────────────────────────────────────
+
+# Extra environment variables
+extraEnvVars: []
+
+# Extra volumes for mounting custom configurations
+extraVolumes: []
+extraVolumeMounts: []
+
+# Pod labels for monitoring and policy enforcement
+podLabels:
+  app: falco
+  component: runtime-security
+  monitoring: "true"
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8765"
+  prometheus.io/path: "/metrics"
+
+# Liveness and readiness probes
+livenessProbe:
+  initialDelaySeconds: 60
+  timeoutSeconds: 5
+  periodSeconds: 15
+
+readinessProbe:
+  initialDelaySeconds: 30
+  timeoutSeconds: 5
+  periodSeconds: 15
+
+# ─── Notes ───────────────────────────────────────────────────────────────────
+#
+# Post-Installation Steps:
+#
+# 1. Create custom rules ConfigMap:
+#      kubectl create configmap falco-custom-rules \
+#        --from-file=custom-rules.yaml=secops/runtime/falco/rules/custom-rules.yaml \
+#        -n falco-system
+#
+# 2. Verify Falco is running:
+#      kubectl get pods -n falco-system -l app=falco
+#      kubectl logs -n falco-system -l app=falco --tail=50
+#
+# 3. Test alert generation:
+#      kubectl exec -it <any-pod> -n <namespace> -- /bin/sh
+#      # Should trigger "Terminal shell in container" alert
+#
+# 4. Check Prometheus metrics:
+#      kubectl port-forward -n falco-system svc/falco 8765:8765
+#      curl http://localhost:8765/metrics | grep falco_
+#
+# 5. Verify Alertmanager integration:
+#      kubectl logs -n falco-system -l app=falcosidekick
+#      # Check for successful HTTP POST to Alertmanager
+#
+# Troubleshooting:
+#
+# - If eBPF driver fails to load:
+#     Check kernel version: uname -r  (requires 4.14+)
+#     Check eBPF support: ls /sys/kernel/btf/vmlinux
+#     View driver logs: kubectl logs -n falco-system -l app=falco -c falco-driver-loader
+#
+# - If alerts are not reaching Alertmanager:
+#     Check Falcosidekick logs: kubectl logs -n falco-system -l app=falcosidekick
+#     Verify Alertmanager endpoint: kubectl get svc -n monitoring
+#     Test connectivity: kubectl exec -n falco-system <falcosidekick-pod> -- curl -v http://kube-prometheus-stack-alertmanager.monitoring:9093/api/v1/status
+#
+# - If metrics are not scraped by Prometheus:
+#     Verify ServiceMonitor: kubectl get servicemonitor -n falco-system
+#     Check Prometheus targets: kubectl port-forward -n monitoring svc/prometheus 9090:9090
+#     Visit http://localhost:9090/targets and search for "falco"
