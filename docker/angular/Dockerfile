@@ -11,7 +11,7 @@
 
 # ── Stage 1: Build ───────────────────────────────────────────────────────────
 # Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM node:25-alpine AS build
+FROM node:26-alpine AS build
 # Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
@@ -27,7 +27,7 @@ RUN npm run build -- --configuration production
 
 # ── Stage 2: Serve with nginx ─────────────────────────────────────────────────
 # Note 7: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
-FROM nginx:1.29-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 # Remove default nginx config and copy custom
 # Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
