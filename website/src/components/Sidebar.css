@@ -17,6 +17,20 @@
   backdrop-filter: blur(6px);
 }
 
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  box-shadow: 0 10px 20px rgba(78, 54, 46, 0.14);
+}
+
 .sidebar-header h1 {
   margin: 0;
   font-size: 20px;
@@ -36,6 +50,13 @@
   margin-top: 12px;
   display: flex;
   gap: 8px;
+}
+
+.tree-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .theme-btn {
@@ -59,6 +80,28 @@
   border-color: rgba(157, 93, 82, 0.45);
   background: linear-gradient(145deg, #c1715b 0%, #e39d6e 100%);
   color: #fff8f2;
+}
+
+.tree-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(123, 75, 67, 0.16);
+  background: rgba(255, 255, 255, 0.76);
+  color: #6a4d4a;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tree-action-btn:hover {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(193, 113, 91, 0.36);
+  color: #2c252b;
 }
 
 .search-box {
@@ -280,6 +323,18 @@
   color: #f6fbff;
 }
 
+.app[data-theme='terminal-dusk'] .tree-action-btn {
+  border-color: rgba(84, 162, 194, 0.24);
+  background: rgba(84, 162, 194, 0.08);
+  color: #d3dce8;
+}
+
+.app[data-theme='terminal-dusk'] .tree-action-btn:hover {
+  background: rgba(84, 162, 194, 0.14);
+  border-color: rgba(155, 205, 219, 0.5);
+  color: #edf4fb;
+}
+
 .app[data-theme='terminal-dusk'] .search-box {
   background: rgba(84, 162, 194, 0.06);
   border-color: rgba(84, 162, 194, 0.18);
@@ -367,6 +422,11 @@
 
   .sidebar-header h1 {
     font-size: 24px;
+  }
+
+  .brand-icon {
+    width: 40px;
+    height: 40px;
   }
 
   .category-header {

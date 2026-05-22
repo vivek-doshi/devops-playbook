@@ -23,9 +23,11 @@
 }
 
 .empty-icon {
-  font-size: 48px;
   margin-bottom: 16px;
   opacity: 0.7;
+  display: flex;
+  justify-content: center;
+  color: #c1715b;
 }
 
 .empty-state h2 {
@@ -220,6 +222,10 @@
 .app[data-theme='terminal-dusk'] .empty-state h2,
 .app[data-theme='terminal-dusk'] .file-path {
   color: #edf4fb;
+}
+
+.app[data-theme='terminal-dusk'] .empty-icon {
+  color: #8dc3d8;
 }
 
 .app[data-theme='terminal-dusk'] .empty-state p,
