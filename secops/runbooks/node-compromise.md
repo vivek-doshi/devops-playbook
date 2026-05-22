@@ -1,14 +1,16 @@
 # Node Compromise Incident Response Runbook
-# Requirements: 13.1–13.8
-#
-# This runbook guides incident responders through safely removing a compromised
-# Kubernetes node while preserving forensic evidence.
-#
-# Related Runbooks:
-#   - secops/runbooks/compromised-pod.md (for pods on the compromised node)
-# Related Tools:
-#   - secops/runtime/falco/ (Falco may have detected the initial compromise)
-#   - secops/runtime/audit-logging/ (audit logs in Loki)
+
+**Requirements:** 13.1-13.8
+
+This runbook guides incident responders through safely removing a compromised
+Kubernetes node while preserving forensic evidence.
+
+**Related Runbooks:**
+- secops/runbooks/compromised-pod.md (for pods on the compromised node)
+
+**Related Tools:**
+- secops/runtime/falco/ (Falco may have detected the initial compromise)
+- secops/runtime/audit-logging/ (audit logs in Loki)
 
 ---
 
