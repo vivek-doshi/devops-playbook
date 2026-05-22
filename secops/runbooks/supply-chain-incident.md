@@ -1,16 +1,18 @@
 # Supply Chain Incident Response Runbook
-# Requirements: 12.1–12.8
-#
-# This runbook guides incident responders through investigating unsigned or tampered
-# container images detected by Kyverno supply chain policies.
-#
-# Related Runbooks:
-#   - secops/runbooks/compromised-pod.md (if a compromised image was deployed)
-# Related Tools:
-#   - secops/supply-chain/cosign-verify-policy.yaml
-#   - secops/supply-chain/sbom-policy.yaml
-#   - secops/supply-chain/slsa-verify.yaml
-#   - security/container-scanning/
+
+**Requirements:** 12.1-12.8
+
+This runbook guides incident responders through investigating unsigned or tampered
+container images detected by Kyverno supply chain policies.
+
+**Related Runbooks:**
+- secops/runbooks/compromised-pod.md (if a compromised image was deployed)
+
+**Related Tools:**
+- secops/supply-chain/cosign-verify-policy.yaml
+- secops/supply-chain/sbom-policy.yaml
+- secops/supply-chain/slsa-verify.yaml
+- security/container-scanning/
 
 ---
 

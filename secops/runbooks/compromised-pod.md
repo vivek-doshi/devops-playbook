@@ -1,14 +1,16 @@
 # Compromised Pod Incident Response Runbook
-# Requirements: 10.1–10.8
-#
-# Structure: Detection → Immediate Actions → Investigation → Remediation → Post-Incident
-#
-# Related Runbooks:
-#   - secops/runbooks/secret-exposure.md (if credentials were exposed)
-#   - secops/runbooks/node-compromise.md (if node escape is suspected)
-# Related Tools:
-#   - secops/runtime/falco/rules/custom-rules.yaml
-#   - secops/runtime/audit-logging/audit-policy.yaml (audit logs in Loki)
+
+**Requirements:** 10.1-10.8
+
+**Structure:** Detection -> Immediate Actions -> Investigation -> Remediation -> Post-Incident
+
+**Related Runbooks:**
+- secops/runbooks/secret-exposure.md (if credentials were exposed)
+- secops/runbooks/node-compromise.md (if node escape is suspected)
+
+**Related Tools:**
+- secops/runtime/falco/rules/custom-rules.yaml
+- secops/runtime/audit-logging/audit-policy.yaml (audit logs in Loki)
 
 ---
 

@@ -1,11 +1,10 @@
-# finops/templates/pr-checklist.md
 # FinOps PR Review Checklist Template
-#
-# Add this checklist to your GitHub PR template (.github/PULL_REQUEST_TEMPLATE.md)
-# or GitLab MR template (.gitlab/merge_request_templates/FinOps.md)
-# whenever a PR includes infrastructure changes, new workloads, or Kubernetes manifests.
-#
-# Usage: Copy the checklist section below into your PR description.
+
+Add this checklist to your GitHub PR template (.github/PULL_REQUEST_TEMPLATE.md)
+or GitLab MR template (.gitlab/merge_request_templates/FinOps.md)
+whenever a PR includes infrastructure changes, new workloads, or Kubernetes manifests.
+
+Usage: Copy the checklist section below into your PR description.
 
 ## FinOps Review Checklist
 

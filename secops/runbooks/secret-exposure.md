@@ -1,15 +1,17 @@
 # Secret Exposure Incident Response Runbook
-# Requirements: 11.1–11.8
-#
-# This runbook guides incident responders through responding to credential leaks,
-# including immediate rotation, impact assessment, and recurrence prevention.
-#
-# Related Runbooks:
-#   - secops/runbooks/compromised-pod.md (if a pod was compromised to access the secret)
-# Related Tools:
-#   - security/secret-rotation/ (credential rotation procedures)
-#   - security/secret-detection/ (detection rules)
-#   - secops/runtime/audit-logging/audit-policy.yaml (audit logs in Loki)
+
+**Requirements:** 11.1-11.8
+
+This runbook guides incident responders through responding to credential leaks,
+including immediate rotation, impact assessment, and recurrence prevention.
+
+**Related Runbooks:**
+- secops/runbooks/compromised-pod.md (if a pod was compromised to access the secret)
+
+**Related Tools:**
+- security/secret-rotation/ (credential rotation procedures)
+- security/secret-detection/ (detection rules)
+- secops/runtime/audit-logging/audit-policy.yaml (audit logs in Loki)
 
 ---
 
