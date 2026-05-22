@@ -6,6 +6,8 @@ const EXCLUDE_PATTERNS = [
   'node_modules',
   '.git',
   '.github',
+  '.kiro',
+  '.ai',
   'dist',
   'website',
   'scripts',       // Internal utility scripts — not part of the public playbook content.

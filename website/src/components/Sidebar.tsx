@@ -197,7 +197,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="brand-row">
           <img className="brand-icon" src={`${import.meta.env.BASE_URL}devops.svg`} alt="devops playbook icon" />
           <div>
-            <h1>dev-ops playbook</h1>
+            <h1>Dev-ops playbook</h1>
             <p className="subtitle">Code Template Browser</p>
           </div>
         </div>
