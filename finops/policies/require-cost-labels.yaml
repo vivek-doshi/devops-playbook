@@ -1,0 +1,90 @@
+# finops/policies/require-cost-labels.yaml
+# Kyverno ClusterPolicy: require finops.org/costcenter and finops.org/environment
+# labels on all Pods. Violations block pod creation with a descriptive error.
+#
+# Apply:  kubectl apply -f finops/policies/require-cost-labels.yaml
+# Test:   kyverno test finops/policies/ --test-case require-cost-labels
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-cost-labels
+  annotations:
+    policies.kyverno.io/title: Require FinOps Cost Labels
+    policies.kyverno.io/category: FinOps Cost Governance
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Validates that all Pods have the required FinOps cost allocation labels:
+      finops.org/costcenter and finops.org/environment. These labels are
+      mandatory for accurate chargeback reporting and cost tracking.
+    finops.org/policy-id: "CP-001"
+    finops.org/remediation: >-
+      Add the labels finops.org/costcenter and finops.org/environment to your
+      Pod spec or the owning controller (Deployment, StatefulSet, etc.).
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: validate-costcenter-label
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - cert-manager
+      validate:
+        message: |
+          Policy: require-cost-labels | Rule: validate-costcenter-label
+
+          Pod '{{ request.object.metadata.name }}' in namespace '{{ request.object.metadata.namespace }}'
+          is missing the required label 'finops.org/costcenter'.
+
+          Remediation: Add the label to your Pod/Deployment spec:
+            metadata:
+              labels:
+                finops.org/costcenter: "your-cost-center"
+
+          Valid cost center values: engineering, data-science, frontend, platform-infra
+          See: https://github.com/your-org/cicd-reference/blob/main/finops/docs/cost-tagging-schema.md
+        pattern:
+          metadata:
+            labels:
+              finops.org/costcenter: "?*"
+
+    - name: validate-environment-label
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - cert-manager
+      validate:
+        message: |
+          Policy: require-cost-labels | Rule: validate-environment-label
+
+          Pod '{{ request.object.metadata.name }}' in namespace '{{ request.object.metadata.namespace }}'
+          is missing the required label 'finops.org/environment'.
+
+          Remediation: Add the label to your Pod/Deployment spec:
+            metadata:
+              labels:
+                finops.org/environment: "production"  # dev | staging | production
+
+          See: https://github.com/your-org/cicd-reference/blob/main/finops/docs/cost-tagging-schema.md
+        pattern:
+          metadata:
+            labels:
+              finops.org/environment: "dev | staging | production"

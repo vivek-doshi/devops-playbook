@@ -1,0 +1,122 @@
+# finops/cicd/gitlab-ci-infracost.yml
+# GitLab CI job template: run Infracost after terraform plan and post cost
+# estimate as a merge request note. Fails the MR if cost exceeds threshold.
+#
+# Usage: Include in your .gitlab-ci.yml:
+#   include:
+#     - project: your-org/cicd-reference
+#       file: finops/cicd/gitlab-ci-infracost.yml
+#
+# Required CI/CD variables:
+#   INFRACOST_API_KEY      — Infracost API key (masked)
+#   GITLAB_TOKEN           — GitLab token with api scope for MR comments
+#
+# Optional overrides (set in project CI/CD variables):
+#   TF_ROOT                — Terraform directory (default: terraform/)
+#   INFRACOST_PCT_THRESHOLD — Max percent increase (default: 20)
+#   INFRACOST_ABS_THRESHOLD — Max absolute increase in USD (default: 500)
+
+variables:
+  TF_ROOT: "${TF_ROOT:-terraform/}"
+  INFRACOST_PCT_THRESHOLD: "${INFRACOST_PCT_THRESHOLD:-20}"
+  INFRACOST_ABS_THRESHOLD: "${INFRACOST_ABS_THRESHOLD:-500}"
+
+.infracost_rules:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - "terraform/**/*"
+        - "**/*.tf"
+        - "**/*.tfvars"
+
+infracost-estimate:
+  stage: test
+  image: infracost/infracost:ci-0.10
+  extends: .infracost_rules
+  variables:
+    INFRACOST_API_KEY: $INFRACOST_API_KEY
+  script:
+    # ── Generate baseline cost on target branch ───────────────────────────────
+    - |
+      git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      git stash
+      git checkout origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+
+      infracost breakdown \
+        --path "$TF_ROOT" \
+        --format json \
+        --out-file /tmp/infracost-base.json
+
+      git checkout $CI_COMMIT_SHA
+      git stash pop || true
+
+    # ── Generate cost diff on MR branch ──────────────────────────────────────
+    - |
+      infracost diff \
+        --path "$TF_ROOT" \
+        --format json \
+        --compare-to /tmp/infracost-base.json \
+        --out-file /tmp/infracost-diff.json
+
+    # ── Generate markdown comment ─────────────────────────────────────────────
+    - |
+      infracost output \
+        --path /tmp/infracost-diff.json \
+        --format gitlab-comment \
+        --out-file /tmp/infracost-comment.md
+
+    # ── Post comment to MR ────────────────────────────────────────────────────
+    - |
+      if [ -n "$GITLAB_TOKEN" ] && [ -n "$CI_MERGE_REQUEST_IID" ]; then
+        COMMENT_BODY=$(cat /tmp/infracost-comment.md | python3 -c "import sys, json; print(json.dumps(sys.stdin.read()))")
+        curl --silent \
+          --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+          --header "Content-Type: application/json" \
+          --data "{\"body\": $COMMENT_BODY}" \
+          "$CI_SERVER_URL/api/v4/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+        echo "✅ Posted Infracost comment to MR #$CI_MERGE_REQUEST_IID"
+      else
+        echo "GITLAB_TOKEN not set — skipping MR comment"
+      fi
+
+    # ── Evaluate thresholds ───────────────────────────────────────────────────
+    - |
+      MONTHLY_DIFF=$(jq '.diffTotalMonthlyCost // 0 | tonumber' /tmp/infracost-diff.json)
+      BASE_COST=$(jq '.pastTotalMonthlyCost // 0 | tonumber' /tmp/infracost-base.json)
+
+      echo "Monthly cost change : \$$MONTHLY_DIFF"
+      echo "Base monthly cost   : \$$BASE_COST"
+
+      if [ "$(echo "$BASE_COST > 0" | bc -l)" -eq 1 ]; then
+        PCT=$(echo "scale=2; $MONTHLY_DIFF / $BASE_COST * 100" | bc -l)
+      else
+        PCT=0
+      fi
+      echo "Percentage increase : ${PCT}%"
+
+      FAIL=false
+      if [ "$(echo "$MONTHLY_DIFF > $INFRACOST_ABS_THRESHOLD" | bc -l)" -eq 1 ]; then
+        echo "❌ Cost increase \$$MONTHLY_DIFF exceeds absolute threshold \$$INFRACOST_ABS_THRESHOLD"
+        FAIL=true
+      fi
+      if [ "$(echo "$PCT > $INFRACOST_PCT_THRESHOLD" | bc -l)" -eq 1 ]; then
+        echo "❌ Cost increase ${PCT}% exceeds percentage threshold ${INFRACOST_PCT_THRESHOLD}%"
+        FAIL=true
+      fi
+
+      if [ "$FAIL" = "true" ]; then
+        echo ""
+        echo "Review: finops/docs/infracost-integration.md"
+        exit 1
+      fi
+      echo "✅ Cost increase is within thresholds."
+
+  artifacts:
+    when: always
+    paths:
+      - /tmp/infracost-diff.json
+      - /tmp/infracost-comment.md
+    expire_in: 30 days
+    reports:
+      # Expose as a downloadable artifact in the MR
+      dotenv: /tmp/infracost-comment.md

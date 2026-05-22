@@ -1,0 +1,106 @@
+# finops/policies/gpu-approval-gate.yaml
+# Kyverno ClusterPolicy: require explicit cost-center approval annotation
+# for any workload that requests GPU resources (nvidia.com/gpu or amd.com/gpu).
+#
+# GPU workloads are extremely expensive. This policy gates them behind an
+# explicit approval annotation to prevent accidental GPU provisioning.
+#
+# To allow a GPU workload, add:
+#   metadata:
+#     annotations:
+#       finops.org/gpu-approved: "true"
+#       finops.org/gpu-approved-by: "john.doe@company.com"
+#       finops.org/gpu-approved-date: "2025-01-15"
+#       finops.org/gpu-justification: "ML training job for Q1 model"
+#
+# Apply:  kubectl apply -f finops/policies/gpu-approval-gate.yaml
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: gpu-approval-gate
+  annotations:
+    policies.kyverno.io/title: GPU Workload Approval Gate
+    policies.kyverno.io/category: FinOps Cost Governance
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Blocks deployment of workloads requesting GPU resources unless they have
+      the explicit approval annotation finops.org/gpu-approved: "true".
+      GPU instances (p3, p4, A100 etc.) can cost $3-$30/hour each.
+      This gate prevents accidental GPU provisioning.
+    finops.org/policy-id: "CP-003"
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-gpu-approval-annotation
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      preconditions:
+        any:
+          # Only apply to pods that actually request GPU resources
+          - key: "{{ request.object.spec.containers[].resources.limits.\"nvidia.com/gpu\" | length(@) }}"
+            operator: GreaterThan
+            value: 0
+          - key: "{{ request.object.spec.containers[].resources.limits.\"amd.com/gpu\" | length(@) }}"
+            operator: GreaterThan
+            value: 0
+      validate:
+        message: |
+          Policy: gpu-approval-gate | Rule: require-gpu-approval-annotation
+
+          Pod '{{ request.object.metadata.name }}' requests GPU resources but lacks the required
+          approval annotation: finops.org/gpu-approved: "true"
+
+          GPU instances are expensive ($3–$30/hour). Approval is required before provisioning.
+
+          Remediation: Obtain approval and add the following annotations to your Pod/Deployment:
+            metadata:
+              annotations:
+                finops.org/gpu-approved: "true"
+                finops.org/gpu-approved-by: "manager@company.com"
+                finops.org/gpu-approved-date: "YYYY-MM-DD"
+                finops.org/gpu-justification: "Brief description of the business need"
+
+          Approval process: https://github.com/your-org/cicd-reference/blob/main/finops/docs/finops-workflow.md#gpu-approval
+        pattern:
+          metadata:
+            annotations:
+              finops.org/gpu-approved: "true"
+
+    - name: require-gpu-approval-metadata
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      preconditions:
+        any:
+          - key: "{{ request.object.spec.containers[].resources.limits.\"nvidia.com/gpu\" | length(@) }}"
+            operator: GreaterThan
+            value: 0
+          - key: "{{ request.object.spec.containers[].resources.limits.\"amd.com/gpu\" | length(@) }}"
+            operator: GreaterThan
+            value: 0
+          - key: "{{ request.object.metadata.annotations.\"finops.org/gpu-approved\" }}"
+            operator: Equals
+            value: "true"
+      validate:
+        message: |
+          Policy: gpu-approval-gate | Rule: require-gpu-approval-metadata
+
+          Pod '{{ request.object.metadata.name }}' has gpu-approved: "true" but is missing
+          required approval metadata annotations.
+
+          Required annotations:
+            finops.org/gpu-approved-by    — Email of approving manager
+            finops.org/gpu-approved-date  — Date of approval (YYYY-MM-DD)
+            finops.org/gpu-justification  — Business justification for GPU usage
+        pattern:
+          metadata:
+            annotations:
+              finops.org/gpu-approved-by: "?*"
+              finops.org/gpu-approved-date: "?*"
+              finops.org/gpu-justification: "?*"

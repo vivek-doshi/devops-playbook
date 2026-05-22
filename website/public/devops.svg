@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="DevOps playbook icon">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7d7b8"/>
+      <stop offset="100%" stop-color="#c1715b"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="10%" y1="10%" x2="90%" y2="90%">
+      <stop offset="0%" stop-color="#fffaf3"/>
+      <stop offset="100%" stop-color="#edf4fb"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="88" height="88" rx="22" fill="url(#bg)"/>
+  <path d="M27 30h19.5c13 0 22.5 8.8 22.5 18s-9.5 18-22.5 18H27V30zm18.9 28.5c7.6 0 12.8-4.9 12.8-10.5s-5.2-10.5-12.8-10.5H38.5v21h7.4z" fill="url(#mark)"/>
+  <path d="M18 58l8-8 8 8-8 8-8-8zm44-20l6-6 10 10-6 6-10-10z" fill="#2c252b" opacity="0.18"/>
+  <path d="M19 56l10-10 10 10-10 10-10-10zm39-22l8-8 14 14-8 8-14-14z" fill="url(#mark)" opacity="0.94"/>
+</svg>

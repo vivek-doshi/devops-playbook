@@ -1,5 +1,5 @@
-﻿import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Search } from 'lucide-react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, Search, FoldHorizontal, UnfoldHorizontal } from 'lucide-react';
 import './Sidebar.css';
 
 interface FileItem {
@@ -100,6 +100,14 @@ function getFileCount(node: TreeNode): number {
   return node.children.reduce((sum, child) => sum + getFileCount(child), 0);
 }
 
+function getFolderPaths(node: TreeNode): string[] {
+  if (node.type === 'file') {
+    return [];
+  }
+
+  return [node.path, ...node.children.flatMap((child) => getFolderPaths(child))];
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   files,
   selectedFile,
@@ -109,9 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme,
   onThemeChange
 }) => {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(['cd', 'ci', 'docker', 'kubernetes'])
-  );
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const toggleFolder = (folder: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -137,6 +143,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [files, searchQuery]);
 
   const tree = useMemo(() => buildTree(filteredFiles), [filteredFiles]);
+
+  const allFolderPaths = useMemo(() => getFolderPaths(tree), [tree]);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setExpandedFolders(new Set(allFolderPaths));
+    }
+  }, [allFolderPaths, searchQuery]);
+
+  const collapseAll = () => setExpandedFolders(new Set());
+  const expandAll = () => setExpandedFolders(new Set(allFolderPaths));
 
   const renderNode = (node: TreeNode, depth: number): React.ReactNode => {
     if (node.type === 'file' && node.file) {
@@ -177,8 +194,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h1>devops-playbook</h1>
-        <p className="subtitle">Code Template Browser</p>
+        <div className="brand-row">
+          <img className="brand-icon" src={`${import.meta.env.BASE_URL}devops.svg`} alt="devops playbook icon" />
+          <div>
+            <h1>dev-ops playbook</h1>
+            <p className="subtitle">Code Template Browser</p>
+          </div>
+        </div>
         <div className="theme-switcher" role="group" aria-label="Theme selector">
           <button
             className={`theme-btn ${theme === 'runbook-dawn' ? 'active' : ''}`}
@@ -193,6 +215,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
           >
             Terminal Dusk
+          </button>
+        </div>
+        <div className="tree-actions" role="group" aria-label="Folder tree controls">
+          <button className="tree-action-btn" type="button" onClick={collapseAll}>
+            <FoldHorizontal size={14} />
+            Collapse all
+          </button>
+          <button className="tree-action-btn" type="button" onClick={expandAll}>
+            <UnfoldHorizontal size={14} />
+            Open all
           </button>
         </div>
       </div>

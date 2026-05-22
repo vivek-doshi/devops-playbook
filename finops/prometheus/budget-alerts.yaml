@@ -1,0 +1,133 @@
+# finops/prometheus/budget-alerts.yaml
+# Prometheus alerting rules for budget threshold monitoring.
+# Triggers at 80% (warning), 100% (critical), and 120% (emergency).
+#
+# Apply with:
+#   kubectl apply -f finops/prometheus/budget-alerts.yaml -n monitoring
+# Or use: ./finops/scripts/deploy-budget-alerts.sh
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: finops-budget-alerts
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+    finops.org/component: budget-alerting
+spec:
+  groups:
+    - name: finops.budget.thresholds
+      interval: 5m
+      rules:
+        # ── Warning: 80% of monthly budget ──────────────────────────────────
+        - alert: BudgetThresholdWarning
+          expr: |
+            (
+              sum by (cost_center) (finops_budget_current_spend)
+              /
+              sum by (cost_center) (finops_budget_threshold)
+            ) >= 0.80
+            and
+            (
+              sum by (cost_center) (finops_budget_current_spend)
+              /
+              sum by (cost_center) (finops_budget_threshold)
+            ) < 1.00
+          for: 10m
+          labels:
+            severity: warning
+            component: finops
+            type: budget
+          annotations:
+            summary: "Budget Warning — {{ $labels.cost_center }} has reached 80% of monthly budget"
+            description: |
+              Cost center {{ $labels.cost_center }} is at {{ printf "%.1f" (mulf $value 100) }}% of its monthly budget.
+              Current spend: ${{ printf "%.2f" (query "sum by (cost_center) (finops_budget_current_spend{cost_center=\"" $labels.cost_center "\"})" | first | value) }}
+              Monthly threshold: ${{ printf "%.2f" (query "sum by (cost_center) (finops_budget_threshold{cost_center=\"" $labels.cost_center "\"})" | first | value) }}
+            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            dashboard_url: "{{ $externalURL }}/d/finops-budget-tracking?var-cost_center={{ $labels.cost_center }}"
+
+        # ── Critical: 100% of monthly budget ────────────────────────────────
+        - alert: BudgetThresholdCritical
+          expr: |
+            (
+              sum by (cost_center) (finops_budget_current_spend)
+              /
+              sum by (cost_center) (finops_budget_threshold)
+            ) >= 1.00
+            and
+            (
+              sum by (cost_center) (finops_budget_current_spend)
+              /
+              sum by (cost_center) (finops_budget_threshold)
+            ) < 1.20
+          for: 5m
+          labels:
+            severity: critical
+            component: finops
+            type: budget
+          annotations:
+            summary: "Budget Exceeded — {{ $labels.cost_center }} has reached 100% of monthly budget"
+            description: |
+              Cost center {{ $labels.cost_center }} has EXCEEDED its monthly budget.
+              Utilization: {{ printf "%.1f" (mulf $value 100) }}%
+              Immediate review required.
+            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            dashboard_url: "{{ $externalURL }}/d/finops-budget-tracking?var-cost_center={{ $labels.cost_center }}"
+
+        # ── Emergency: 120% of monthly budget ───────────────────────────────
+        - alert: BudgetThresholdEmergency
+          expr: |
+            (
+              sum by (cost_center) (finops_budget_current_spend)
+              /
+              sum by (cost_center) (finops_budget_threshold)
+            ) >= 1.20
+          for: 5m
+          labels:
+            severity: critical
+            component: finops
+            type: budget
+            escalation: emergency
+          annotations:
+            summary: "EMERGENCY — {{ $labels.cost_center }} has exceeded 120% of monthly budget"
+            description: |
+              EMERGENCY: Cost center {{ $labels.cost_center }} is at {{ printf "%.1f" (mulf $value 100) }}% of budget.
+              This indicates a runaway cost scenario. Immediate action required.
+            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            dashboard_url: "{{ $externalURL }}/d/finops-budget-tracking?var-cost_center={{ $labels.cost_center }}"
+
+        # ── Namespace approaching limit ──────────────────────────────────────
+        - alert: NamespaceHighCost
+          expr: |
+            sum by (namespace, cost_center) (kubecost_namespace_cost_hourly) * 730
+            > 5000
+          for: 30m
+          labels:
+            severity: warning
+            component: finops
+            type: namespace-cost
+          annotations:
+            summary: "High monthly cost projected for namespace {{ $labels.namespace }}"
+            description: |
+              Namespace {{ $labels.namespace }} (cost center: {{ $labels.cost_center }}) is projected to cost
+              ${{ printf "%.2f" $value }} this month based on current hourly spend.
+            dashboard_url: "{{ $externalURL }}/d/finops-cost-overview?var-namespace={{ $labels.namespace }}"
+
+        # ── Cost monitoring data stale ───────────────────────────────────────
+        - alert: CostMonitoringDataStale
+          expr: |
+            (time() - max(kubecost_last_sync_timestamp)) > 21600
+          for: 15m
+          labels:
+            severity: warning
+            component: finops
+            type: data-quality
+          annotations:
+            summary: "Cost monitoring data is stale (>6 hours old)"
+            description: |
+              Kubecost/OpenCost has not received fresh data in over 6 hours.
+              Cost reports and alerts may be inaccurate.
+              Check Kubecost/OpenCost connectivity to cloud provider billing APIs.
+            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/troubleshooting.md#cost-monitoring-data-stale"

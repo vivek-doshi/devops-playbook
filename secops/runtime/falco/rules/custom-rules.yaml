@@ -1,0 +1,406 @@
+# Falco Custom Detection Rules
+# Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 15.1–15.8
+#
+# These rules extend Falco's default ruleset with environment-specific detections.
+# Rules follow Falco syntax: https://falco.org/docs/rules/
+#
+# Deploy as ConfigMap:
+#   kubectl create configmap falco-custom-rules \
+#     --from-file=custom-rules.yaml=secops/runtime/falco/rules/custom-rules.yaml \
+#     -n falco-system
+#
+# Severity mapping to Alertmanager:
+#   CRITICAL → critical severity  → PagerDuty
+#   ERROR    → high severity      → PagerDuty
+#   WARNING  → medium severity    → Slack
+#   NOTICE   → low severity       → Slack (if configured)
+
+# ─── Macros ──────────────────────────────────────────────────────────────────
+
+# Production namespaces that require strict monitoring
+- macro: production_namespace
+  condition: >
+    k8s.ns.name in (production, prod, staging, stage)
+
+# Non-production namespaces where some rules are relaxed
+- macro: non_production_namespace
+  condition: >
+    k8s.ns.name in (development, dev, test, testing, qa, local, sandbox)
+
+# Common shell binaries to detect
+- macro: shell_binaries
+  condition: >
+    proc.name in (bash, sh, zsh, dash, ksh, csh, tcsh, fish, ash)
+
+# Expected privileged system containers that may spawn shells
+- macro: allowed_shell_containers
+  condition: >
+    container.image.repository in (
+      "datadog/agent",
+      "dynatrace/oneagent",
+      "newrelic/infrastructure",
+      "fluent/fluent-bit",
+      "grafana/agent",
+      "prom/node-exporter"
+    )
+
+# Debug pods explicitly named for troubleshooting
+- macro: debug_pod
+  condition: >
+    k8s.pod.name startswith "debug-" or
+    k8s.pod.name startswith "troubleshoot-" or
+    k8s.pod.name startswith "test-" or
+    k8s.pod.name startswith "tmp-"
+
+# Init containers legitimately run setup scripts
+- macro: init_container
+  condition: >
+    container.name startswith "init-" or
+    container.name startswith "setup-" or
+    container.name startswith "migrate-"
+
+# Sensitive file paths that should not be accessed by containers
+- macro: sensitive_files
+  condition: >
+    fd.name startswith /etc/shadow or
+    fd.name startswith /etc/passwd or
+    fd.name startswith /etc/sudoers or
+    fd.name startswith /etc/sudoers.d or
+    fd.name startswith /root/.ssh or
+    fd.name startswith /home/.ssh or
+    fd.name = /etc/ssh/ssh_host_rsa_key or
+    fd.name = /etc/ssh/ssh_host_dsa_key or
+    fd.name = /etc/ssh/ssh_host_ecdsa_key or
+    fd.name = /etc/ssh/ssh_host_ed25519_key or
+    fd.name startswith /proc/1/ or
+    fd.name startswith /var/run/secrets/kubernetes.io/serviceaccount
+
+# Known safe outbound destinations (DNS, internal services)
+- macro: allowed_outbound_destinations
+  condition: >
+    fd.rip in (127.0.0.1, ::1) or
+    fd.rport in (53, 5353)  # DNS
+
+# Capabilities that indicate privilege escalation
+- macro: privilege_escalation_syscalls
+  condition: >
+    evt.type in (setuid, setgid, setreuid, setregid, setresuid, setresgid)
+
+# ─── Rules ───────────────────────────────────────────────────────────────────
+
+# ── 1. Terminal Shell in Production Container ─────────────────────────────────
+# Requirement 1.1, 15.2
+# Detects shell spawning in production namespaces, which typically indicates
+# an operator interactively accessing a container or a compromised workload.
+- rule: Terminal Shell in Production Container
+  desc: >
+    A shell was spawned in a container running in a production namespace.
+    Interactive shells in production are a strong indicator of either
+    unauthorized access or a compromised workload.
+  condition: >
+    spawned_process and
+    container and
+    shell_binaries and
+    production_namespace and
+    not debug_pod and
+    not init_container and
+    not allowed_shell_containers
+  output: >
+    Shell spawned in production container
+    (user=%user.name user_uid=%user.uid command=%proc.cmdline
+    pod=%k8s.pod.name container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: WARNING
+  tags:
+    - container
+    - shell
+    - production
+    - mitre_execution
+    - mitre_persistence
+  exceptions:
+    - name: allowed_kubectl_exec
+      fields: [k8s.pod.name, k8s.ns.name]
+      comps: [startswith, in]
+      values:
+        - [debug-, [production]]
+
+# ── 2. Privilege Escalation Attempt ──────────────────────────────────────────
+# Requirement 1.2, 15.3
+# Detects attempts to change user/group IDs, which can indicate privilege
+# escalation attacks such as container breakout attempts.
+- rule: Privilege Escalation via UID/GID Change
+  desc: >
+    A process attempted to change its user or group ID, which may indicate
+    a privilege escalation attack or container escape attempt.
+    setuid/setgid system calls are commonly used in exploitation.
+  condition: >
+    privilege_escalation_syscalls and
+    container and
+    not proc.name in (sudo, su, newuidmap, newgidmap) and
+    not proc.pname in (sudo, su, newuidmap, newgidmap)
+  output: >
+    Privilege escalation attempt detected
+    (user=%user.name user_uid=%user.uid syscall=%evt.type
+    command=%proc.cmdline pod=%k8s.pod.name container=%container.name
+    ns=%k8s.ns.name image=%container.image.repository:%container.image.tag)
+  priority: CRITICAL
+  tags:
+    - container
+    - privilege_escalation
+    - mitre_privilege_escalation
+    - cis
+
+# Detect capability modifications (adding dangerous capabilities)
+- rule: Container Capability Modification Attempt
+  desc: >
+    A process attempted to modify Linux capabilities in a container.
+    Adding capabilities such as CAP_SYS_ADMIN, CAP_NET_ADMIN, or
+    CAP_SETUID can enable privilege escalation and container escapes.
+  condition: >
+    evt.type = capset and
+    container and
+    not proc.name in (runc, containerd-shim, dockerd)
+  output: >
+    Container capability modification attempt
+    (user=%user.name command=%proc.cmdline caps=%evt.arg.effective
+    pod=%k8s.pod.name container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: ERROR
+  tags:
+    - container
+    - capabilities
+    - mitre_privilege_escalation
+
+# ── 3. Unexpected Outbound Network Connection ─────────────────────────────────
+# Requirement 1.3, 15.4
+# Detects containers making outbound connections to unexpected destinations,
+# which can indicate C2 communication, data exfiltration, or lateral movement.
+- rule: Unexpected Outbound Connection from Container
+  desc: >
+    A container made an outbound network connection to an unexpected destination.
+    This may indicate command-and-control communication, data exfiltration,
+    or lateral movement by a compromised workload.
+  condition: >
+    outbound and
+    container and
+    not allowed_outbound_destinations and
+    fd.sip != "" and
+    not proc.name in (curl, wget, apt-get, yum, dnf, pip, npm, node, python, java)
+  output: >
+    Unexpected outbound connection from container
+    (user=%user.name command=%proc.cmdline
+    src_ip=%fd.cip src_port=%fd.cport dst_ip=%fd.rip dst_port=%fd.rport
+    proto=%fd.l4proto pod=%k8s.pod.name container=%container.name
+    ns=%k8s.ns.name image=%container.image.repository:%container.image.tag)
+  priority: WARNING
+  tags:
+    - network
+    - container
+    - outbound
+    - mitre_exfiltration
+    - mitre_command_and_control
+
+# ── 4. Sensitive File Access ─────────────────────────────────────────────────
+# Requirement 1.4, 15.5
+# Detects reads of sensitive system files that containers should not access.
+# This can indicate credential harvesting or reconnaissance activity.
+- rule: Sensitive File Access in Container
+  desc: >
+    A container process accessed a sensitive system file such as /etc/shadow,
+    /etc/passwd, SSH private keys, or Kubernetes service account tokens in
+    an unexpected way. This may indicate credential theft or privilege escalation.
+  condition: >
+    open_read and
+    container and
+    sensitive_files and
+    not proc.name in (passwd, shadow, ssh-keygen, sshd, sssd) and
+    not k8s.pod.name startswith "kube-" and
+    not k8s.pod.name startswith "calico-" and
+    not k8s.pod.name startswith "cilium-" and
+    not k8s.pod.name startswith "aws-node"
+  output: >
+    Sensitive file accessed in container
+    (user=%user.name command=%proc.cmdline file=%fd.name
+    pod=%k8s.pod.name container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: ERROR
+  tags:
+    - file
+    - container
+    - credentials
+    - mitre_credential_access
+    - mitre_discovery
+
+# Detect write access to sensitive files (more severe than reads)
+- rule: Sensitive File Modified in Container
+  desc: >
+    A container process modified a sensitive system file such as /etc/passwd
+    or /etc/shadow. Modifying these files is a strong indicator of a container
+    compromise or escape attempt.
+  condition: >
+    open_write and
+    container and
+    (fd.name startswith /etc/passwd or
+     fd.name startswith /etc/shadow or
+     fd.name startswith /etc/sudoers or
+     fd.name startswith /etc/sudoers.d) and
+    not proc.name in (passwd, chpasswd, adduser, useradd, usermod)
+  output: >
+    Sensitive file modified in container
+    (user=%user.name command=%proc.cmdline file=%fd.name
+    pod=%k8s.pod.name container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: CRITICAL
+  tags:
+    - file
+    - container
+    - credentials
+    - mitre_persistence
+    - mitre_privilege_escalation
+
+# ── 5. Container Escape Attempt ──────────────────────────────────────────────
+# Requirement 1.5, 15.6
+# Detects common container escape techniques including host namespace access,
+# cgroup escapes, and host filesystem mounting.
+
+# Detect access to host /proc filesystem (often used for container escapes)
+- rule: Container Proc Mount Access
+  desc: >
+    A container process accessed /proc of the host or another container's
+    process. This technique is commonly used in container escape attacks,
+    particularly through CVE-2019-5736 (runc overwrite) style attacks.
+  condition: >
+    open_read and
+    container and
+    fd.name startswith /proc/ and
+    fd.name contains /root/ and
+    not proc.name in (ps, top, htop, nsenter, crictl)
+  output: >
+    Container proc mount access attempt
+    (user=%user.name command=%proc.cmdline file=%fd.name
+    pod=%k8s.pod.name container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: CRITICAL
+  tags:
+    - container
+    - escape
+    - mitre_privilege_escalation
+
+# Detect nsenter usage (entering host namespaces)
+- rule: Namespace Enter in Container
+  desc: >
+    A container process executed nsenter, which allows entering host or
+    other container namespaces. This is a classic container escape technique
+    and should never occur in production workloads.
+  condition: >
+    spawned_process and
+    container and
+    proc.name = nsenter
+  output: >
+    nsenter executed in container - possible container escape
+    (user=%user.name command=%proc.cmdline pod=%k8s.pod.name
+    container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: CRITICAL
+  tags:
+    - container
+    - escape
+    - namespace
+    - mitre_privilege_escalation
+
+# Detect container running with host PID namespace
+- rule: Container Running with Host PID Namespace
+  desc: >
+    A container is running with hostPID=true, sharing the host process
+    namespace. This gives the container visibility and control over all
+    host processes and is a significant security risk.
+  condition: >
+    spawned_process and
+    container and
+    proc.is_container_healthcheck = false and
+    not proc.pname in (containerd-shim, runc, dockerd) and
+    evt.rawres >= 0 and
+    (proc.pid != proc.vpid)  # Process is visible outside its namespace
+  output: >
+    Container may be running with host PID namespace
+    (user=%user.name pid=%proc.pid vpid=%proc.vpid command=%proc.cmdline
+    pod=%k8s.pod.name container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: WARNING
+  tags:
+    - container
+    - escape
+    - pid_namespace
+    - cis
+
+# Detect write access to /etc/cron files (persistence mechanism)
+- rule: Cron File Modified in Container
+  desc: >
+    A container process modified a cron configuration file. Attackers use
+    cron modifications for persistence after gaining initial access.
+    This activity is unexpected in container workloads.
+  condition: >
+    open_write and
+    container and
+    (fd.name startswith /etc/cron or
+     fd.name startswith /var/spool/cron or
+     fd.name = /etc/crontab)
+  output: >
+    Cron file modified in container - possible persistence attempt
+    (user=%user.name command=%proc.cmdline file=%fd.name
+    pod=%k8s.pod.name container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: ERROR
+  tags:
+    - container
+    - persistence
+    - cron
+    - mitre_persistence
+
+# ── 6. Crypto Mining Detection ───────────────────────────────────────────────
+# Requirement 15.7 (bonus: common threat in cloud environments)
+- rule: Cryptocurrency Miner Detected
+  desc: >
+    A known cryptocurrency miner binary or mining pool connection was detected.
+    Crypto miners are commonly deployed by attackers after gaining access to
+    compute resources. This indicates a compromised workload.
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (xmrig, xmr-stak, ethminer, claymore, t-rex, nbminer,
+                  lolminer, gminer, phoenixminer, teamredminer)
+  output: >
+    Cryptocurrency miner detected in container
+    (user=%user.name command=%proc.cmdline pod=%k8s.pod.name
+    container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: CRITICAL
+  tags:
+    - container
+    - cryptomining
+    - mitre_impact
+
+# ── 7. kubectl Execution in Container ────────────────────────────────────────
+# Requirement 15.8 (lateral movement via kubectl from within a pod)
+- rule: kubectl Executed in Container
+  desc: >
+    The kubectl binary was executed inside a container. This can indicate
+    lateral movement attempts where an attacker uses a compromised pod to
+    interact with the Kubernetes API server and escalate privileges or
+    access other resources.
+  condition: >
+    spawned_process and
+    container and
+    proc.name = kubectl and
+    production_namespace
+  output: >
+    kubectl executed inside production container - possible lateral movement
+    (user=%user.name command=%proc.cmdline pod=%k8s.pod.name
+    container=%container.name ns=%k8s.ns.name
+    image=%container.image.repository:%container.image.tag)
+  priority: ERROR
+  tags:
+    - container
+    - kubernetes
+    - lateral_movement
+    - mitre_lateral_movement

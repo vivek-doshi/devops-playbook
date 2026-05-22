@@ -1,0 +1,198 @@
+# Kyverno ClusterPolicy: Image Signature Verification
+# Requirements: 4.1–4.7, 20.1, 20.4, 20.5
+#
+# Verifies that all container images deployed to the cluster are signed using
+# Cosign keyless signing via GitHub Actions OIDC, with signatures recorded
+# in the Sigstore Rekor transparency log.
+#
+# Enforcement modes (via namespace labels):
+#   Default (no label)                             → Enforce (reject unsigned images)
+#   policy.kyverno.io/supply-chain=audit           → Audit (log violations, allow deployment)
+#   policy.kyverno.io/supply-chain=disabled        → Disabled (skip verification entirely)
+#
+# Apply namespace labels:
+#   kubectl label namespace development policy.kyverno.io/supply-chain=audit
+#   kubectl label namespace local-dev policy.kyverno.io/supply-chain=disabled
+#
+# Prerequisites:
+#   - Kyverno >= 1.10 installed (see policy/kyverno/)
+#   - Images signed via: cosign sign --oidc-issuer https://token.actions.githubusercontent.com
+#
+# Reference:
+#   https://kyverno.io/docs/writing-policies/verify-images/
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signature
+  annotations:
+    policies.kyverno.io/title: Verify Image Signature
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/minversion: "1.10.0"
+    policies.kyverno.io/description: >-
+      Ensures that all container images are signed using Cosign keyless signing
+      with GitHub Actions OIDC tokens. Signatures must be recorded in the Sigstore
+      Rekor transparency log. Unsigned images are rejected unless the namespace
+      has audit or disabled mode enabled via label.
+    secops.requirements: "4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 20.1, 20.4, 20.5"
+spec:
+  # Default action: enforce (block unsigned images)
+  # Namespace label 'policy.kyverno.io/supply-chain=audit' switches to audit mode
+  # Requirement 4.7
+  validationFailureAction: Enforce
+  background: false
+
+  # Timeout for signature verification (Rekor lookup can take time)
+  webhookTimeoutSeconds: 30
+
+  rules:
+    # ── Rule 1: Verify image signature ────────────────────────────────────────
+    # Requirements: 4.2, 4.3, 4.4, 4.5
+    - name: verify-image-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+
+      # Exclude system namespaces (Requirement 4.7, 20.5)
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+
+          # Exclude namespaces with 'disabled' label (Requirement 20.1)
+          - resources:
+              namespaces:
+                - "*"
+              selector:
+                matchLabels:
+                  policy.kyverno.io/supply-chain: disabled
+
+      # Switch to audit mode for namespaces with 'audit' label (Requirement 4.7)
+      # This overrides the global validationFailureAction
+      context:
+        - name: namespaceLabels
+          apiCall:
+            urlPath: "/api/v1/namespaces/{{request.namespace}}"
+            jmesPath: "metadata.labels"
+
+      # Image signature verification using Cosign keyless signing
+      # Requirement 4.2, 4.3
+      verifyImages:
+        - imageReferences:
+            - "*"  # Apply to all container images
+
+          # Skip verification in audit mode namespaces
+          # The exclude above handles 'disabled'; audit mode is handled by
+          # the global validationFailureAction override below
+          skipImageReferences:
+            # Skip verification for known system images
+            - "registry.k8s.io/*"
+            - "k8s.gcr.io/*"
+            - "quay.io/kiwigrid/*"
+            - "docker.io/falcosecurity/*"
+
+          attestors:
+            - count: 1
+              entries:
+                # Keyless signature verification using Sigstore
+                # Requirement 4.3, 4.4, 4.5
+                - keyless:
+                    # Certificate subject: GitHub Actions workflow URL pattern
+                    # Requirement 4.4 - verify certificate identity
+                    subject: "https://github.com/*/github/workflows/*@*"
+
+                    # OIDC issuer: GitHub Actions
+                    # Requirement 4.5 - verify certificate OIDC issuer
+                    issuer: "https://token.actions.githubusercontent.com"
+
+                    # Sigstore Rekor transparency log
+                    # Requirement 4.3 - verify against Rekor
+                    rekor:
+                      url: "https://rekor.sigstore.dev"
+                    ctlog:
+                      url: "https://ctfe.sigstore.dev/test"
+                    additionalExtensions:
+                      githubWorkflowTrigger: push
+
+          # Mutate image to use digest (pin image by SHA256)
+          # This prevents tag mutation attacks after signature verification
+          mutateDigest: true
+          verifyDigest: true
+
+          # Descriptive error message on verification failure (Requirement 4.6)
+      # Audit mode: override failure action for audit namespaces
+      # Check namespace label at request time
+      preconditions:
+        any:
+          - key: "{{ namespaceLabels.\"policy.kyverno.io/supply-chain\" || '' }}"
+            operator: AnyNotIn
+            value:
+              - audit
+
+    # ── Rule 2: Audit mode for labeled namespaces ──────────────────────────────
+    # Requirement 4.7 - log violations without blocking in audit namespaces
+    - name: verify-image-signature-audit
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+              # Only apply to namespaces with audit label
+              selector:
+                matchLabels:
+                  policy.kyverno.io/supply-chain: audit
+
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+
+      context:
+        - name: namespaceLabels
+          apiCall:
+            urlPath: "/api/v1/namespaces/{{request.namespace}}"
+            jmesPath: "metadata.labels"
+
+      verifyImages:
+        - imageReferences:
+            - "*"
+          skipImageReferences:
+            - "registry.k8s.io/*"
+            - "k8s.gcr.io/*"
+          attestors:
+            - count: 1
+              entries:
+                - keyless:
+                    subject: "https://github.com/*/github/workflows/*@*"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: "https://rekor.sigstore.dev"
+          mutateDigest: false
+          verifyDigest: false
+
+      # Audit mode: violations are logged to PolicyReport but Pod is allowed
+      # Requirement 4.7
+      validate:
+        message: >
+          [AUDIT] Image signature verification failed for image '{{ element.image }}'.
+          Images must be signed using Cosign with GitHub Actions OIDC.
+          This namespace is in audit mode - deployment is allowed but violation is recorded.
+          To enforce: remove label 'policy.kyverno.io/supply-chain=audit' from namespace.
+          Documentation: secops/supply-chain/cosign-verify-policy.yaml
+        deny: {}

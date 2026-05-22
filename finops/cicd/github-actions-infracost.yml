@@ -1,0 +1,141 @@
+# finops/cicd/github-actions-infracost.yml
+# GitHub Actions workflow template: run Infracost after terraform plan,
+# post cost estimate as a PR comment, and fail the check if cost exceeds threshold.
+#
+# Usage: Copy to .github/workflows/infracost.yml and customize paths/thresholds.
+# Prerequisites:
+#   - Add INFRACOST_API_KEY to GitHub repository secrets
+#   - Optionally add GITHUB_TOKEN (auto-provided in Actions)
+#
+# Docs: finops/docs/infracost-integration.md
+
+name: Infracost Cost Estimate
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - "**.tf"
+      - "**.tfvars"
+
+permissions:
+  contents: read
+  pull-requests: write  # Required to post PR comments
+
+env:
+  # Directory containing Terraform root module
+  TF_ROOT: terraform/
+  # Maximum allowed cost increase (percent). Set 0 to block any increase.
+  INFRACOST_PERCENT_THRESHOLD: 20
+  # Maximum allowed absolute monthly cost increase (USD). Set 0 to disable.
+  INFRACOST_ABSOLUTE_THRESHOLD: 500
+
+jobs:
+  infracost:
+    name: Cost Estimate
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Setup ────────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # ── Terraform init ───────────────────────────────────────────────────────
+      - name: Terraform init
+        working-directory: ${{ env.TF_ROOT }}
+        run: terraform init -input=false -backend=false
+
+      # ── Generate Infracost baseline (base branch) ────────────────────────────
+      - name: Generate Infracost baseline
+        run: |
+          git checkout ${{ github.base_ref }}
+          infracost breakdown \
+            --path ${{ env.TF_ROOT }} \
+            --format json \
+            --out-file /tmp/infracost-base.json
+          git checkout ${{ github.sha }}
+
+      # ── Generate Infracost diff (PR branch) ─────────────────────────────────
+      - name: Generate Infracost diff
+        run: |
+          infracost diff \
+            --path ${{ env.TF_ROOT }} \
+            --format json \
+            --compare-to /tmp/infracost-base.json \
+            --out-file /tmp/infracost-diff.json
+
+      # ── Post PR comment ──────────────────────────────────────────────────────
+      - name: Post Infracost PR comment
+        uses: infracost/actions/comment@v3
+        with:
+          path: /tmp/infracost-diff.json
+          behavior: update   # Update existing comment instead of posting new ones
+
+      # ── Evaluate cost thresholds ─────────────────────────────────────────────
+      - name: Evaluate cost thresholds
+        id: check_thresholds
+        run: |
+          # Extract cost data from diff JSON
+          MONTHLY_COST_DIFF=$(jq '.diffTotalMonthlyCost // 0 | tonumber' /tmp/infracost-diff.json)
+          BASE_COST=$(jq '.pastTotalMonthlyCost // 0 | tonumber' /tmp/infracost-base.json)
+
+          echo "Monthly cost change: \$$MONTHLY_COST_DIFF"
+          echo "Base monthly cost:   \$$BASE_COST"
+
+          # Calculate percentage increase
+          if [ "$(echo "$BASE_COST > 0" | bc -l)" -eq 1 ]; then
+            PCT_INCREASE=$(echo "scale=2; $MONTHLY_COST_DIFF / $BASE_COST * 100" | bc -l)
+          else
+            PCT_INCREASE=0
+          fi
+          echo "Cost increase: ${PCT_INCREASE}%"
+
+          # Check thresholds
+          THRESHOLD_EXCEEDED=false
+
+          if [ "$(echo "$MONTHLY_COST_DIFF > ${{ env.INFRACOST_ABSOLUTE_THRESHOLD }}" | bc -l)" -eq 1 ]; then
+            echo "::error::Cost increase \$$MONTHLY_COST_DIFF exceeds absolute threshold of \$${{ env.INFRACOST_ABSOLUTE_THRESHOLD }}/month"
+            THRESHOLD_EXCEEDED=true
+          fi
+
+          if [ "$(echo "$PCT_INCREASE > ${{ env.INFRACOST_PERCENT_THRESHOLD }}" | bc -l)" -eq 1 ]; then
+            echo "::error::Cost increase ${PCT_INCREASE}% exceeds percentage threshold of ${{ env.INFRACOST_PERCENT_THRESHOLD }}%"
+            THRESHOLD_EXCEEDED=true
+          fi
+
+          echo "threshold_exceeded=$THRESHOLD_EXCEEDED" >> "$GITHUB_OUTPUT"
+          echo "monthly_cost_diff=$MONTHLY_COST_DIFF" >> "$GITHUB_OUTPUT"
+          echo "pct_increase=$PCT_INCREASE" >> "$GITHUB_OUTPUT"
+
+      # ── Fail the check if threshold exceeded ─────────────────────────────────
+      - name: Fail if cost threshold exceeded
+        if: steps.check_thresholds.outputs.threshold_exceeded == 'true'
+        run: |
+          echo ""
+          echo "❌ Cost increase exceeds configured thresholds."
+          echo ""
+          echo "  Monthly increase : \$${{ steps.check_thresholds.outputs.monthly_cost_diff }}"
+          echo "  Percentage       : ${{ steps.check_thresholds.outputs.pct_increase }}%"
+          echo "  Thresholds       : \$${{ env.INFRACOST_ABSOLUTE_THRESHOLD }} / ${{ env.INFRACOST_PERCENT_THRESHOLD }}%"
+          echo ""
+          echo "Options:"
+          echo "  1. Reduce the infrastructure changes to lower cost impact"
+          echo "  2. Get approval and update INFRACOST_PERCENT_THRESHOLD in the workflow"
+          echo "  3. See: finops/docs/infracost-integration.md"
+          exit 1
+
+      # ── Success summary ───────────────────────────────────────────────────────
+      - name: Cost check passed
+        if: steps.check_thresholds.outputs.threshold_exceeded == 'false'
+        run: |
+          echo "✅ Cost increase \$${{ steps.check_thresholds.outputs.monthly_cost_diff }}/month is within thresholds."

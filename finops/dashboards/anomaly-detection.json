@@ -1,0 +1,112 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "alertlist", "name": "Alert list", "version": "" }
+  ],
+  "description": "Cost anomaly detection: spikes exceeding 50% of 7-day average, new high-cost namespaces, and unusual cost patterns over the past 30 days.",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "5m",
+  "schemaVersion": 38,
+  "tags": ["finops", "anomaly-detection"],
+  "time": { "from": "now-30d", "to": "now" },
+  "timezone": "browser",
+  "title": "FinOps - Cost Anomaly Detection",
+  "uid": "finops-anomaly-detection",
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kubecost_namespace_cost_hourly, namespace)",
+        "hide": 0, "includeAll": true, "allValue": ".*", "label": "Namespace", "multi": true, "name": "namespace",
+        "query": { "query": "label_values(kubecost_namespace_cost_hourly, namespace)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    { "id": 1, "title": "Active Cost Anomalies", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 2, "title": "Active Anomaly Alerts", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 }] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "count(ALERTS{alertname=~\"CostAnomaly.*\", alertstate=\"firing\"}) or vector(0)", "legendFormat": "Active Anomalies", "refId": "A" }]
+    },
+    {
+      "id": 3, "title": "Namespaces with Cost Spike (>50% above 7d avg)", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 }] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "count(kubecost_namespace_cost_hourly > 1.5 * avg_over_time(kubecost_namespace_cost_hourly[7d])) or vector(0)", "legendFormat": "Cost Spikes", "refId": "A" }]
+    },
+    {
+      "id": 4, "title": "New High-Cost Namespaces (>$100 in 24h)", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 }] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "count(sum by (namespace) (increase(kubecost_namespace_cost_hourly[24h])) > 100) or vector(0)", "legendFormat": "New High-Cost NS", "refId": "A" }]
+    },
+    {
+      "id": 5, "title": "Max Cost Increase %", "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 100 }] }, "unit": "percent", "decimals": 1 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "max((kubecost_namespace_cost_hourly - avg_over_time(kubecost_namespace_cost_hourly[7d])) / avg_over_time(kubecost_namespace_cost_hourly[7d]) * 100) or vector(0)", "legendFormat": "Max Spike %", "refId": "A" }]
+    },
+    { "id": 10, "title": "Cost Spike Analysis", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 } },
+    {
+      "id": 11, "title": "Namespace Cost vs 7-Day Baseline", "type": "timeseries",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "currencyUSD", "decimals": 2 } },
+      "options": { "tooltip": { "mode": "multi", "sort": "desc" }, "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum by (namespace) (kubecost_namespace_cost_hourly{namespace=~\"$namespace\"})", "legendFormat": "{{namespace}} — Current", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum by (namespace) (avg_over_time(kubecost_namespace_cost_hourly{namespace=~\"$namespace\"}[7d]))", "legendFormat": "{{namespace}} — 7d Avg", "refId": "B" }
+      ]
+    },
+    {
+      "id": 12, "title": "Cost Anomalies — Top Offenders", "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 100 }] }, "unit": "percent", "decimals": 1 },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Current Cost (USD/hr)" }, "properties": [{ "id": "unit", "value": "currencyUSD" }] },
+          { "matcher": { "id": "byName", "options": "Baseline (USD/hr)" }, "properties": [{ "id": "unit", "value": "currencyUSD" }] },
+          {
+            "matcher": { "id": "byName", "options": "namespace" },
+            "properties": [{ "id": "links", "value": [{ "title": "View Namespace Cost", "url": "/d/finops-cost-overview?var-namespace=${__value.raw}", "targetBlank": false }] }]
+          }
+        ]
+      },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum by (namespace) (kubecost_namespace_cost_hourly{namespace=~\"$namespace\"})", "legendFormat": "current_cost", "refId": "A", "instant": true, "format": "table" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum by (namespace) (avg_over_time(kubecost_namespace_cost_hourly{namespace=~\"$namespace\"}[7d]))", "legendFormat": "baseline", "refId": "B", "instant": true, "format": "table" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "(sum by (namespace) (kubecost_namespace_cost_hourly{namespace=~\"$namespace\"}) - sum by (namespace) (avg_over_time(kubecost_namespace_cost_hourly{namespace=~\"$namespace\"}[7d]))) / sum by (namespace) (avg_over_time(kubecost_namespace_cost_hourly{namespace=~\"$namespace\"}[7d])) * 100", "legendFormat": "pct_increase", "refId": "C", "instant": true, "format": "table" }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        { "id": "organize", "options": { "renameByName": { "namespace": "Namespace", "Value #A": "Current Cost (USD/hr)", "Value #B": "Baseline (USD/hr)", "Value #C": "Increase %" } } },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Increase %", "desc": true }] } }
+      ]
+    },
+    { "id": 20, "title": "Alert History", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 } },
+    {
+      "id": 21, "title": "Recent Cost Anomaly Alerts", "type": "alertlist",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
+      "options": { "alertInstanceLabelFilter": "alertname=~\"CostAnomaly.*\"", "dashboardAlerts": false, "groupBy": ["alertname", "namespace"], "groupMode": "tags", "maxItems": 20, "sortOrder": 1, "stateFilter": { "firing": true, "pending": true, "noData": false, "normal": false, "error": false } }
+    }
+  ]
+}

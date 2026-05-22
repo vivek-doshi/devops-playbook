@@ -1,0 +1,272 @@
+# kube-bench One-Time CIS Benchmark Scan Job
+# Requirements: 7.1–7.6, 8.1
+#
+# Runs a one-time CIS Kubernetes Benchmark scan using kube-bench.
+# Results are stored as a ConfigMap with timestamp and cluster labels.
+#
+# Usage:
+#   kubectl apply -f secops/compliance/kube-bench-job.yaml
+#   kubectl wait -n secops --for=condition=complete job/kube-bench-scan --timeout=300s
+#   kubectl get configmap -n secops -l scan-type=cis-benchmark
+#
+# View results:
+#   kubectl get configmap kube-bench-results-$(date +%Y-%m-%d) -n secops -o jsonpath='{.data.results\.json}' | jq .
+#
+# Prerequisites:
+#   - secops namespace exists (created by loki-shipper.yaml or manually)
+#   - kubectl apply -f secops/runtime/audit-logging/loki-shipper.yaml  (creates namespace)
+#   - RBAC permissions to create ConfigMaps in secops namespace
+
+---
+# ServiceAccount for kube-bench job
+# Requirement 7.1
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-bench
+  namespace: secops
+  labels:
+    app: kube-bench
+    component: compliance-scanner
+
+---
+# ClusterRole for kube-bench to access cluster configuration
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-bench
+  labels:
+    app: kube-bench
+rules:
+  # Read node information for worker node scanning
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+  # Read configmaps (for previous scan comparison)
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "create", "update", "patch"]
+  # Read pods for cluster context
+  - apiGroups: [""]
+    resources: ["pods", "namespaces"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-bench
+  labels:
+    app: kube-bench
+subjects:
+  - kind: ServiceAccount
+    name: kube-bench
+    namespace: secops
+roleRef:
+  kind: ClusterRole
+  name: kube-bench
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# kube-bench CIS Benchmark Scan Job
+# Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kube-bench-scan
+  namespace: secops
+  labels:
+    app: kube-bench
+    component: compliance-scanner
+    scan-type: cis-benchmark
+  annotations:
+    description: "One-time CIS Kubernetes Benchmark scan. See secops/compliance/ for documentation."
+spec:
+  # Retry on failure
+  backoffLimit: 2
+  # Clean up after 24 hours
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: kube-bench
+        component: compliance-scanner
+    spec:
+      serviceAccountName: kube-bench
+      restartPolicy: Never
+
+      # Run on control plane node for access to control plane component configurations
+      # Requirement 7.3 - scan control plane components
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+
+      # Init container runs kube-bench scan and stores results
+      initContainers:
+        - name: kube-bench-scan
+          image: aquasec/kube-bench:v0.7.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Starting CIS Kubernetes Benchmark scan..."
+              SCAN_DATE=$(date +%Y-%m-%d)
+              SCAN_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+              # Run kube-bench against all components
+              # Requirement 7.2, 7.3 - scan control plane components
+              # Requirement 7.4 - scan worker node configurations
+              # Requirement 7.5 - JSON output format
+              /usr/local/bin/kube-bench run \
+                --targets=master,etcd,controlplane,policies,node \
+                --json \
+                --outputfile /tmp/results.json \
+                || true  # kube-bench exits non-zero when failures found; continue anyway
+
+              echo "Scan complete. Processing results..."
+              cat /tmp/results.json | python3 -c "
+              import json, sys
+
+              data = json.load(sys.stdin)
+              totals = {'total_pass': 0, 'total_fail': 0, 'total_warn': 0, 'total_info': 0}
+
+              for control in data.get('Controls', []):
+                  for test in control.get('tests', []):
+                      for result in test.get('results', []):
+                          status = result.get('status', '').upper()
+                          if status == 'PASS': totals['total_pass'] += 1
+                          elif status == 'FAIL': totals['total_fail'] += 1
+                          elif status == 'WARN': totals['total_warn'] += 1
+                          elif status == 'INFO': totals['total_info'] += 1
+
+              data['Totals'] = totals
+              print(json.dumps(data, indent=2))
+              " > /tmp/results-final.json
+
+              # Store results as ConfigMap with timestamp labels (Requirement 7.6)
+              kubectl create configmap kube-bench-results-$(date +%Y-%m-%d) \
+                -n secops \
+                --from-file=results.json=/tmp/results-final.json \
+                --dry-run=client -o yaml | \
+                kubectl annotate --local -f - \
+                  scan-date="$(date +%Y-%m-%d)" \
+                  scan-timestamp="${SCAN_TIMESTAMP}" \
+                  -o yaml | \
+                kubectl apply -f - \
+                --overwrite=true
+
+              kubectl label configmap kube-bench-results-$(date +%Y-%m-%d) \
+                -n secops \
+                scan-type=cis-benchmark \
+                scan-date="$(date +%Y-%m-%d)" \
+                --overwrite=true
+
+              echo "Results stored in ConfigMap: kube-bench-results-${SCAN_DATE}"
+              echo "PASS: $(cat /tmp/results-final.json | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d.get(\"Totals\",{}).get(\"total_pass\",0))')"
+              echo "FAIL: $(cat /tmp/results-final.json | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d.get(\"Totals\",{}).get(\"total_fail\",0))')"
+              echo "WARN: $(cat /tmp/results-final.json | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d.get(\"Totals\",{}).get(\"total_warn\",0))')"
+
+          # Host filesystem access required for node scanning
+          volumeMounts:
+            - name: var-lib-etcd
+              mountPath: /var/lib/etcd
+              readOnly: true
+            - name: var-lib-kubelet
+              mountPath: /var/lib/kubelet
+              readOnly: true
+            - name: var-lib-kube-scheduler
+              mountPath: /var/lib/kube-scheduler
+              readOnly: true
+            - name: var-lib-kube-controller-manager
+              mountPath: /var/lib/kube-controller-manager
+              readOnly: true
+            - name: etc-systemd
+              mountPath: /etc/systemd
+              readOnly: true
+            - name: lib-systemd
+              mountPath: /lib/systemd
+              readOnly: true
+            - name: etc-kubernetes
+              mountPath: /etc/kubernetes
+              readOnly: true
+            - name: usr-local-mount-kubelet
+              mountPath: /usr/local/mount-from-host/bin
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+
+          env:
+            - name: CLUSTER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+      # Main container just signals completion
+      containers:
+        - name: scan-complete
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "CIS Kubernetes Benchmark scan completed."
+              echo "View results: kubectl get configmap -n secops -l scan-type=cis-benchmark"
+              SCAN_DATE=$(date +%Y-%m-%d)
+              FAILS=$(kubectl get configmap kube-bench-results-${SCAN_DATE} -n secops \
+                -o jsonpath='{.data.results\.json}' 2>/dev/null | \
+                python3 -c 'import json,sys;d=json.load(sys.stdin);print(d.get("Totals",{}).get("total_fail",0))' 2>/dev/null || echo "unknown")
+              echo "Failed checks: ${FAILS}"
+              if [ "${FAILS}" != "0" ] && [ "${FAILS}" != "unknown" ]; then
+                echo "WARNING: ${FAILS} CIS Benchmark checks failed. Review secops/compliance/controls/cis-kubernetes.md"
+              fi
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
+      volumes:
+        - name: var-lib-etcd
+          hostPath:
+            path: /var/lib/etcd
+        - name: var-lib-kubelet
+          hostPath:
+            path: /var/lib/kubelet
+        - name: var-lib-kube-scheduler
+          hostPath:
+            path: /var/lib/kube-scheduler
+        - name: var-lib-kube-controller-manager
+          hostPath:
+            path: /var/lib/kube-controller-manager
+        - name: etc-systemd
+          hostPath:
+            path: /etc/systemd
+        - name: lib-systemd
+          hostPath:
+            path: /lib/systemd
+        - name: etc-kubernetes
+          hostPath:
+            path: /etc/kubernetes
+        - name: usr-local-mount-kubelet
+          hostPath:
+            path: /usr/local/bin
+        - name: tmp
+          emptyDir: {}

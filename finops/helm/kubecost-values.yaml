@@ -1,0 +1,333 @@
+# Kubecost Helm values for cost monitoring and optimization
+# This configuration integrates Kubecost with the existing Prometheus stack
+# and provides multi-cloud cost visibility across AWS, Azure, and GCP.
+#
+# Installation:
+#   helm repo add kubecost https://kubecost.github.io/cost-analyzer/
+#   helm install kubecost kubecost/cost-analyzer -n finops -f kubecost-values.yaml
+#
+# Requirements: 1.1, 1.2, 1.3, 1.5
+
+# Global configuration
+global:
+  # Prometheus integration - use existing Prometheus from observability stack
+  prometheus:
+    enabled: false  # Disable bundled Prometheus, use existing one
+    fqdn: http://prometheus-operated.monitoring.svc:9090  # <-- CHANGE THIS if Prometheus is in a different namespace
+  
+  grafana:
+    enabled: false  # Use existing Grafana from observability stack
+    domainName: grafana.example.com  # <-- CHANGE THIS to match your Grafana domain
+    proxy: false
+
+# Kubecost primary deployment configuration
+kubecostDeployment:
+  replicas: 1
+  
+# Kubecost frontend configuration
+kubecostFrontend:
+  replicas: 1
+
+# Cost analyzer configuration
+kubecostModel:
+  # Data retention period (90 days default per requirements)
+  etlDailyStoreDurationDays: 91  # Keep 91 days to ensure full 90-day queries work
+  etlHourlyStoreDurationHours: 2184  # 91 days * 24 hours
+  
+  # Resource configuration
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  
+  # Cloud provider cost integration
+  # These settings enable Kubecost to fetch actual cloud billing data
+  # for accurate cost allocation beyond Kubernetes resource costs
+  
+  # AWS Cost and Usage Report (CUR) integration
+  # Requirement 9.1: Configure Kubecost to use AWS Cost and Usage Reports
+  # Uncomment and configure when deploying to AWS EKS:
+  # awsCostAndUsageReport:
+  #   enabled: true
+  #   athenaProjectID: "your-aws-account-id"  # <-- CHANGE THIS
+  #   athenaBucketName: "s3://your-cur-bucket"  # <-- CHANGE THIS
+  #   athenaRegion: "us-east-1"  # <-- CHANGE THIS
+  #   athenaDatabase: "athenacurcfn_your_cur_database"  # <-- CHANGE THIS
+  #   athenaTable: "your_cur_table"  # <-- CHANGE THIS
+  
+  # Azure Cost Management API integration
+  # Requirement 9.2: Configure Kubecost to use Azure Cost Management API
+  # Uncomment and configure when deploying to Azure AKS:
+  # azureCostManagement:
+  #   enabled: true
+  #   subscriptionID: "your-azure-subscription-id"  # <-- CHANGE THIS
+  #   clientID: "your-service-principal-client-id"  # <-- CHANGE THIS
+  #   clientSecret: "your-service-principal-secret"  # <-- CHANGE THIS (use Secret reference in production)
+  #   tenantID: "your-azure-tenant-id"  # <-- CHANGE THIS
+  
+  # GCP Billing Export integration
+  # Requirement 9.3: Configure Kubecost to use GCP Billing Export
+  # Uncomment and configure when deploying to GCP GKE:
+  # gcpBillingExport:
+  #   enabled: true
+  #   projectID: "your-gcp-project-id"  # <-- CHANGE THIS
+  #   datasetName: "your_billing_dataset"  # <-- CHANGE THIS
+  #   tableName: "gcp_billing_export_v1_*"  # <-- CHANGE THIS
+  #   key: |
+  #     {
+  #       "type": "service_account",
+  #       "project_id": "your-gcp-project-id",
+  #       ...
+  #     }  # <-- CHANGE THIS (use Secret reference in production)
+
+# Prometheus configuration for Kubecost metrics
+prometheus:
+  server:
+    # Use existing Prometheus server
+    enabled: false
+  
+  # Kubecost-specific metrics retention
+  # Note: Main Prometheus retention is 30d, but Kubecost stores aggregated data
+  serverFiles:
+    prometheus.yml:
+      scrape_configs:
+        - job_name: kubecost
+          honor_labels: true
+          scrape_interval: 1m
+          scrape_timeout: 10s
+          metrics_path: /metrics
+          scheme: http
+          static_configs:
+            - targets:
+                - kubecost-cost-analyzer.finops.svc:9003
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9090
+  targetPort: 9090
+  labels:
+    monitoring: "true"  # Opt-in to Prometheus service discovery
+
+# Ingress configuration for web UI
+# Requirement 1.5: Expose web UI accessible via Kubernetes Ingress with TLS
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # <-- CHANGE THIS if using different issuer
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Optional: Add authentication for production deployments
+    # nginx.ingress.kubernetes.io/auth-type: basic
+    # nginx.ingress.kubernetes.io/auth-secret: kubecost-basic-auth
+    # nginx.ingress.kubernetes.io/auth-realm: "Kubecost Authentication Required"
+  hosts:
+    - host: kubecost.example.com  # <-- CHANGE THIS to your domain
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: kubecost-tls
+      hosts:
+        - kubecost.example.com  # <-- CHANGE THIS to match host above
+
+# Persistent volume for cost data storage
+persistentVolume:
+  enabled: true
+  size: 32Gi  # Sized for 90 days of cost data in medium-sized clusters
+  storageClass: ""  # Use default storage class, or specify: gp3, managed-premium, etc.
+  accessMode: ReadWriteOnce
+
+# Network costs configuration
+# Enables tracking of network egress and cross-zone traffic costs
+networkCosts:
+  enabled: true
+  podMonitor:
+    enabled: true
+  
+  # Traffic logging for detailed network cost analysis
+  trafficLogging:
+    enabled: false  # Enable if detailed network flow analysis is needed (increases storage)
+
+# Cluster controller for multi-cluster support
+# Enable this if managing costs across multiple clusters
+clusterController:
+  enabled: false  # Set to true for multi-cluster deployments
+
+# ServiceMonitor for Prometheus Operator integration
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: prometheus  # <-- CHANGE THIS to match your Prometheus Operator release name
+
+# Reporting configuration
+reporting:
+  # Enable cost reports and recommendations
+  valuesReporting: true
+  
+  # Error reporting (disable in air-gapped environments)
+  errorReporting: false
+  
+  # Product analytics (disable for privacy/compliance)
+  productAnalytics:
+    enabled: false
+
+# Resource labels for cost allocation
+# These labels are used to aggregate costs by team, environment, cost center
+# Requirement 2.1, 2.2, 2.3: Aggregate costs by namespace and labels
+kubecostProductConfigs:
+  # Default currency for cost display
+  # Requirement 9.5: Convert all amounts to USD for consistent comparison
+  currencyCode: "USD"
+  
+  # Cluster name for multi-cluster identification
+  clusterName: "production-cluster"  # <-- CHANGE THIS to your cluster name
+  
+  # Label configuration for cost allocation
+  labelMappingConfigs:
+    enabled: true
+    # Map Kubernetes labels to Kubecost cost allocation dimensions
+    # Requirement 2.2: Aggregate costs by finops.org/costcenter label
+    # Requirement 2.3: Aggregate costs by finops.org/environment label
+    owner_label: "finops.org/costcenter"
+    team_label: "finops.org/team"
+    department_label: "finops.org/costcenter"
+    environment_label: "finops.org/environment"
+    product_label: "finops.org/project"
+
+# Priority class for Kubecost pods
+priorityClassName: ""  # Set to system-cluster-critical for production
+
+# Node selector and tolerations for Kubecost deployment
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+# Image pull secrets (if using private registry)
+imagePullSecrets: []
+
+# Kubecost metrics exporter
+# Requirement 13.1: Expose cost metrics in Prometheus format
+metricsExporter:
+  enabled: true
+
+# Notifications configuration
+# Integrate with existing Alertmanager for budget alerts
+# See finops/prometheus/budget-alerts.yaml for alert rules
+notifications:
+  alertmanager:
+    enabled: true
+    fqdn: http://alertmanager-operated.monitoring.svc:9093  # <-- CHANGE THIS if Alertmanager is elsewhere
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Service account
+serviceAccount:
+  create: true
+  name: kubecost
+  annotations: {}
+    # For AWS IRSA (IAM Roles for Service Accounts):
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/kubecost-role
+    # For Azure Workload Identity:
+    # azure.workload.identity/client-id: "your-client-id"
+    # For GCP Workload Identity:
+    # iam.gke.io/gcp-service-account: kubecost@PROJECT_ID.iam.gserviceaccount.com
+
+# Additional environment variables
+# Use for cloud provider credentials via secrets
+extraEnv: []
+  # - name: AWS_ACCESS_KEY_ID
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: kubecost-aws-credentials
+  #       key: access-key-id
+  # - name: AWS_SECRET_ACCESS_KEY
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: kubecost-aws-credentials
+  #       key: secret-access-key
+
+# Additional volumes and volume mounts
+extraVolumes: []
+extraVolumeMounts: []
+
+# Upgrade configuration
+# Preserve data during upgrades
+upgradeToPersistentVolume: true
+
+# Kubecost API configuration
+kubecostAPI:
+  # Query performance optimization
+  # Requirement 2.6: Return results within 5 seconds for 90-day queries
+  maxQueryConcurrency: 5
+  queryLoggingEnabled: false
+
+# Cost allocation configuration
+costAllocation:
+  # Shared cost allocation method
+  # Requirement 6.6: Allocate shared cluster costs proportionally by resource usage
+  sharedNamespaces:
+    - kube-system
+    - monitoring
+    - finops
+    - cert-manager
+    - ingress-nginx
+  
+  # Idle cost allocation
+  idleCostAllocation: proportional  # Options: proportional, even, none
+
+# Savings recommendations
+savings:
+  enabled: true
+  
+  # Rightsizing recommendations
+  # Requirement 3.6: Highlight recommendations with >20% potential savings
+  rightsizing:
+    enabled: true
+    threshold: 0.20  # 20% savings threshold for high-priority recommendations
+
+# Health checks
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 120
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false  # Enable for high-availability deployments
+  minAvailable: 1
+
+# Horizontal pod autoscaling
+autoscaling:
+  enabled: false  # Enable if Kubecost experiences high query load
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80

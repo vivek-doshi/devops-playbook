@@ -35,6 +35,10 @@ terraform {
 provider "azurerm" {
   # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   features {}
+
+  default_tags {
+    tags = local.common_tags
+  }
 }
 
 # ---------------------------------------------
@@ -176,6 +180,8 @@ resource "azurerm_application_insights" "main" {
 # ---------------------------------------------
 locals {
   common_tags = {
+    CostCenter  = var.cost_center
+    Owner       = var.owner
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"

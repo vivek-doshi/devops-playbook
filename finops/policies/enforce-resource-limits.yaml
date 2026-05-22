@@ -1,0 +1,144 @@
+# finops/policies/enforce-resource-limits.yaml
+# Kyverno ClusterPolicy: enforce maximum resource limits per namespace based on
+# team budget. Blocks Pods that request resources exceeding configured limits.
+#
+# Apply:  kubectl apply -f finops/policies/enforce-resource-limits.yaml
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: enforce-resource-limits
+  annotations:
+    policies.kyverno.io/title: Enforce Resource Limits for Cost Control
+    policies.kyverno.io/category: FinOps Cost Governance
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Ensures all containers have CPU and memory resource limits defined, and
+      that requests do not exceed team-budget-based maximums per container.
+      This prevents uncontrolled cost growth from resource-hungry workloads.
+    finops.org/policy-id: "CP-002"
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-cpu-limits
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kube-public", "kube-node-lease", "cert-manager"]
+      validate:
+        message: |
+          Policy: enforce-resource-limits | Rule: require-cpu-limits
+
+          Container '{{ request.object.spec.containers[0].name }}' in Pod '{{ request.object.metadata.name }}'
+          does not have a CPU limit defined.
+
+          Remediation: Add resources.limits.cpu to every container:
+            resources:
+              requests:
+                cpu: "100m"
+              limits:
+                cpu: "2"
+
+          See: https://github.com/your-org/cicd-reference/blob/main/finops/docs/cost-tagging-schema.md
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  limits:
+                    cpu: "?*"
+
+    - name: require-memory-limits
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kube-public", "kube-node-lease", "cert-manager"]
+      validate:
+        message: |
+          Policy: enforce-resource-limits | Rule: require-memory-limits
+
+          Container in Pod '{{ request.object.metadata.name }}' does not have a memory limit defined.
+
+          Remediation: Add resources.limits.memory to every container:
+            resources:
+              limits:
+                memory: "512Mi"
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  limits:
+                    memory: "?*"
+
+    - name: max-cpu-per-container
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kube-public", "kube-node-lease", "cert-manager"]
+          # Exclude GPU-approved workloads which may need more resources
+          - resources:
+              selector:
+                matchLabels:
+                  finops.org/gpu-approved: "true"
+      validate:
+        message: |
+          Policy: enforce-resource-limits | Rule: max-cpu-per-container
+
+          Container in Pod '{{ request.object.metadata.name }}' requests CPU exceeding the maximum
+          allowed per container (8 cores).
+
+          Current request: {{ request.object.spec.containers[0].resources.requests.cpu }}
+          Maximum allowed: 8 cores (8000m)
+
+          Remediation:
+          1. Reduce CPU request/limit to <= 8 cores
+          2. If this workload genuinely needs more than 8 cores, contact the platform team
+             to review your budget allocation.
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.containers[].resources.requests.cpu | to_number(@) }}"
+                operator: GreaterThan
+                value: 8
+
+    - name: max-memory-per-container
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      exclude:
+        any:
+          - resources:
+              namespaces: ["kube-system", "kube-public", "kube-node-lease", "cert-manager"]
+          - resources:
+              selector:
+                matchLabels:
+                  finops.org/gpu-approved: "true"
+      validate:
+        message: |
+          Policy: enforce-resource-limits | Rule: max-memory-per-container
+
+          Container in Pod '{{ request.object.metadata.name }}' requests memory exceeding the maximum
+          allowed per container (32Gi).
+
+          Maximum allowed: 32Gi
+          To request an exemption, contact the platform team.
+        deny:
+          conditions:
+            any:
+              - key: "{{ divide(request.object.spec.containers[0].resources.requests.memory || '0', '1073741824') }}"
+                operator: GreaterThan
+                value: 32

@@ -1,0 +1,93 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" }
+  ],
+  "description": "Cost tag compliance: percentage of pods with required finops.org/costcenter and finops.org/environment labels, with non-compliant resource listing.",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "10m",
+  "schemaVersion": 38,
+  "tags": ["finops", "tag-compliance"],
+  "time": { "from": "now-7d", "to": "now" },
+  "timezone": "browser",
+  "title": "FinOps - Tag Compliance",
+  "uid": "finops-tag-compliance",
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kube_pod_info, namespace)",
+        "hide": 0, "includeAll": true, "allValue": ".*", "label": "Namespace", "multi": true, "name": "namespace",
+        "query": { "query": "label_values(kube_pod_info, namespace)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    { "id": 1, "title": "Overall Compliance", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 2, "title": "Cost Center Label Compliance %", "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 80 }, { "color": "green", "value": 95 }] }, "unit": "percent", "min": 0, "max": 100, "decimals": 1 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "(count(kube_pod_labels{label_finops_org_costcenter!=\"\", namespace=~\"$namespace\"}) / count(kube_pod_info{namespace=~\"$namespace\"})) * 100", "legendFormat": "Cost Center Compliance %", "refId": "A" }]
+    },
+    {
+      "id": 3, "title": "Environment Label Compliance %", "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 80 }, { "color": "green", "value": 95 }] }, "unit": "percent", "min": 0, "max": 100, "decimals": 1 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "(count(kube_pod_labels{label_finops_org_environment!=\"\", namespace=~\"$namespace\"}) / count(kube_pod_info{namespace=~\"$namespace\"})) * 100", "legendFormat": "Environment Compliance %", "refId": "A" }]
+    },
+    {
+      "id": 4, "title": "Non-Compliant Pods", "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "count(kube_pod_info{namespace=~\"$namespace\"}) - count(kube_pod_labels{label_finops_org_costcenter!=\"\", namespace=~\"$namespace\"})", "legendFormat": "Missing Labels", "refId": "A" }]
+    },
+    {
+      "id": 5, "title": "Total Pods Scanned", "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "count(kube_pod_info{namespace=~\"$namespace\"})", "legendFormat": "Total Pods", "refId": "A" }]
+    },
+    { "id": 10, "title": "Compliance Trend", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 } },
+    {
+      "id": 11, "title": "Tag Compliance Over Time", "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 15 }, "unit": "percent", "min": 0, "max": 100, "decimals": 1 } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "(count(kube_pod_labels{label_finops_org_costcenter!=\"\", namespace=~\"$namespace\"}) / count(kube_pod_info{namespace=~\"$namespace\"})) * 100", "legendFormat": "Cost Center Label %", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "(count(kube_pod_labels{label_finops_org_environment!=\"\", namespace=~\"$namespace\"}) / count(kube_pod_info{namespace=~\"$namespace\"})) * 100", "legendFormat": "Environment Label %", "refId": "B" }
+      ]
+    },
+    { "id": 20, "title": "Non-Compliant Resources", "type": "row", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 } },
+    {
+      "id": 21, "title": "Non-Compliant Namespaces", "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum by (namespace) (kube_pod_info{namespace=~\"$namespace\"}) - sum by (namespace) (kube_pod_labels{label_finops_org_costcenter!=\"\", namespace=~\"$namespace\"})", "legendFormat": "", "refId": "A", "instant": true, "format": "table" }],
+      "transformations": [
+        { "id": "organize", "options": { "renameByName": { "namespace": "Namespace", "Value": "Pods Missing Labels" } } },
+        { "id": "filterByValue", "options": { "filters": [{ "fieldName": "Pods Missing Labels", "config": { "id": "greaterOrEqual", "options": { "value": 1 } } }], "type": "include" } },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Pods Missing Labels", "desc": true }] } }
+      ]
+    }
+  ]
+}

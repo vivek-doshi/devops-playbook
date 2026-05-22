@@ -1,0 +1,103 @@
+{
+  "annotations": { "list": [] },
+  "description": "Reserved capacity utilization, coverage percentage, and stable workload candidates ranked by potential savings",
+  "editable": true,
+  "id": null,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{"color":"red","value":null},{"color":"yellow","value":60},{"color":"green","value":80}] },
+          "unit": "percent", "min": 0, "max": 100
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Reserved Instance Utilization",
+      "type": "gauge",
+      "targets": [{ "expr": "finops_reserved_instance_utilization_pct", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{"color":"red","value":null},{"color":"yellow","value":30},{"color":"green","value":60}] },
+          "unit": "percent", "min": 0, "max": 100
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Reserved Coverage %",
+      "type": "gauge",
+      "targets": [{ "expr": "finops_reserved_coverage_pct", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null}] }, "unit": "currencyUSD" } },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Total Potential Annual Savings",
+      "type": "stat",
+      "targets": [{ "expr": "sum(finops_reserved_potential_annual_savings)", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null}] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Stable Workload Candidates",
+      "type": "stat",
+      "targets": [{ "expr": "count(finops_reserved_potential_annual_savings > 0)", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left", "displayMode": "auto", "filterable": true } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Annual Savings ($)" }, "properties": [{ "id": "unit", "value": "currencyUSD" }, { "id": "custom.displayMode", "value": "color-background" }] }
+        ]
+      },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 8 },
+      "id": 5,
+      "options": { "sortBy": [{ "displayName": "Annual Savings ($)", "desc": true }] },
+      "title": "Stable Workload Candidates — Reserved Instance Recommendations",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "sort_desc(topk(20, finops_reserved_potential_annual_savings))",
+          "instant": true, "refId": "A", "format": "table"
+        }
+      ],
+      "transformations": [{ "id": "organize", "options": { "renameByName": { "namespace": "Namespace", "workload": "Workload", "Value": "Annual Savings ($)" } } }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
+      "id": 6,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] }, "showUnfilled": true },
+      "title": "On-demand vs Reserved Cost Comparison",
+      "type": "bargauge",
+      "targets": [
+        { "expr": "sum by (namespace) (finops_namespace_cost_hourly) * 730", "legendFormat": "On-demand: {{namespace}}", "instant": true, "refId": "A" },
+        { "expr": "sum by (namespace) (finops_namespace_cost_hourly) * 730 * 0.65", "legendFormat": "Reserved (est.): {{namespace}}", "instant": true, "refId": "B" }
+      ]
+    }
+  ],
+  "refresh": "1h",
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": ["finops", "reserved-capacity"],
+  "templating": { "list": [
+    { "label": "Namespace", "name": "namespace", "query": "label_values(kube_pod_info, namespace)", "type": "query", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true }
+  ]},
+  "time": { "from": "now-90d", "to": "now" },
+  "title": "FinOps — Reserved Capacity",
+  "uid": "finops-reserved-capacity",
+  "version": 1
+}

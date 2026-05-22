@@ -1,0 +1,158 @@
+# finops/prometheus/alertmanager-anomaly-config.yaml
+# Dedicated Alertmanager configuration for cost anomaly alerts.
+# Routes anomaly alerts to appropriate channels based on severity and namespace.
+#
+# Apply as a patch to the existing Alertmanager configuration, or use standalone:
+#   kubectl create secret generic alertmanager-finops-anomaly \
+#     --from-file=alertmanager.yaml=finops/prometheus/alertmanager-anomaly-config.yaml \
+#     -n monitoring
+
+global:
+  resolve_timeout: 5m
+
+# ─── Notification templates ───────────────────────────────────────────────────
+templates:
+  - /etc/alertmanager/templates/finops-anomaly.tmpl
+
+# ─── Routing ──────────────────────────────────────────────────────────────────
+route:
+  group_by: ["alertname", "namespace", "anomaly_type"]
+  group_wait: 1m
+  group_interval: 10m
+  repeat_interval: 6h
+  receiver: "default-anomaly"
+
+  routes:
+    # Critical anomaly (>100% spike) — PagerDuty + Slack
+    - matchers:
+        - name: alertname
+          value: CostAnomalyCritical
+      receiver: "pagerduty-anomaly-critical"
+      continue: true
+
+    - matchers:
+        - name: alertname
+          value: CostAnomalyCritical
+      receiver: "slack-anomaly-critical"
+
+    # Spike warning (>50% over 7d baseline)
+    - matchers:
+        - name: alertname
+          value: CostAnomalySpike
+      receiver: "slack-anomaly-warning"
+
+    # New namespace with high spend
+    - matchers:
+        - name: alertname
+          value: NewNamespaceHighCost
+      receiver: "slack-anomaly-new-namespace"
+
+    # Tag compliance degradation
+    - matchers:
+        - name: alertname
+          value: CostTagComplianceLow
+      receiver: "slack-tag-compliance"
+
+# ─── Receivers ────────────────────────────────────────────────────────────────
+receivers:
+  - name: "default-anomaly"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-anomalies"
+        title: "FinOps Anomaly: {{ .GroupLabels.alertname }}"
+        text: "{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}"
+        send_resolved: true
+
+  - name: "pagerduty-anomaly-critical"
+    pagerduty_configs:
+      - routing_key: "${PAGERDUTY_INTEGRATION_KEY_PLATFORM}"
+        severity: "critical"
+        summary: "Cost Spike >100%: {{ .GroupLabels.namespace }}"
+        description: |
+          {{ range .Alerts }}
+          Namespace: {{ .Labels.namespace }}
+          Current cost: {{ .Annotations.current_cost }}
+          Baseline (7d avg): {{ .Annotations.baseline_cost }}
+          Increase: {{ .Annotations.percent_increase }}%
+          {{ end }}
+        details:
+          namespace: "{{ .GroupLabels.namespace }}"
+          runbook: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+
+  - name: "slack-anomaly-critical"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_PLATFORM}"
+        channel: "#platform-emergency"
+        title: "🔴 CRITICAL Cost Spike: {{ .GroupLabels.namespace }}"
+        color: "danger"
+        text: |
+          @oncall — Cost anomaly requires immediate attention.
+          {{ range .Alerts }}
+          *Namespace:* {{ .Labels.namespace }}
+          *Current hourly cost:* {{ .Annotations.current_cost }}
+          *7-day baseline:* {{ .Annotations.baseline_cost }}
+          *Increase:* {{ .Annotations.percent_increase }}%
+          <{{ .Annotations.dashboard_url }}|📊 Investigate in Grafana>
+          <{{ .Annotations.runbook_url }}|📖 Runbook>
+          {{ end }}
+        send_resolved: true
+
+  - name: "slack-anomaly-warning"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-anomalies"
+        title: "⚠️ Cost Spike Detected: {{ .GroupLabels.namespace }}"
+        color: "warning"
+        text: |
+          {{ range .Alerts }}
+          *Namespace:* {{ .Labels.namespace }}
+          *Current hourly cost:* {{ .Annotations.current_cost }}
+          *7-day baseline:* {{ .Annotations.baseline_cost }}
+          *Increase:* {{ .Annotations.percent_increase }}%
+          *Anomaly type:* {{ .Labels.anomaly_type }}
+          <{{ .Annotations.dashboard_url }}|📊 View in Grafana> | <{{ .Annotations.runbook_url }}|📖 Runbook>
+          {{ end }}
+        send_resolved: true
+
+  - name: "slack-anomaly-new-namespace"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-anomalies"
+        title: "🆕 New High-Cost Namespace: {{ .GroupLabels.namespace }}"
+        color: "warning"
+        text: |
+          A new namespace has appeared with significant spend within 24h.
+          {{ range .Alerts }}
+          *Namespace:* {{ .Labels.namespace }}
+          *Cost (last 24h):* {{ .Annotations.current_cost }}
+          *Threshold:* $100/day
+          Check if this workload has the required FinOps cost labels.
+          <{{ .Annotations.dashboard_url }}|📊 View Cost Dashboard>
+          {{ end }}
+        send_resolved: false
+
+  - name: "slack-tag-compliance"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-alerts"
+        title: "🏷️ Tag Compliance Below 95%: {{ .GroupLabels.namespace }}"
+        color: "warning"
+        text: |
+          {{ range .Alerts }}
+          *Namespace:* {{ .Labels.namespace }}
+          *Compliance:* {{ .Annotations.compliance_pct }}%
+          *Non-compliant pods:* {{ .Annotations.non_compliant_count }}
+          Run: `python finops/scripts/validate-cost-tags.py --namespace {{ .Labels.namespace }}`
+          {{ end }}
+        send_resolved: true
+
+# ─── Inhibition rules ─────────────────────────────────────────────────────────
+inhibit_rules:
+  # Suppress spike warning when critical is already firing for the same namespace
+  - source_matchers:
+      - name: alertname
+        value: CostAnomalyCritical
+    target_matchers:
+      - name: alertname
+        value: CostAnomalySpike
+    equal: ["namespace"]

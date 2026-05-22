@@ -405,6 +405,74 @@ Files: [`backup/velero/`](../../backup/velero/)
 
 ---
 
+## FinOps Checkpoints
+
+> Complete these steps before promoting to **production**. They are part of the standard workflow — not optional extras.
+
+### FinOps Checkpoint 1 — Verify cost labels
+
+All Pods must have `finops.org/costcenter` and `finops.org/environment` labels. The `require-cost-labels` Kyverno policy will block deployment if they are missing.
+
+```yaml
+# In your Deployment pod template spec:
+metadata:
+  labels:
+    app: my-service
+    finops.org/costcenter: "engineering"       # Required
+    finops.org/environment: "production"       # Required: dev | staging | production
+    finops.org/team: "platform"                # Optional
+    finops.org/project: "my-service"           # Optional
+```
+
+Validate before deploying:
+```bash
+python finops/scripts/validate-cost-tags.py --namespace <your-namespace>
+```
+
+Cost tagging schema: [`finops/docs/cost-tagging-schema.md`](../../finops/docs/cost-tagging-schema.md)
+
+---
+
+### FinOps Checkpoint 2 — Review VPA recommendations (pre-production)
+
+Before deploying to production, check if VPA has recommendations for your workload. VPA needs at least 24 hours of data from staging.
+
+```bash
+# Check VPA recommendations and cost impact
+python finops/scripts/analyze-rightsizing.py --namespace <staging-namespace>
+```
+
+What to check:
+- If VPA recommends **lower** resources → update your manifests to match (free savings)
+- If savings > 20% → this is **high priority** — address before production deploy
+- If no recommendations → VPA needs more data (ensure staging has been running 24h+)
+
+View in Grafana: [FinOps — Rightsizing Opportunities](https://grafana.internal.company.com/d/finops-rightsizing)
+
+---
+
+### FinOps Checkpoint 3 — Confirm resource requests align with team budget
+
+Before deploying a new service, estimate its monthly cost contribution:
+
+```bash
+# Quick cost estimate: CPU * $0.048/hr * 730 + RAM * $0.006/hr * 730
+# Example: 0.5 CPU + 512Mi = (0.5 * 0.048 + 0.5 * 0.006) * 730 ≈ $19.71/month
+```
+
+Then verify the team's budget has headroom:
+- Check current spend in [FinOps — Budget Tracking dashboard](https://grafana.internal.company.com/d/finops-budget-tracking)
+- If adding > $500/month to a cost center → notify the FinOps team
+
+---
+
+### FinOps PR Checklist
+
+Include the FinOps checklist in your PR for infrastructure changes:  
+[`finops/templates/pr-checklist.md`](../../finops/templates/pr-checklist.md)
+
+---
+
 ## Guardrails
 
 These Kyverno policies are enforced cluster-wide. Deployments that violate them will be rejected:

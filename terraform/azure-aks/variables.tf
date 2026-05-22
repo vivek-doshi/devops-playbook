@@ -9,6 +9,22 @@ variable "project" {
   type        = string
   # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "myapp" # <-- CHANGE THIS
+
+  validation {
+    condition     = length(trim(var.project)) > 0
+    error_message = "Project must be a non-empty string."
+  }
+}
+
+variable "cost_center" {
+  description = "FinOps cost center tag applied to all resources"
+  type        = string
+  default     = "engineering-shared" # <-- CHANGE THIS
+
+  validation {
+    condition     = length(trim(var.cost_center)) > 0
+    error_message = "CostCenter must be a non-empty string."
+  }
 }
 
 variable "environment" {
@@ -16,7 +32,23 @@ variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string
   default     = "dev" # <-- CHANGE THIS
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
+  }
 # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+}
+
+variable "owner" {
+  description = "FinOps owner tag applied to all resources; must be an email address"
+  type        = string
+  default     = "platform@example.com" # <-- CHANGE THIS
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.owner))
+    error_message = "Owner must be a valid email address."
+  }
 }
 
 variable "location" {
@@ -93,4 +125,72 @@ variable "acr_sku" {
   # Note 20: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "Standard"
+}
+
+variable "gpu_node_pool_enabled" {
+  description = "Create a separate GPU-enabled user node pool for model training or inference workloads"
+  type        = bool
+  default     = false
+}
+
+variable "gpu_node_pool_name" {
+  description = "Name of the AKS GPU node pool; must be 1-12 lowercase alphanumeric characters"
+  type        = string
+  default     = "gpu"
+
+  validation {
+    condition     = can(regex("^[a-z0-9]{1,12}$", var.gpu_node_pool_name))
+    error_message = "gpu_node_pool_name must be 1-12 lowercase alphanumeric characters."
+  }
+}
+
+variable "gpu_node_vm_size" {
+  description = "VM size for the AKS GPU node pool"
+  type        = string
+  default     = "Standard_NC4as_T4_v3" # <-- CHANGE THIS: pick the GPU SKU that matches your workload and region
+}
+
+variable "gpu_enable_autoscaling" {
+  description = "Enable cluster autoscaler on the GPU node pool"
+  type        = bool
+  default     = true
+}
+
+variable "gpu_node_count" {
+  description = "Node count for the GPU node pool when autoscaling is disabled"
+  type        = number
+  default     = 1
+}
+
+variable "gpu_node_min_count" {
+  description = "Minimum node count for the GPU node pool when autoscaling is enabled"
+  type        = number
+  default     = 0
+}
+
+variable "gpu_node_max_count" {
+  description = "Maximum node count for the GPU node pool when autoscaling is enabled"
+  type        = number
+  default     = 3
+}
+
+variable "gpu_node_os_disk_size_gb" {
+  description = "OS disk size in GiB for GPU nodes"
+  type        = number
+  default     = 256
+}
+
+variable "gpu_node_taint_enabled" {
+  description = "Apply a NoSchedule taint to the GPU node pool so only explicit ML workloads land on it"
+  type        = bool
+  default     = true
+}
+
+variable "gpu_node_labels" {
+  description = "Additional Kubernetes labels to apply to the GPU node pool"
+  type        = map(string)
+  default = {
+    accelerator = "nvidia-gpu"
+    workload    = "ml"
+  }
 }

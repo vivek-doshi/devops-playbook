@@ -1,0 +1,331 @@
+# ============================================================
+# TEMPLATE: OpenCost Helm Values
+# WHEN TO USE: Deploying OpenCost for Kubernetes cost monitoring
+# WHAT TO CHANGE: Cloud provider credentials, Prometheus endpoint, Ingress host
+# RELATED FILES: finops/helm/kubecost-values.yaml, finops/scripts/install-cost-monitoring.sh
+# ============================================================
+
+# OpenCost Helm chart values for cost monitoring and allocation
+# This configuration integrates with Prometheus for metrics collection
+# and supports multi-cloud pricing APIs (AWS, Azure, GCP)
+
+# Namespace configuration
+# OpenCost will be deployed to the 'finops' namespace
+# The installation script creates this namespace if it doesn't exist
+opencost:
+  # Prometheus integration
+  # OpenCost requires Prometheus for scraping metrics and data storage
+  prometheus:
+    # Internal Prometheus endpoint - adjust if using external Prometheus
+    internal:
+      enabled: true
+      serviceName: prometheus-operated
+      namespaceName: monitoring
+      port: 9090
+    
+    # External Prometheus endpoint (if not using internal)
+    external:
+      enabled: false
+      url: http://prometheus-server.monitoring.svc:9090  # <-- CHANGE THIS if using external Prometheus
+  
+  # Exporter configuration
+  exporter:
+    # Default cluster ID for cost allocation
+    # Used to identify costs in multi-cluster environments
+    defaultClusterId: default-cluster  # <-- CHANGE THIS to your cluster identifier
+    
+    # Cloud provider configuration
+    # OpenCost will attempt to detect the cloud provider automatically
+    # Override these settings for explicit configuration
+    cloudProviderApiKey: ""  # Optional: API key for cloud provider pricing data
+    
+    # AWS configuration
+    # Requires IAM role with access to Cost and Usage Reports
+    aws:
+      # Set to true to enable AWS pricing integration
+      enabled: false  # <-- CHANGE THIS to true for AWS clusters
+      # AWS region for Spot data feed
+      spotDataRegion: us-east-1  # <-- CHANGE THIS to your region
+      # S3 bucket containing Spot data feed
+      spotDataBucket: ""  # <-- CHANGE THIS to your S3 bucket name
+      # AWS account ID
+      accountId: ""  # <-- CHANGE THIS to your AWS account ID
+      # Service account annotations for IAM role (IRSA)
+      serviceAccountAnnotations:
+        eks.amazonaws.com/role-arn: ""  # <-- CHANGE THIS to your IAM role ARN
+    
+    # Azure configuration
+    # Requires service principal with Cost Management Reader role
+    azure:
+      # Set to true to enable Azure pricing integration
+      enabled: false  # <-- CHANGE THIS to true for AKS clusters
+      # Azure subscription ID
+      subscriptionId: ""  # <-- CHANGE THIS to your subscription ID
+      # Azure tenant ID
+      tenantId: ""  # <-- CHANGE THIS to your tenant ID
+      # Azure client ID (service principal)
+      clientId: ""  # <-- CHANGE THIS to your client ID
+      # Azure client secret (stored in Kubernetes Secret)
+      clientSecretName: opencost-azure-secret  # <-- CHANGE THIS if using different secret name
+      clientSecretKey: azure-client-secret
+    
+    # GCP configuration
+    # Requires service account with BigQuery Data Viewer role
+    gcp:
+      # Set to true to enable GCP pricing integration
+      enabled: false  # <-- CHANGE THIS to true for GKE clusters
+      # GCP project ID
+      projectId: ""  # <-- CHANGE THIS to your project ID
+      # BigQuery dataset containing billing export
+      billingDataDataset: ""  # <-- CHANGE THIS to your dataset name
+      # BigQuery table containing billing export
+      billingDataTable: ""  # <-- CHANGE THIS to your table name
+      # Service account key (stored in Kubernetes Secret)
+      serviceAccountSecretName: opencost-gcp-secret  # <-- CHANGE THIS if using different secret name
+      serviceAccountSecretKey: gcp-service-account-key
+    
+    # Additional environment variables
+    extraEnv:
+      # Emit KSM v1 metrics for compatibility
+      EMIT_KSM_V1_METRICS: "false"
+      EMIT_KSM_V1_METRICS_ONLY: "true"
+      # Prometheus cluster ID label
+      PROM_CLUSTER_ID_LABEL: cluster
+      # Log level (debug, info, warn, error)
+      LOG_LEVEL: info  # <-- CHANGE THIS to debug for troubleshooting
+      # Data retention period in days
+      RETENTION_DAYS: "90"  # <-- CHANGE THIS to adjust retention (default: 90 days)
+  
+  # UI configuration
+  ui:
+    enabled: true
+    # Resource limits for UI container
+    resources:
+      requests:
+        cpu: 10m
+        memory: 55Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  
+  # Service configuration
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 9003
+    targetPort: 9003
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9003"
+      prometheus.io/path: "/metrics"
+  
+  # ServiceMonitor for Prometheus Operator
+  # Enables automatic discovery and scraping by Prometheus
+  serviceMonitor:
+    enabled: true
+    namespace: finops
+    labels:
+      release: kube-prometheus-stack  # <-- CHANGE THIS to match your Prometheus Operator release
+    interval: 30s
+    scrapeTimeout: 10s
+  
+  # Resource limits for OpenCost exporter
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  
+  # Node selector for pod placement
+  nodeSelector: {}
+  
+  # Tolerations for pod scheduling
+  tolerations: []
+  
+  # Affinity rules for pod scheduling
+  affinity: {}
+
+# Ingress configuration for OpenCost web UI
+ingress:
+  enabled: true
+  className: nginx  # <-- CHANGE THIS if using different ingress controller
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # <-- CHANGE THIS to your cert-manager issuer
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Authentication annotations (optional)
+    # nginx.ingress.kubernetes.io/auth-type: basic
+    # nginx.ingress.kubernetes.io/auth-secret: opencost-basic-auth
+    # nginx.ingress.kubernetes.io/auth-realm: "OpenCost Authentication Required"
+  hosts:
+    - host: opencost.example.com  # <-- CHANGE THIS to your domain
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: opencost-tls
+      hosts:
+        - opencost.example.com  # <-- CHANGE THIS to match host above
+
+# Priority class for pod scheduling
+priorityClassName: ""
+
+# Security context for pods
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Security context for containers
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# Pod annotations
+podAnnotations:
+  finops.org/costcenter: "platform"  # <-- CHANGE THIS to your cost center
+  finops.org/environment: "production"  # <-- CHANGE THIS to your environment
+
+# Pod labels
+podLabels:
+  app: opencost
+  component: cost-monitoring
+
+# Liveness probe configuration
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /healthz
+    port: 9003
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Readiness probe configuration
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /healthz
+    port: 9003
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Persistent volume for cost data storage (optional)
+# Recommended for production to persist cost data across pod restarts
+persistence:
+  enabled: false  # <-- CHANGE THIS to true for production
+  storageClass: ""  # <-- CHANGE THIS to your storage class
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  annotations: {}
+
+# Network policy (optional)
+# Restricts network access to OpenCost pods
+networkPolicy:
+  enabled: false  # <-- CHANGE THIS to true for enhanced security
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443  # For cloud provider API access
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Service account configuration
+serviceAccount:
+  create: true
+  name: opencost
+  annotations: {}
+    # For AWS IRSA (IAM Roles for Service Accounts)
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/opencost-role
+    # For GCP Workload Identity
+    # iam.gke.io/gcp-service-account: opencost@PROJECT_ID.iam.gserviceaccount.com
+    # For Azure Workload Identity
+    # azure.workload.identity/client-id: CLIENT_ID
+
+# ============================================================
+# CONFIGURATION NOTES
+# ============================================================
+#
+# 1. PROMETHEUS INTEGRATION
+#    - OpenCost requires Prometheus for metrics collection
+#    - Default configuration assumes Prometheus Operator in 'monitoring' namespace
+#    - Adjust prometheus.internal settings if using different setup
+#
+# 2. CLOUD PROVIDER SETUP
+#    - Enable only the cloud provider(s) you're using
+#    - Follow finops/docs/cloud-provider-setup.md for IAM/RBAC configuration
+#    - Store sensitive credentials in Kubernetes Secrets
+#
+# 3. INGRESS AND TLS
+#    - Update ingress.hosts and ingress.tls with your domain
+#    - Ensure cert-manager is installed for automatic TLS certificate management
+#    - Consider enabling authentication for production deployments
+#
+# 4. RESOURCE LIMITS
+#    - Default limits are suitable for small-to-medium clusters
+#    - Increase resources.limits for large clusters (>100 nodes)
+#    - Monitor OpenCost pod metrics to adjust as needed
+#
+# 5. DATA RETENTION
+#    - Default retention is 90 days (configurable via RETENTION_DAYS)
+#    - Enable persistence for production to survive pod restarts
+#    - Consider external storage (S3/Blob/GCS) for long-term archival
+#
+# 6. SECURITY
+#    - Security contexts enforce non-root execution and read-only filesystem
+#    - Enable networkPolicy for production to restrict pod communication
+#    - Use Kubernetes Secrets for cloud provider credentials
+#    - Consider enabling Ingress authentication for web UI access
+#
+# 7. MULTI-CLUSTER SETUP
+#    - Set unique defaultClusterId for each cluster
+#    - Use centralized Prometheus or Thanos for cross-cluster cost aggregation
+#    - Configure cloud provider credentials per cluster
+#
+# ============================================================
+# INSTALLATION COMMAND
+# ============================================================
+#
+# helm repo add opencost https://opencost.github.io/opencost-helm-chart
+# helm repo update
+# kubectl create namespace finops
+# helm install opencost opencost/opencost \
+#   --namespace finops \
+#   --values finops/helm/opencost-values.yaml
+#
+# Or use the provided installation script:
+# ./finops/scripts/install-cost-monitoring.sh --tool opencost
+#
+# ============================================================

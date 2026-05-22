@@ -1,0 +1,207 @@
+# Kubernetes Audit Policy
+# This policy balances security visibility with log volume by selectively logging
+# security-relevant API operations while excluding high-volume read operations.
+#
+# Requirements: 3.1, 3.2, 3.3, 3.4, 18.1, 18.2, 18.3, 18.4, 18.5, 18.6, 18.7, 18.8
+#
+# Audit Levels:
+# - None: Don't log events that match this rule
+# - Metadata: Log request metadata (user, timestamp, resource, verb) but not request/response bodies
+# - Request: Log request metadata and request body but not response body
+# - RequestResponse: Log request metadata, request body, and response body
+#
+# Usage:
+# Configure the Kubernetes API server with the following flags:
+#   --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+#   --audit-log-path=/var/log/kubernetes/audit.log
+#   --audit-log-maxage=30
+#   --audit-log-maxbackup=10
+#   --audit-log-maxsize=100
+
+apiVersion: audit.k8s.io/v1
+kind: Policy
+# Don't generate audit events for all requests in RequestReceived stage
+omitStages:
+  - "RequestReceived"
+rules:
+  # ============================================================================
+  # EXCLUDE RULES - Reduce log volume by excluding noisy operations
+  # ============================================================================
+  
+  # Exclude system component requests to reduce noise (Requirement 18.8)
+  # System components like kube-proxy, kube-scheduler generate high-volume routine requests
+  - level: None
+    users:
+      - "system:kube-proxy"
+      - "system:kube-scheduler"
+      - "system:kube-controller-manager"
+      - "system:serviceaccount:kube-system:generic-garbage-collector"
+      - "system:serviceaccount:kube-system:attachdetach-controller"
+      - "system:serviceaccount:kube-system:certificate-controller"
+      - "system:serviceaccount:kube-system:clusterrole-aggregation-controller"
+      - "system:serviceaccount:kube-system:cronjob-controller"
+      - "system:serviceaccount:kube-system:disruption-controller"
+      - "system:serviceaccount:kube-system:endpoint-controller"
+      - "system:serviceaccount:kube-system:horizontal-pod-autoscaler"
+      - "system:serviceaccount:kube-system:namespace-controller"
+      - "system:serviceaccount:kube-system:node-controller"
+      - "system:serviceaccount:kube-system:persistent-volume-binder"
+      - "system:serviceaccount:kube-system:pod-garbage-collector"
+      - "system:serviceaccount:kube-system:pv-protection-controller"
+      - "system:serviceaccount:kube-system:pvc-protection-controller"
+      - "system:serviceaccount:kube-system:replicaset-controller"
+      - "system:serviceaccount:kube-system:replication-controller"
+      - "system:serviceaccount:kube-system:resourcequota-controller"
+      - "system:serviceaccount:kube-system:service-account-controller"
+      - "system:serviceaccount:kube-system:service-controller"
+      - "system:serviceaccount:kube-system:statefulset-controller"
+      - "system:serviceaccount:kube-system:ttl-controller"
+
+  # Exclude get/list/watch operations on ConfigMaps and Secrets to reduce volume (Requirement 18.7)
+  # These are high-frequency read operations that don't represent security events
+  - level: None
+    verbs: ["get", "list", "watch"]
+    resources:
+      - group: ""
+        resources: ["configmaps", "secrets"]
+
+  # Exclude read-only operations on endpoints (high volume, low security value)
+  - level: None
+    verbs: ["get", "list", "watch"]
+    resources:
+      - group: ""
+        resources: ["endpoints"]
+
+  # Exclude lease operations (high volume coordination traffic)
+  - level: None
+    resources:
+      - group: "coordination.k8s.io"
+        resources: ["leases"]
+
+  # ============================================================================
+  # AUTHENTICATION AND AUTHORIZATION FAILURES - High security value
+  # ============================================================================
+
+  # Log authentication failures at Metadata level (Requirement 18.2)
+  # Captures failed login attempts without logging sensitive credentials
+  - level: Metadata
+    omitStages:
+      - "RequestReceived"
+    userGroups: ["system:unauthenticated"]
+
+  # Log authorization failures at Metadata level (Requirement 18.3)
+  # Authorization failures are captured by the catch-all rule at the end of this policy
+  # Kubernetes audit policy rules cannot filter by response status code (403 Forbidden)
+  # Instead, all requests are logged, and authorization failures are identified in the
+  # audit log by responseStatus.code=403. This approach ensures we capture authorization
+  # failures without creating a separate rule that would duplicate logging.
+
+  # ============================================================================
+  # SECRET OPERATIONS - Log metadata only to exclude secret values
+  # ============================================================================
+
+  # Log Secret operations at Metadata level to exclude secret values (Requirement 18.4)
+  # Captures who accessed secrets without logging the actual secret data
+  - level: Metadata
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+        resources: ["secrets"]
+
+  # ============================================================================
+  # RBAC RESOURCE OPERATIONS - Full request/response logging
+  # ============================================================================
+
+  # Log RBAC resource operations at RequestResponse level (Requirement 18.6)
+  # RBAC changes are critical security events requiring full audit trail
+  - level: RequestResponse
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: "rbac.authorization.k8s.io"
+        resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+
+  # ============================================================================
+  # POD, DEPLOYMENT, SERVICE OPERATIONS - Full request/response logging
+  # ============================================================================
+
+  # Log Pod operations at RequestResponse level (Requirement 18.5)
+  # Pod creation/modification are critical security events
+  - level: RequestResponse
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+        resources: ["pods", "services"]
+      - group: "apps"
+        resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+
+  # ============================================================================
+  # OTHER SECURITY-RELEVANT RESOURCES
+  # ============================================================================
+
+  # Log ServiceAccount operations at RequestResponse level
+  # ServiceAccount changes can affect authentication and authorization
+  - level: RequestResponse
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+        resources: ["serviceaccounts"]
+
+  # Log PersistentVolume and PersistentVolumeClaim operations
+  # Storage operations can expose sensitive data
+  - level: RequestResponse
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+        resources: ["persistentvolumes", "persistentvolumeclaims"]
+
+  # Log Ingress and NetworkPolicy operations
+  # Network configuration changes are security-relevant
+  - level: RequestResponse
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: "networking.k8s.io"
+        resources: ["ingresses", "networkpolicies"]
+      - group: "extensions"
+        resources: ["ingresses"]
+
+  # Log admission control configuration changes
+  # ValidatingWebhookConfiguration and MutatingWebhookConfiguration control admission policies
+  - level: RequestResponse
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: "admissionregistration.k8s.io"
+        resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+
+  # Log CertificateSigningRequest operations
+  # Certificate operations are critical for cluster security
+  - level: RequestResponse
+    omitStages:
+      - "RequestReceived"
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: "certificates.k8s.io"
+        resources: ["certificatesigningrequests"]
+
+  # ============================================================================
+  # DEFAULT RULE - Log everything else at Metadata level
+  # ============================================================================
+
+  # Catch-all rule for any operations not covered above
+  # Provides baseline visibility without excessive log volume
+  - level: Metadata
+    omitStages:
+      - "RequestReceived"

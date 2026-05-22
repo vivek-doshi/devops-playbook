@@ -40,9 +40,6 @@ function App() {
         if (!response.ok) throw new Error('Failed to load index');
         const data = await response.json();
         setFiles(data);
-        if (data.length > 0) {
-          setSelectedFile(data[0]);
-        }
       } catch (err) {
         setError('Failed to load file index. Make sure to run `npm run build` first.');
         console.error(err);

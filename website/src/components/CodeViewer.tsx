@@ -1,5 +1,5 @@
 ﻿import React, { useEffect } from 'react';
-import { Copy, Download, ExternalLink, Info, Tag, Wrench, FileText, Shield, Link } from 'lucide-react';
+import { Copy, Download, ExternalLink, Info, Tag, Wrench, FileText, Shield, Link, FileSearch } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-yaml';
@@ -86,9 +86,11 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file }) => {
     return (
       <div className="code-viewer empty">
         <div className="empty-state">
-          <div className="empty-icon">📁</div>
+          <div className="empty-icon">
+            <FileSearch size={42} strokeWidth={1.8} />
+          </div>
           <h2>Select a file to view</h2>
-          <p>Browse the file tree on the left to get started</p>
+          <p>No file is selected. Choose an item from the tree on the left.</p>
         </div>
       </div>
     );

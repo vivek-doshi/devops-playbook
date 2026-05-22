@@ -1,0 +1,186 @@
+# finops/prometheus/alertmanager-budget-config.yaml
+# Alertmanager configuration for routing FinOps budget and anomaly alerts.
+# Integrates with Slack, Microsoft Teams, and PagerDuty.
+#
+# Apply as a Secret:
+#   kubectl create secret generic alertmanager-finops \
+#     --from-file=alertmanager.yaml=finops/prometheus/alertmanager-budget-config.yaml \
+#     -n monitoring
+
+global:
+  resolve_timeout: 5m
+
+# ─── Notification templates ───────────────────────────────────────────────────
+templates:
+  - /etc/alertmanager/templates/finops.tmpl
+
+# ─── Routing ──────────────────────────────────────────────────────────────────
+route:
+  group_by: ["alertname", "cost_center", "namespace"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: "default-receiver"
+
+  routes:
+    # Emergency budget alerts — PagerDuty + Slack
+    - matchers:
+        - name: escalation
+          value: emergency
+      receiver: "pagerduty-emergency"
+      continue: true
+
+    - matchers:
+        - name: escalation
+          value: emergency
+      receiver: "slack-emergency"
+
+    # Critical budget alerts
+    - matchers:
+        - name: severity
+          value: critical
+        - name: type
+          value: budget
+      receiver: "slack-critical-budget"
+      continue: true
+
+    - matchers:
+        - name: severity
+          value: critical
+        - name: type
+          value: budget
+        - name: cost_center
+          value: data-science
+      receiver: "pagerduty-data-science"
+
+    # Warning budget alerts — Slack only
+    - matchers:
+        - name: severity
+          value: warning
+        - name: type
+          value: budget
+      receiver: "slack-warning-budget"
+
+    # Cost anomaly alerts
+    - matchers:
+        - name: type
+          value: cost-anomaly
+      receiver: "slack-anomaly"
+      continue: true
+
+    - matchers:
+        - name: severity
+          value: critical
+        - name: type
+          value: cost-anomaly
+      receiver: "pagerduty-platform"
+
+# ─── Receivers ────────────────────────────────────────────────────────────────
+receivers:
+  - name: "default-receiver"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-alerts"
+        title: "FinOps Alert: {{ .GroupLabels.alertname }}"
+        text: "{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}"
+        send_resolved: true
+
+  - name: "slack-warning-budget"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-budget-warnings"
+        title: "⚠️ Budget Warning: {{ .GroupLabels.cost_center }}"
+        color: "warning"
+        text: |
+          {{ range .Alerts }}
+          *Cost Center:* {{ .Labels.cost_center }}
+          *Severity:* {{ .Labels.severity }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.dashboard_url }}|View Dashboard>
+          {{ end }}
+        send_resolved: true
+
+  - name: "slack-critical-budget"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-budget-critical"
+        title: "🚨 Budget EXCEEDED: {{ .GroupLabels.cost_center }}"
+        color: "danger"
+        text: |
+          {{ range .Alerts }}
+          *Cost Center:* {{ .Labels.cost_center }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.runbook_url }}|Runbook> | <{{ .Annotations.dashboard_url }}|Dashboard>
+          {{ end }}
+        send_resolved: true
+
+  - name: "slack-emergency"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_PLATFORM}"
+        channel: "#platform-emergency"
+        title: "🔴 EMERGENCY: {{ .GroupLabels.cost_center }} — 120%+ Budget"
+        color: "danger"
+        text: |
+          @oncall EMERGENCY budget breach detected!
+          {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+        send_resolved: true
+
+  - name: "slack-anomaly"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL_FINOPS}"
+        channel: "#finops-anomalies"
+        title: "📊 Cost Anomaly: {{ .GroupLabels.namespace }}"
+        color: "warning"
+        text: |
+          {{ range .Alerts }}
+          *Namespace:* {{ .Labels.namespace }}
+          *Type:* {{ .Labels.anomaly_type }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.dashboard_url }}|Investigate>
+          {{ end }}
+        send_resolved: true
+
+  - name: "pagerduty-platform"
+    pagerduty_configs:
+      - routing_key: "${PAGERDUTY_INTEGRATION_KEY_PLATFORM}"
+        severity: "critical"
+        summary: "FinOps: {{ .GroupLabels.alertname }} — {{ .GroupLabels.namespace }}"
+        description: "{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}"
+        details:
+          cost_center: "{{ .GroupLabels.cost_center }}"
+          namespace: "{{ .GroupLabels.namespace }}"
+          runbook: "{{ (index .Alerts 0).Annotations.runbook_url }}"
+
+  - name: "pagerduty-emergency"
+    pagerduty_configs:
+      - routing_key: "${PAGERDUTY_INTEGRATION_KEY_PLATFORM}"
+        severity: "critical"
+        summary: "EMERGENCY Budget: {{ .GroupLabels.cost_center }} > 120%"
+        description: "{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}"
+
+  - name: "pagerduty-data-science"
+    pagerduty_configs:
+      - routing_key: "${PAGERDUTY_INTEGRATION_KEY_DATA_SCIENCE}"
+        severity: "critical"
+        summary: "FinOps Budget Alert: data-science {{ .GroupLabels.alertname }}"
+        description: "{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}"
+
+# ─── Inhibition rules ─────────────────────────────────────────────────────────
+inhibit_rules:
+  # Suppress warning when critical is already firing for the same cost center
+  - source_matchers:
+      - name: severity
+        value: critical
+    target_matchers:
+      - name: severity
+        value: warning
+    equal: ["cost_center", "alertname"]
+
+  # Suppress anomaly warning when critical anomaly is firing
+  - source_matchers:
+      - name: anomaly_type
+        value: critical-spike
+    target_matchers:
+      - name: anomaly_type
+        value: spike
+    equal: ["namespace"]
