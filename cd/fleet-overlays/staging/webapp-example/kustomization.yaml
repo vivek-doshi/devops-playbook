@@ -1,0 +1,15 @@
+# Example fleet overlay for the webapp Helm chart
+# This overlay is deployed to every cluster with environment: staging
+# by fleet-workload-applicationset.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../_base/webapp # <-- CHANGE THIS: point to your app base manifests path; differs by app repository layout.
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: webapp

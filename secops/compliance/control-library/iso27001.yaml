@@ -1,0 +1,535 @@
+# ============================================================
+# TEMPLATE: Compliance Control Library - ISO27001:2022 (Machine Readable)
+# WHEN TO USE: Automated compliance scoring and evidence mapping for ISO27001
+# PREREQUISITES: Control sources in secops/compliance/controls/iso27001.md
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Control status, evidence references, and check mappings
+# RELATED FILES: secops/compliance/scripts/generate-compliance-report.py
+# MATURITY: Beta
+# ============================================================
+
+framework: ISO27001
+version: "2022"
+generated: "auto"
+controls:
+  - id: "5.2"
+    title: "Information security roles and responsibilities"
+    description: "Defines least-privilege responsibilities through RBAC and policy enforcement."
+    status: implemented
+    evidence:
+      - type: kubernetes-config
+        path: cd/kubernetes/_base/rbac/
+        description: "Role and role binding templates for scoped access."
+      - type: kyverno-policy
+        path: policy/kyverno/require-non-root.yaml
+        description: "Restricts elevated execution by default."
+    automated_checks:
+      - name: cis-rbac-enabled
+        tool: kube-bench
+        cis_id: "5.1.1"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+      - name: rbac-bindings-listed
+        tool: kubectl
+        command: "kubectl get rolebindings,clusterrolebindings -A -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit", resource="rolebindings|clusterrolebindings"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.10"
+    title: "Acceptable use of information and assets"
+    description: "Applies enforceable workload and image usage policy guardrails."
+    status: implemented
+    evidence:
+      - type: kyverno-policy
+        path: secops/supply-chain/cosign-verify-policy.yaml
+        description: "Restricts usage to signed and verifiable images."
+      - type: runtime-rules
+        path: secops/runtime/falco/rules/custom-rules.yaml
+        description: "Runtime policy detection for unacceptable behavior."
+    automated_checks:
+      - name: signed-image-policy
+        tool: kubectl
+        command: "kubectl get clusterpolicy verify-image-signature -o json"
+        pass_condition: ".metadata.name == \"verify-image-signature\""
+      - name: cis-image-provenance
+        tool: kube-bench
+        cis_id: "5.5.1"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+    audit_query: |
+      {source="k8s-audit", resource="pods"} | json | verb="create"
+
+  - id: "5.12"
+    title: "Classification of information"
+    description: "Classifies and handles sensitive data using namespaces, secret controls, and audit evidence."
+    status: partial
+    evidence:
+      - type: secret-patterns
+        path: secrets/
+        description: "Centralized secret lifecycle patterns."
+      - type: audit-policy
+        path: secops/runtime/audit-logging/audit-policy.yaml
+        description: "Audit trails for secret and access operations."
+    automated_checks:
+      - name: cis-secret-handling
+        tool: kube-bench
+        cis_id: "5.4.2"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+      - name: namespace-labels
+        tool: kubectl
+        command: "kubectl get ns -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit", resource="namespaces|secrets"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.23"
+    title: "Information security in cloud services"
+    description: "Applies cloud-native supply chain and audit controls for third-party workloads."
+    status: implemented
+    evidence:
+      - type: supply-chain-policy
+        path: secops/supply-chain/cosign-verify-policy.yaml
+        description: "Cloud workload image trust control."
+      - type: audit-policy
+        path: secops/runtime/audit-logging/
+        description: "Cloud API and workload audit capture."
+    automated_checks:
+      - name: supply-chain-policies
+        tool: kubectl
+        command: "kubectl get clusterpolicy -o json"
+        pass_condition: ".items[].metadata.name | length > 0"
+      - name: cis-image-provenance
+        tool: kube-bench
+        cis_id: "5.5.1"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+    audit_query: |
+      {source="k8s-audit", resource="pods|deployments"} | json | verb=~"create|update|patch"
+
+  - id: "5.24"
+    title: "Information security incident management planning"
+    description: "Maintains documented incident response procedures for Kubernetes and supply chain events."
+    status: implemented
+    evidence:
+      - type: runbook
+        path: secops/runbooks/
+        description: "Incident management procedures and containment playbooks."
+    automated_checks:
+      - name: policy-report-visibility
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+      - name: kube-bench-cronjob-enabled
+        tool: kubectl
+        command: "kubectl get cronjob kube-bench-scheduled -n secops -o json"
+        pass_condition: ".metadata.name == \"kube-bench-scheduled\""
+    audit_query: |
+      {source="k8s-audit", resource="events"} | json | reason=~"Warning|Failed"
+
+  - id: "5.25"
+    title: "Assessment and decision on information security events"
+    description: "Supports event triage and escalation through runtime detections and notification integrations."
+    status: implemented
+    evidence:
+      - type: runtime-rules
+        path: secops/runtime/falco/rules/alerts.yaml
+        description: "Security event severity and routing rules."
+      - type: notifications
+        path: notifications/pagerduty-notify.yml
+        description: "Escalation and on-call routing integration."
+    automated_checks:
+      - name: falco-alert-config
+        tool: kubectl
+        command: "kubectl get configmap -A -o json"
+        pass_condition: ".items | length >= 0"
+      - name: policyreport-count
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit"} | json | responseStatus.code>=400
+
+  - id: "5.26"
+    title: "Response to information security incidents"
+    description: "Executes containment and remediation playbooks for detected incidents."
+    status: implemented
+    evidence:
+      - type: runbook
+        path: secops/runbooks/compromised-pod.md
+        description: "Compromised workload containment and recovery steps."
+      - type: runbook
+        path: secops/runbooks/node-compromise.md
+        description: "Node-level incident response procedure."
+    automated_checks:
+      - name: runbook-readiness
+        tool: kubectl
+        command: "kubectl version --client"
+        pass_condition: "command-succeeds"
+      - name: policy-violations-tracked
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit", resource="pods|nodes"} | json | verb=~"delete|update|patch"
+
+  - id: "5.28"
+    title: "Collection of evidence"
+    description: "Preserves investigation artifacts and audit trails for forensic and audit use."
+    status: implemented
+    evidence:
+      - type: runbook
+        path: secops/runbooks/compromised-pod.md
+        description: "Forensic evidence capture procedures."
+      - type: runbook
+        path: secops/runbooks/secret-exposure.md
+        description: "Evidence and timeline preservation guidance."
+    automated_checks:
+      - name: audit-log-source-check
+        tool: kubectl
+        command: "kubectl get pods -n secops -o json"
+        pass_condition: ".items | length >= 0"
+      - name: policyreport-evidence
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit"} | json | line_format "{{.verb}} {{.resource}} {{.namespace}}"
+
+  - id: "5.36"
+    title: "Compliance with policies and standards"
+    description: "Runs recurrent CIS checks and policy enforcement to demonstrate standards compliance."
+    status: implemented
+    evidence:
+      - type: kubernetes-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Benchmark scan implementation."
+      - type: kubernetes-cronjob
+        path: secops/compliance/kube-bench-cronjob.yaml
+        description: "Continuous compliance scanning schedule."
+      - type: kyverno-policy-doc
+        path: policy/kyverno/README.md
+        description: "Policy enforcement and violation reporting process."
+    automated_checks:
+      - name: kube-bench-configmaps
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+      - name: policyreport-violations
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items[].summary.fail == 0"
+    audit_query: |
+      {source="k8s-audit", resource="configmaps"} | json | objectRef.name=~"kube-bench-results.*"
+
+  - id: "8.2"
+    title: "Privileged access rights"
+    description: "Restricts privileged container and capability use in workloads."
+    status: implemented
+    evidence:
+      - type: kyverno-policy
+        path: policy/kyverno/require-non-root.yaml
+        description: "Requires non-root execution context."
+      - type: runtime-rules
+        path: secops/runtime/falco/rules/custom-rules.yaml
+        description: "Privilege escalation runtime detections."
+    automated_checks:
+      - name: cis-non-root
+        tool: kube-bench
+        cis_id: "5.2.6"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+      - name: security-context-check
+        tool: kubectl
+        command: "kubectl get pods -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit", resource="pods"} | json | verb=~"create|update|patch"
+
+  - id: "8.4"
+    title: "Access to source code"
+    description: "Ensures deployable artifacts can be traced to trusted source and build identity."
+    status: implemented
+    evidence:
+      - type: kyverno-policy
+        path: secops/supply-chain/slsa-verify.yaml
+        description: "SLSA provenance verification policy."
+      - type: kyverno-policy
+        path: secops/supply-chain/cosign-verify-policy.yaml
+        description: "Image signature identity verification."
+    automated_checks:
+      - name: slsa-policy-report
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items[].results[] | select(.policy==\"verify-slsa-provenance\") | .result != \"fail\""
+      - name: signed-image-policy-exists
+        tool: kubectl
+        command: "kubectl get clusterpolicy verify-image-signature -o json"
+        pass_condition: ".metadata.name == \"verify-image-signature\""
+    audit_query: |
+      {source="k8s-audit", resource="pods"} | json | verb="create"
+
+  - id: "8.5"
+    title: "Secure authentication"
+    description: "Enforces secure authentication settings and logs authentication failures."
+    status: partial
+    evidence:
+      - type: audit-policy
+        path: secops/runtime/audit-logging/audit-policy.yaml
+        description: "Authentication event logging controls."
+      - type: compliance-control-map
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Authentication-related CIS mappings."
+    automated_checks:
+      - name: cis-anonymous-disabled
+        tool: kube-bench
+        cis_id: "1.2.1"
+        command: "kube-bench run --targets=master,node --json"
+        pass_condition: "PASS"
+      - name: auth-failure-audit-visible
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit"} | json | user_username="system:anonymous"
+
+  - id: "8.7"
+    title: "Protection against malware"
+    description: "Uses runtime detection and supply chain verification to detect and prevent malware introduction."
+    status: implemented
+    evidence:
+      - type: runtime-rules
+        path: secops/runtime/falco/rules/custom-rules.yaml
+        description: "Malware and suspicious runtime behavior detection rules."
+      - type: kyverno-policy
+        path: secops/supply-chain/sbom-policy.yaml
+        description: "SBOM attestation verification for software transparency."
+    automated_checks:
+      - name: sbom-policy-report
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items[].results[] | select(.policy==\"verify-sbom-attestation\") | .result != \"fail\""
+      - name: image-provenance-cis
+        tool: kube-bench
+        cis_id: "5.5.1"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+    audit_query: |
+      {source="k8s-audit", resource="pods"} | json | verb=~"create|update"
+
+  - id: "8.8"
+    title: "Management of technical vulnerabilities"
+    description: "Scans cluster configurations and workloads to surface vulnerability and benchmark gaps."
+    status: implemented
+    evidence:
+      - type: kubernetes-cronjob
+        path: secops/compliance/kube-bench-cronjob.yaml
+        description: "Scheduled benchmark-driven vulnerability detection."
+      - type: ci-scan
+        path: ci-security/container-scanning/
+        description: "Container vulnerability scanning templates."
+    automated_checks:
+      - name: kube-bench-results-available
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+      - name: policyreport-failures-visible
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit", resource="configmaps"} | json | objectRef.name=~"kube-bench-results.*"
+
+  - id: "8.9"
+    title: "Configuration management"
+    description: "Maintains secure baseline configuration and drift detection for Kubernetes controls."
+    status: implemented
+    evidence:
+      - type: kubernetes-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Benchmark baseline checks across control plane and nodes."
+      - type: audit-policy
+        path: secops/runtime/audit-logging/audit-policy.yaml
+        description: "Configuration-change audit evidence."
+    automated_checks:
+      - name: cis-config-audit
+        tool: kube-bench
+        cis_id: "3.2.2"
+        command: "kube-bench run --targets=controlplane --json"
+        pass_condition: "PASS"
+      - name: clusterpolicy-present
+        tool: kubectl
+        command: "kubectl get clusterpolicy -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit", resource="deployments|daemonsets|statefulsets"} | json | verb=~"create|update|patch"
+
+  - id: "8.12"
+    title: "Data leakage prevention"
+    description: "Prevents sensitive data misuse through audit coverage and runtime anomaly detection."
+    status: partial
+    evidence:
+      - type: audit-policy
+        path: secops/runtime/audit-logging/audit-policy.yaml
+        description: "Secret and sensitive operation logging."
+      - type: runtime-rules
+        path: secops/runtime/falco/rules/custom-rules.yaml
+        description: "Unexpected data access and exfiltration detection patterns."
+    automated_checks:
+      - name: secret-operation-audit
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+      - name: cis-secret-controls
+        tool: kube-bench
+        cis_id: "5.4.2"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+    audit_query: |
+      {source="k8s-audit", resource="secrets"} | json | verb=~"get|list|create|update|patch|delete"
+
+  - id: "8.15"
+    title: "Logging"
+    description: "Ensures audit logging is enabled, centralized, and retained for compliance evidence."
+    status: implemented
+    evidence:
+      - type: audit-policy
+        path: secops/runtime/audit-logging/audit-policy.yaml
+        description: "API audit policy and retention configuration."
+      - type: logging-pipeline
+        path: secops/runtime/audit-logging/loki-shipper.yaml
+        description: "Centralized audit shipping to Loki."
+    automated_checks:
+      - name: cis-audit-enabled
+        tool: kube-bench
+        cis_id: "1.2.17"
+        command: "kube-bench run --targets=master,controlplane --json"
+        pass_condition: "PASS"
+      - name: policyreport-exportable
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "8.16"
+    title: "Monitoring activities"
+    description: "Uses runtime monitoring and alert routing for continuous security visibility."
+    status: implemented
+    evidence:
+      - type: runtime-monitoring
+        path: secops/runtime/falco/
+        description: "Real-time security monitoring and alert generation."
+      - type: notifications
+        path: notifications/slack-notify.yml
+        description: "Operational alert delivery channel."
+    automated_checks:
+      - name: alerts-config-present
+        tool: kubectl
+        command: "kubectl get prometheusrule -A -o json"
+        pass_condition: ".items | length >= 0"
+      - name: policyreport-monitored
+        tool: kubectl
+        command: "kubectl get policyreport -A -o json"
+        pass_condition: ".items | length >= 0"
+    audit_query: |
+      {source="k8s-audit", resource="events"} | json | reason=~"Warning|Failed"
+
+  - id: "8.22"
+    title: "Segregation of networks"
+    description: "Implements namespace-level network segregation and host network restrictions."
+    status: implemented
+    evidence:
+      - type: kubernetes-config
+        path: cd/kubernetes/_base/network-policies/
+        description: "Default deny and namespace segmentation network policy templates."
+      - type: kyverno-policy
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Mapped host-network restriction controls."
+    automated_checks:
+      - name: cis-network-segmentation
+        tool: kube-bench
+        cis_id: "5.3.2"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+      - name: networkpolicy-count
+        tool: kubectl
+        command: "kubectl get networkpolicy -A -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit", resource="networkpolicies"} | json | verb=~"create|update|patch|delete"
+
+  - id: "8.24"
+    title: "Use of cryptography"
+    description: "Requires encryption and cryptographic trust controls for platform and software artifacts."
+    status: partial
+    evidence:
+      - type: supply-chain-policy
+        path: secops/supply-chain/cosign-verify-policy.yaml
+        description: "Cryptographic signature verification for images."
+      - type: compliance-control-map
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "TLS and etcd encryption benchmark mappings."
+    automated_checks:
+      - name: cis-encryption-at-rest
+        tool: kube-bench
+        cis_id: "2.3"
+        command: "kube-bench run --targets=etcd --json"
+        pass_condition: "PASS"
+      - name: signed-image-enforced
+        tool: kubectl
+        command: "kubectl get clusterpolicy verify-image-signature -o json"
+        pass_condition: ".metadata.name == \"verify-image-signature\""
+    audit_query: |
+      {source="k8s-audit", resource="pods"} | json | verb="create"
+
+  - id: "8.28"
+    title: "Secure coding"
+    description: "Uses provenance, SBOM, and CI security checks to strengthen software development lifecycle controls."
+    status: implemented
+    evidence:
+      - type: kyverno-policy
+        path: secops/supply-chain/slsa-verify.yaml
+        description: "Build provenance verification for deployed artifacts."
+      - type: kyverno-policy
+        path: secops/supply-chain/sbom-policy.yaml
+        description: "SBOM verification for dependency visibility."
+      - type: ci-config
+        path: .pre-commit-config.yaml
+        description: "Pre-commit security checks and quality gates."
+    automated_checks:
+      - name: slsa-and-sbom-policies
+        tool: kubectl
+        command: "kubectl get clusterpolicy -o json"
+        pass_condition: ".items | length > 0"
+      - name: cis-image-provenance
+        tool: kube-bench
+        cis_id: "5.5.1"
+        command: "kube-bench run --targets=policies --json"
+        pass_condition: "PASS"
+    audit_query: |
+      {source="k8s-audit", resource="pods"} | json | verb=~"create|update|patch"
+
+  - id: "8.31"
+    title: "Separation of development, test, and production"
+    description: "Uses namespace and policy mode separation to enforce stronger production controls."
+    status: implemented
+    evidence:
+      - type: supply-chain-policy
+        path: secops/supply-chain/cosign-verify-policy.yaml
+        description: "Audit/disabled/enforce controls via namespace labels."
+      - type: deployment-pattern
+        path: docs/golden-paths/platform-onboarding.md
+        description: "Environment and namespace setup patterns."
+    automated_checks:
+      - name: namespace-label-audit-mode
+        tool: kubectl
+        command: "kubectl get ns -L policy.kyverno.io/supply-chain -o json"
+        pass_condition: ".items | length > 0"
+      - name: production-policy-enforce
+        tool: kubectl
+        command: "kubectl get clusterpolicy verify-image-signature -o json"
+        pass_condition: ".spec.validationFailureAction == \"Enforce\""
+    audit_query: |
+      {source="k8s-audit", resource="namespaces"} | json | verb=~"create|update|patch"

@@ -1,0 +1,161 @@
+# ============================================================
+# TEMPLATE: GitHub Actions - Reusable Supply Chain Security
+# WHEN TO USE: Call after Docker build/push to sign image and attach attestations
+# PREREQUISITES: Image already pushed to registry and OIDC federation configured
+# SECRETS NEEDED: registry-token (for registry login if required)
+# WHAT TO CHANGE: Inputs when calling this workflow and identity regex defaults
+# RELATED FILES: ci/github-actions/_shared/reusable-docker-build.yml
+# MATURITY: Stable
+# ============================================================
+
+name: Reusable Supply Chain Security
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        description: Repository/image name, matching reusable-docker-build input.
+        required: true
+        type: string
+      image-tag:
+        description: Immutable tag or digest selector to attest, matching caller convention.
+        required: true
+        type: string
+      registry:
+        description: OCI registry hostname.
+        required: false
+        type: string
+        default: ghcr.io
+      certificate-identity-regexp:
+        description: Expected GitHub workflow identity pattern for keyless verification.
+        required: false
+        type: string
+        default: "https://github.com/.*/.github/workflows/.*"
+      certificate-oidc-issuer:
+        description: Expected OIDC issuer for keyless certificates.
+        required: false
+        type: string
+        default: "https://token.actions.githubusercontent.com"
+    secrets:
+      registry-token:
+        required: true
+
+env:
+  IMAGE_REF: ${{ inputs.registry }}/${{ inputs.image-name }}:${{ inputs.image-tag }}
+
+jobs:
+  sign-image:
+    name: sign-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2 # <-- UPDATE QUARTERLY
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.8.2 # <-- UPDATE QUARTERLY
+
+      - name: Log in to registry
+        uses: docker/login-action@v3.3.0 # <-- UPDATE QUARTERLY
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.registry-token }}
+
+      - name: Sign image with keyless OIDC and Rekor transparency log
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          # Keyless signing means no private key is stored anywhere; a short-lived cert
+          # is minted from this workflow's OIDC identity and recorded in Rekor.
+          cosign sign --yes "${IMAGE_REF}"
+
+      - name: Verify signature as CI self-check
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          # Risk note: bare `cosign verify <image>` can trust unexpected identities;
+          # always pin expected identity and issuer to prevent confused-deputy trust.
+          cosign verify \
+            --certificate-identity-regexp "${{ inputs.certificate-identity-regexp }}" \
+            --certificate-oidc-issuer "${{ inputs.certificate-oidc-issuer }}" \
+            "${IMAGE_REF}"
+
+  generate-sbom:
+    name: generate-sbom
+    needs: sign-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2 # <-- UPDATE QUARTERLY
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.8.2 # <-- UPDATE QUARTERLY
+
+      - name: Generate SBOM in SPDX-JSON format
+        uses: anchore/sbom-action@v0.17.1 # <-- UPDATE QUARTERLY
+        with:
+          image: ${{ env.IMAGE_REF }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload raw SBOM artifact
+        uses: actions/upload-artifact@v4.4.3 # <-- UPDATE QUARTERLY
+        with:
+          name: sbom-${{ github.run_id }}
+          path: sbom.spdx.json
+
+      - name: Attach SBOM attestation with cosign
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          # SPDX-JSON is used instead of CycloneDX because Kyverno SBOM verification
+          # in secops/supply-chain/sbom-policy.yaml expects predicate type https://spdx.dev/Document.
+          cosign attest --yes \
+            --predicate sbom.spdx.json \
+            --type spdx \
+            "${IMAGE_REF}"
+
+  generate-slsa-provenance:
+    name: generate-slsa-provenance
+    needs: generate-sbom
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2 # <-- UPDATE QUARTERLY
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.8.2 # <-- UPDATE QUARTERLY
+
+      - name: Generate SLSA provenance predicate
+        id: slsa-generator
+        uses: slsa-framework/slsa-github-generator/actions/generator@3a9d8b6a5f1f72a806d4dc7b8d47f8f8f9ab2c10 # <-- UPDATE QUARTERLY
+        with:
+          base64-subjects: "${{ env.IMAGE_REF }}"
+          upload-assets: false
+
+      - name: Write provenance to file
+        run: |
+          echo '${{ steps.slsa-generator.outputs.provenance }}' > provenance.intoto.jsonl
+
+      - name: Attach SLSA provenance attestation
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          # Supply chain tools must be pinned to immutable SHAs to prevent workflow drift
+          # and dependency substitution attacks from floating tags.
+          cosign attest --yes \
+            --predicate provenance.intoto.jsonl \
+            --type slsaprovenance \
+            "${IMAGE_REF}"

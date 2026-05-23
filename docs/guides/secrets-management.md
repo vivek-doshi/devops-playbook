@@ -3,6 +3,17 @@
 
 A practical guide to managing secrets across CI/CD pipelines and Kubernetes.
 
+## Secret implementation patterns
+
+| Task | Go to |
+|---|---|
+| Store and sync a secret to Kubernetes | [secrets/README.md](../../secrets/README.md) |
+| Full lifecycle (provision -> rotate -> offboard) | [secrets/guides/secret-lifecycle.md](../../secrets/guides/secret-lifecycle.md) |
+| Emergency rotation | [secrets/guides/emergency-rotation.md](../../secrets/guides/emergency-rotation.md) |
+| Decommission a service's secrets | [secrets/guides/secret-offboarding.md](../../secrets/guides/secret-offboarding.md) |
+| Terraform-managed rotation (alternative) | [ci-security/secret-rotation/](../../ci-security/secret-rotation/) |
+| OIDC federation for CI/CD | [docs/guides/github-actions-oidc.md](github-actions-oidc.md) |
+
 <!-- Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 ---
 

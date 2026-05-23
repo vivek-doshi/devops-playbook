@@ -1,0 +1,68 @@
+# ============================================================
+# TEMPLATE: GitHub Actions - Reusable Supply Chain Verify
+# WHEN TO USE: Pull request check to verify a referenced image is already signed
+# PREREQUISITES: OIDC issuer and expected certificate identity pattern are known
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Inputs passed from caller pipeline
+# RELATED FILES: secops/supply-chain/cosign-verify-policy.yaml
+# MATURITY: Stable
+# ============================================================
+
+name: Reusable Supply Chain Verify
+
+on:
+  workflow_call:
+    inputs:
+      image-ref:
+        description: Fully qualified image reference to verify.
+        required: true
+        type: string
+      certificate-identity-regexp:
+        description: Expected identity regex in cosign certificate.
+        required: true
+        type: string
+      certificate-oidc-issuer:
+        description: Expected OIDC issuer in cosign certificate.
+        required: false
+        type: string
+        default: https://token.actions.githubusercontent.com
+      soft-fail:
+        description: When true, keep PR green while still surfacing verification failure.
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  verify-image-signature:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.8.2 # <-- UPDATE QUARTERLY
+
+      - name: Verify image signature
+        id: verify
+        continue-on-error: true
+        run: |
+          # CI verification is a shift-left check; Kyverno admission policies are the
+          # enforcement gate at deploy time and should still remain enabled.
+          # Risk note: never run bare `cosign verify <image>` because it does not restrict
+          # trusted identity scope without explicit certificate checks.
+          cosign verify \
+            --certificate-identity-regexp "${{ inputs.certificate-identity-regexp }}" \
+            --certificate-oidc-issuer "${{ inputs.certificate-oidc-issuer }}" \
+            "${{ inputs.image-ref }}"
+
+      - name: Fail if signature verification failed
+        if: steps.verify.outcome == 'failure' && !inputs.soft-fail
+        run: |
+          echo "Image signature verification failed for ${{ inputs.image-ref }}"
+          exit 1
+
+      - name: Audit-only warning when soft-fail is enabled
+        if: steps.verify.outcome == 'failure' && inputs.soft-fail
+        run: |
+          echo "[AUDIT MODE] Signature verification failed for ${{ inputs.image-ref }}"
+          echo "Enable hard fail by setting soft-fail to false in the caller workflow."

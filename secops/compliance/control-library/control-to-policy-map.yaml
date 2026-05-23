@@ -1,0 +1,111 @@
+# ============================================================
+# TEMPLATE: Compliance Crosswalk - Control To Policy Map
+# WHEN TO USE: Authoritative mapping for secops.requirements annotations
+# PREREQUISITES: policy/kyverno and secops/supply-chain policy inventory
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Framework control references per policy
+# RELATED FILES: secops/supply-chain/cosign-verify-policy.yaml
+# MATURITY: Beta
+# ============================================================
+
+version: 1
+policies:
+  - path: policy/kyverno/disallow-latest-tag.yaml
+    name: disallow-latest-tag
+    satisfies:
+      - framework: SOC2
+        controls: ["CC6.1", "CC8.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.5.1"]
+      - framework: ISO27001
+        controls: ["5.10", "8.28"]
+
+  - path: policy/kyverno/enforce-finops-labels.yaml
+    name: enforce-finops-labels
+    satisfies:
+      - framework: SOC2
+        controls: ["CC8.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.7.1"]
+      - framework: ISO27001
+        controls: ["5.12", "8.9"]
+
+  - path: policy/kyverno/require-labels.yaml
+    name: require-labels
+    satisfies:
+      - framework: SOC2
+        controls: ["CC8.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.7.1"]
+      - framework: ISO27001
+        controls: ["5.12", "8.9"]
+
+  - path: policy/kyverno/require-liveness-readiness.yaml
+    name: require-liveness-readiness
+    satisfies:
+      - framework: SOC2
+        controls: ["CC7.1", "CC7.2"]
+      - framework: CIS-Kubernetes
+        controls: ["5.7.3"]
+      - framework: ISO27001
+        controls: ["8.9", "8.16"]
+
+  - path: policy/kyverno/require-non-root.yaml
+    name: require-non-root
+    satisfies:
+      - framework: SOC2
+        controls: ["CC6.1", "CC6.8"]
+      - framework: CIS-Kubernetes
+        controls: ["5.2.6", "5.7.3"]
+      - framework: ISO27001
+        controls: ["8.2", "8.7"]
+
+  - path: policy/kyverno/require-readonly-filesystem.yaml
+    name: require-readonly-filesystem
+    satisfies:
+      - framework: SOC2
+        controls: ["CC6.8", "CC7.2"]
+      - framework: CIS-Kubernetes
+        controls: ["5.2.5", "5.7.3"]
+      - framework: ISO27001
+        controls: ["8.2", "8.7"]
+
+  - path: policy/kyverno/require-resource-limits.yaml
+    name: require-resource-limits
+    satisfies:
+      - framework: SOC2
+        controls: ["CC7.1", "CC8.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.7.3"]
+      - framework: ISO27001
+        controls: ["8.9", "8.16"]
+
+  - path: secops/supply-chain/cosign-verify-policy.yaml
+    name: verify-image-signature
+    satisfies:
+      - framework: SOC2
+        controls: ["CC6.8", "CC8.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.5.1"]
+      - framework: ISO27001
+        controls: ["5.23", "8.4", "8.24", "8.28"]
+
+  - path: secops/supply-chain/sbom-policy.yaml
+    name: verify-sbom-attestation
+    satisfies:
+      - framework: SOC2
+        controls: ["CC6.8", "CC8.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.5.1"]
+      - framework: ISO27001
+        controls: ["8.7", "8.28"]
+
+  - path: secops/supply-chain/slsa-verify.yaml
+    name: verify-slsa-provenance
+    satisfies:
+      - framework: SOC2
+        controls: ["CC6.8", "CC8.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.5.1"]
+      - framework: ISO27001
+        controls: ["8.4", "8.28"]
