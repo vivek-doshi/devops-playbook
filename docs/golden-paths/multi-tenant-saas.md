@@ -1,4 +1,4 @@
-# Golden Path — Multi-Tenant SaaS
+﻿# Golden Path — Multi-Tenant SaaS
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -12,8 +12,8 @@
 - You need billing instrumentation to meter per-tenant usage
 
 Not the right path? See:
-- [kubernetes-microservice.md](kubernetes-microservice.md) — single-tenant microservice without isolation requirements
-- [database-migrations.md](database-migrations.md) — schema migration workflow used by this path for per-tenant schemas
+- [Kubernetes Microservice](kubernetes-microservice.md) — single-tenant microservice without isolation requirements
+- [Database Migrations](database-migrations.md) — schema migration workflow used by this path for per-tenant schemas
 
 ---
 
@@ -206,7 +206,7 @@ kubectl apply -f cd/kubernetes/_patterns/db-migration-job.yaml \
 
 The migration Job reads the tenant's database credentials from the External Secret created in Step 5.
 
-Cross-link: [database-migrations.md](database-migrations.md) — full migration workflow including expand/contract pattern, CI integration, and rollback procedures.
+Cross-link: [Database Migrations](database-migrations.md) — full migration workflow including expand/contract pattern, CI integration, and rollback procedures.
 
 > **Scale limit:** Schema-per-tenant on a shared database cluster scales to approximately 1,000 tenants before connection pool exhaustion becomes a concern. At that scale, deploy [PgBouncer](https://www.pgbouncer.org/) or an equivalent connection pooler in front of the database.
 
@@ -316,7 +316,7 @@ These rules are enforced by automation. Violations are blocked at the cluster le
 
 ## Related paths and guides
 
-- [kubernetes-microservice.md](kubernetes-microservice.md) — base path this extends; use for single-tenant services
-- [database-migrations.md](database-migrations.md) — per-tenant schema creation and migration workflow
-- [platform-onboarding.md](platform-onboarding.md) — cluster and namespace foundations
+- [Kubernetes Microservice](kubernetes-microservice.md) — base path this extends; use for single-tenant services
+- [Database Migrations](database-migrations.md) — per-tenant schema creation and migration workflow
+- [Platform Onboarding](platform-onboarding.md) — cluster and namespace foundations
 - [docs/guides/secrets-management.md](../guides/secrets-management.md) — full guide to per-tenant secret stores

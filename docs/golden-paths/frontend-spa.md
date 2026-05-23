@@ -1,4 +1,4 @@
-# Golden Path — Frontend SPA
+﻿# Golden Path — Frontend SPA
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -11,8 +11,8 @@
 - You want CI/CD, Lighthouse quality gates, and security scanning by default
 
 Not the right path? See:
-- [kubernetes-microservice.md](kubernetes-microservice.md) — the API your SPA talks to
-- [serverless-app.md](serverless-app.md) — BFF or lightweight API backend
+- [Kubernetes Microservice](kubernetes-microservice.md) — the API your SPA talks to
+- [Serverless App](serverless-app.md) — BFF or lightweight API backend
 
 ---
 

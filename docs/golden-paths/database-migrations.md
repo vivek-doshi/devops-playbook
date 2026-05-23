@@ -1,4 +1,4 @@
-# Golden Path — Database Migrations
+﻿# Golden Path — Database Migrations
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -11,8 +11,8 @@
 - You need a CI-integrated migration workflow (migrations run before the Deployment rollout)
 
 Not the right path? See:
-- [kubernetes-microservice.md](kubernetes-microservice.md) Step 9 — if you need the full microservice deployment workflow that references this path
-- [data-pipeline.md](data-pipeline.md) Step 8 — if your migration is part of a data pipeline job
+- [Kubernetes Microservice](kubernetes-microservice.md) Step 9 — if you need the full microservice deployment workflow that references this path
+- [Data Pipeline](data-pipeline.md) Step 8 — if your migration is part of a data pipeline job
 
 ---
 
@@ -304,7 +304,7 @@ Reference: [`backup/velero/namespace-backup.yaml`](../../backup/velero/namespace
 
 ## Related paths and guides
 
-- [kubernetes-microservice.md](kubernetes-microservice.md) — Step 9 references this path for schema migration guidance
-- [data-pipeline.md](data-pipeline.md) — Step 8 references this path for pipeline-triggered migrations
+- [Kubernetes Microservice](kubernetes-microservice.md) — Step 9 references this path for schema migration guidance
+- [Data Pipeline](data-pipeline.md) — Step 8 references this path for pipeline-triggered migrations
 - [docs/guides/database-migrations.md](../guides/database-migrations.md) — the underlying reference guide; this golden path is the workflow wrapper
-- [multi-tenant-saas.md](multi-tenant-saas.md) — uses this path for per-tenant schema isolation and migrations
+- [Multi-Tenant SaaS](multi-tenant-saas.md) — uses this path for per-tenant schema isolation and migrations

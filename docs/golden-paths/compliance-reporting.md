@@ -10,7 +10,7 @@
 - You are preparing for an audit, customer questionnaire, or internal governance review.
 - You need repeatable, machine-generated evidence rather than ad hoc screenshots.
 
-Not the right path? See [platform-onboarding.md](platform-onboarding.md) Step 7 if you only need Kyverno installation without full compliance reporting automation.
+Not the right path? See [Platform Onboarding](platform-onboarding.md) Step 7 if you only need Kyverno installation without full compliance reporting automation.
 
 ---
 

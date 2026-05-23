@@ -1,4 +1,4 @@
-# Golden Path — Serverless App
+﻿# Golden Path — Serverless App
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -11,8 +11,8 @@
 - Deployment target is AWS Lambda or GCP Cloud Run
 
 Not the right path? See:
-- [kubernetes-microservice.md](kubernetes-microservice.md) — long-running containers on Kubernetes
-- [data-pipeline.md](data-pipeline.md) — heavy batch jobs that need more compute
+- [Kubernetes Microservice](kubernetes-microservice.md) — long-running containers on Kubernetes
+- [Data Pipeline](data-pipeline.md) — heavy batch jobs that need more compute
 
 ---
 

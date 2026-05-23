@@ -1,4 +1,4 @@
-# Golden Path — Data Pipeline
+﻿# Golden Path — Data Pipeline
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -11,8 +11,8 @@
 - Your workload processes data in bulk (ETL, reports, aggregations, ML training)
 
 Not the right path? See:
-- [kubernetes-microservice.md](kubernetes-microservice.md) — long-running services that handle real-time requests
-- [serverless-app.md](serverless-app.md) — lightweight event-driven functions (< 15 min runtime)
+- [Kubernetes Microservice](kubernetes-microservice.md) — long-running services that handle real-time requests
+- [Serverless App](serverless-app.md) — lightweight event-driven functions (< 15 min runtime)
 
 ---
 
