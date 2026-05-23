@@ -3,7 +3,7 @@
 Generated from current workspace structure.
 
 - Root: d:/projects/cicd-reference
-- Generated: 2026-05-23 19:09:40
+- Generated: 2026-05-23 19:39:59
 - Exclusions: .ai/, .git/, .github/prompts/, .github/skills/, .kiro/, website/
 
 ```text
@@ -230,6 +230,32 @@ Generated from current workspace structure.
 │   │   │   └── Jenkinsfile
 │   │   └── python
 │   │       └── Jenkinsfile
+│   └── README.md
+├── ci-security
+│   ├── container-scanning
+│   │   ├── grype-scan.yml
+│   │   └── trivy-scan.yml
+│   ├── dependency-audit
+│   │   ├── npm-audit.yml
+│   │   ├── nuget-audit.yml
+│   │   └── pip-audit.yml
+│   ├── iac-scanning
+│   │   ├── checkov.yml
+│   │   ├── README.md
+│   │   └── tfsec.yml
+│   ├── sast
+│   │   ├── semgrep.yml
+│   │   ├── snyk.yml
+│   │   └── sonarqube.yml
+│   ├── secret-detection
+│   │   ├── gitleaks.yml
+│   │   └── trufflehog.yml
+│   ├── secret-rotation
+│   │   ├── aws-rotation-lambda.py
+│   │   ├── aws-rotation-lambda.tf
+│   │   ├── azure-keyvault-rotation.tf
+│   │   ├── external-secrets-operator.yaml
+│   │   └── README.md
 │   └── README.md
 ├── compose
 │   ├── _templates
@@ -528,32 +554,6 @@ Generated from current workspace structure.
 │       ├── aws-rotation.yml
 │       ├── azure-rotation.yml
 │       └── gcp-rotation.yml
-├── security
-│   ├── container-scanning
-│   │   ├── grype-scan.yml
-│   │   └── trivy-scan.yml
-│   ├── dependency-audit
-│   │   ├── npm-audit.yml
-│   │   ├── nuget-audit.yml
-│   │   └── pip-audit.yml
-│   ├── iac-scanning
-│   │   ├── checkov.yml
-│   │   ├── README.md
-│   │   └── tfsec.yml
-│   ├── sast
-│   │   ├── semgrep.yml
-│   │   ├── snyk.yml
-│   │   └── sonarqube.yml
-│   ├── secret-detection
-│   │   ├── gitleaks.yml
-│   │   └── trufflehog.yml
-│   ├── secret-rotation
-│   │   ├── aws-rotation-lambda.py
-│   │   ├── aws-rotation-lambda.tf
-│   │   ├── azure-keyvault-rotation.tf
-│   │   ├── external-secrets-operator.yaml
-│   │   └── README.md
-│   └── README.md
 ├── terraform
 │   ├── _bootstrap
 │   │   ├── aws
