@@ -47,3 +47,26 @@ GitOps treats the Git repository as the single source of truth for cluster state
 
 - Config repo (GitOps repo) should be separate from app code repo to keep concerns clean.
 - Secrets must never be committed in plaintext — use Sealed Secrets, External Secrets Operator, or Vault Agent Injector.
+
+---
+
+## Multi-cluster fleet extension (2026)
+
+The repository now includes a fleet extension based on:
+
+- `cd/gitops/argocd/fleet/fleet-applicationset.yaml`
+- `cd/gitops/argocd/fleet/cluster-registry.yaml`
+
+This extends the existing ArgoCD ApplicationSet strategy by using a list generator driven by a human-maintained cluster registry file in Git.
+
+### Alternatives considered
+
+- **Cluster API + GitOps**: rejected for starter repository complexity and higher operational overhead.
+- **ArgoCD cluster-config generator**: rejected due to tighter coupling between cluster provisioning internals and ArgoCD generator behavior.
+- **Flux multi-tenancy**: viable technically, but inconsistent with the ArgoCD default established in this ADR.
+
+### Consequences
+
+- Cluster registry remains human-maintained, which introduces operational toil beyond ~20 clusters.
+- The registry is explicit and auditable in Git, which is preferred at the current target scale.
+- Fleet behavior remains consistent with GitOps principles: declarative, versioned, and continuously reconciled.

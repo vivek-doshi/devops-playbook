@@ -1,0 +1,87 @@
+# ============================================================
+# TEMPLATE: Kyverno - Fleet Policy Propagation Validation
+# WHEN TO USE: Validate fleet label and secret-sharing guardrails across clusters
+# PREREQUISITES: Deployed to every cluster by fleet-applicationset.yaml
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Excluded namespaces and label keys if your conventions differ
+# RELATED FILES: cd/gitops/argocd/fleet/fleet-applicationset.yaml
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: fleet-policy-propagation
+  annotations:
+    policies.kyverno.io/title: Fleet Policy Propagation Validation
+    policies.kyverno.io/category: Fleet Governance
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Namespace,Deployment,Secret
+    policies.kyverno.io/minversion: "1.10.0"
+    secops.requirements: "CC6.1, CC7.1, 5.2, 5.36, 8.9"
+spec:
+  validationFailureAction: Audit
+  background: true
+  # These rules are audit-only because they validate fleet management tool behavior, not user workloads.
+  # Failures indicate an ArgoCD configuration problem, not a developer error.
+  rules:
+    - name: require-fleet-namespace-labels
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+      exclude:
+        any:
+          - resources:
+              names:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - kyverno
+                - argocd
+      validate:
+        message: "Fleet namespaces must include fleet.argocd.io/cluster and environment labels."
+        pattern:
+          metadata:
+            labels:
+              fleet.argocd.io/cluster: "?*"
+              environment: "?*"
+
+    - name: require-fleet-workload-labels
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - argocd
+                - kyverno
+                - monitoring
+      validate:
+        message: "Deployments in fleet-managed namespaces should include fleet.argocd.io/app label."
+        pattern:
+          metadata:
+            labels:
+              fleet.argocd.io/app: "?*"
+
+    - name: deny-cross-cluster-secrets
+      match:
+        any:
+          - resources:
+              kinds:
+                - Secret
+      validate:
+        message: "Cross-cluster shared secret pattern is not allowed; remove label fleet.io/shared=true."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.metadata.labels.\"fleet.io/shared\" || '' }}"
+                operator: Equals
+                value: "true"

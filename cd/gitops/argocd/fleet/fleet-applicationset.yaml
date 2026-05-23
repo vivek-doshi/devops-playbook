@@ -1,0 +1,107 @@
+# ============================================================
+# TEMPLATE: ArgoCD Fleet - Platform Component ApplicationSet
+# WHEN TO USE: Propagate shared platform components to all registered clusters
+# PREREQUISITES: cluster-registry ConfigMap and fleet-platform AppProject
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Repo URL and ConfigMap data source wiring for elementsYaml
+# RELATED FILES: cd/gitops/argocd/fleet/cluster-registry.yaml
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: fleet-platform-components
+  namespace: argocd
+spec:
+  goTemplate: true
+  # Scale limit: keep this ApplicationSet to 20 clusters max to avoid reconciliation pressure.
+  # Design choice: use list generator from cluster-registry ConfigMap instead of ArgoCD clusters generator
+  # to keep cluster inventory human-maintained and auditable in Git.
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elementsYaml: |
+                {{- /* Source from cluster-registry ConfigMap data.clusters via your rendering pipeline */ -}}
+                {{ .clusters | default "[]" }}
+          - list:
+              elements:
+                - component: kyverno
+                  appNamespace: kyverno
+                  sourceType: kustomize
+                  sourcePath: policy/kyverno
+                - component: external-secrets-operator
+                  appNamespace: external-secrets-system
+                  sourceType: helm
+                  chartRepo: https://charts.external-secrets.io
+                  chartName: external-secrets
+                  chartVersion: 0.9.20
+                  valueFiles: []
+                - component: prometheus-stack
+                  appNamespace: monitoring
+                  sourceType: helm
+                  chartRepo: https://prometheus-community.github.io/helm-charts
+                  chartName: kube-prometheus-stack
+                  chartVersion: 62.7.0
+                  valueFiles:
+                    - observability/prometheus/values.yaml
+                - component: cert-manager
+                  appNamespace: cert-manager
+                  sourceType: kustomize
+                  sourcePath: cd/kubernetes/cert-manager
+                - component: fleet-network-policies
+                  appNamespace: fleet-system
+                  sourceType: kustomize
+                  sourcePath: cd/kubernetes/_base/network-policies
+
+  template:
+    metadata:
+      name: "{{ .name }}-{{ .component }}"
+      labels:
+        fleet.argocd.io/cluster: "{{ .name }}"
+        fleet.argocd.io/component: "{{ .component }}"
+        fleet.argocd.io/environment: "{{ .environment }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: fleet-platform
+      destination:
+        server: "{{ .server }}"
+        namespace: "{{ .appNamespace }}"
+      source:
+        repoURL: https://github.com/your-org/cicd-reference.git # <-- CHANGE THIS: set your GitOps repository URL so generated Applications point at your actual source-of-truth repo.
+        targetRevision: HEAD
+        path: "{{ .sourcePath }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          # At fleet scale (20 clusters x 5 components), full syncs create API load spikes.
+          # ApplyOutOfSyncOnly=true limits reconciliation to changed resources only.
+          - ApplyOutOfSyncOnly=true
+      # Retry with exponential backoff: unreachable cluster should not block healthy clusters.
+      retry:
+        limit: 5
+        backoff:
+          duration: 30s
+          factor: 2
+          maxDuration: 5m
+
+  templatePatch: |
+    {{- if eq .sourceType "helm" }}
+    spec:
+      source:
+        repoURL: "{{ .chartRepo }}"
+        chart: "{{ .chartName }}"
+        targetRevision: "{{ .chartVersion }}"
+        helm:
+          {{- if .valueFiles }}
+          valueFiles:
+          {{- range .valueFiles }}
+            - "{{ . }}"
+          {{- end }}
+          {{- end }}
+    {{- end }}

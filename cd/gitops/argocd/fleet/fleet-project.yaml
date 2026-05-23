@@ -1,0 +1,53 @@
+# ============================================================
+# TEMPLATE: ArgoCD Fleet - Platform AppProject
+# WHEN TO USE: Security boundary for fleet-level GitOps deployments
+# PREREQUISITES: ArgoCD namespace and cluster registry ConfigMap
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Source repo URL allow-list and namespace scopes
+# RELATED FILES: cd/gitops/argocd/fleet/fleet-applicationset.yaml
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: fleet-platform
+  namespace: argocd
+  annotations:
+    fleet.argocd.io/cascade: "true"
+spec:
+  description: Fleet-level project for shared platform components across registered clusters.
+
+  sourceRepos:
+    - https://github.com/your-org/cicd-reference.git # <-- CHANGE THIS: set to your authoritative GitOps repository URL so only trusted sources can deploy fleet components.
+
+  destinations:
+    - server: "*"
+      namespace: kyverno
+    - server: "*"
+      namespace: external-secrets-system
+    - server: "*"
+      namespace: monitoring
+    - server: "*"
+      namespace: cert-manager
+    - server: "*"
+      namespace: argocd
+    - server: "*"
+      namespace: fleet-*
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: kyverno.io
+      kind: ClusterPolicy
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+# This project intentionally uses broad permissions because it deploys platform components.
+# Application teams should use separate AppProjects with narrower scope - see cd/gitops/argocd/application.yaml for the single-app pattern.

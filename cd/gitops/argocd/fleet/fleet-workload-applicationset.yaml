@@ -1,0 +1,70 @@
+# ============================================================
+# TEMPLATE: ArgoCD Fleet - Workload ApplicationSet
+# WHEN TO USE: Deploy workloads across selected fleet clusters by environment
+# PREREQUISITES: cluster-registry ConfigMap and cd/fleet-overlays structure
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: repoURL and targetEnvironment value
+# RELATED FILES: cd/fleet-overlays/README.md
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: fleet-workloads
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  # Scale limit: this generator strategy is validated for up to 20 clusters.
+  # Platform components belong in fleet-applicationset.yaml; workloads belong here.
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elementsYaml: |
+                {{- /* Source from cluster-registry ConfigMap data.clusters via your rendering pipeline */ -}}
+                {{ .clusters | default "[]" }}
+          - git:
+              repoURL: https://github.com/your-org/cicd-reference.git # <-- CHANGE THIS: set to your GitOps repository so ApplicationSet can discover fleet overlay directories.
+              revision: HEAD
+              directories:
+                - path: cd/fleet-overlays/*/*
+
+  template:
+    metadata:
+      name: '{{ .name }}-{{ index (splitList "/" .path.path) 3 }}'
+      labels:
+        fleet.argocd.io/cluster: "{{ .name }}"
+        fleet.argocd.io/environment: "{{ .environment }}"
+        fleet.argocd.io/app: '{{ index (splitList "/" .path.path) 3 }}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: fleet-platform
+      source:
+        repoURL: https://github.com/your-org/cicd-reference.git # <-- CHANGE THIS: use the same GitOps repo URL used by your overlays and ApplicationSets.
+        targetRevision: HEAD
+        path: "{{ .path.path }}"
+      destination:
+        server: "{{ .server }}"
+        namespace: 'fleet-{{ index (splitList "/" .path.path) 3 }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          # Required for fleet scale: avoid full-apply storms by syncing only changed objects.
+          - ApplyOutOfSyncOnly=true
+      retry:
+        limit: 5
+        backoff:
+          duration: 30s
+          factor: 2
+          maxDuration: 5m
+
+  # Matrix behavior:
+  # For N clusters and M app overlay directories, this yields N x M Applications.
+  # Example: 5 clusters x 3 apps = 15 Applications managed by one ApplicationSet.

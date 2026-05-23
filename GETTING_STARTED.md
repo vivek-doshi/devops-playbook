@@ -104,6 +104,7 @@ Use this guide to quickly find the right template for your scenario.
 <!-- Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 | AWS Lambda | [`cd/targets/aws-lambda/serverless-deploy.yml`](cd/targets/aws-lambda/serverless-deploy.yml) |
 | ArgoCD GitOps | [`cd/gitops/argocd/application.yaml`](cd/gitops/argocd/application.yaml) |
+| Deploy to multiple clusters (fleet management) | [`docs/golden-paths/multi-cluster-fleet.md`](docs/golden-paths/multi-cluster-fleet.md) |
 
 ---
 
@@ -118,6 +119,18 @@ Use this guide to quickly find the right template for your scenario.
 | Secret detection (Gitleaks) | [`security/secret-detection/gitleaks.yml`](security/secret-detection/gitleaks.yml) |
 <!-- Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 | Dependency audit (npm) | [`security/dependency-audit/npm-audit.yml`](security/dependency-audit/npm-audit.yml) |
+| Supply chain security (signing, SBOM, SLSA) | [`docs/golden-paths/supply-chain-security.md`](docs/golden-paths/supply-chain-security.md) |
+
+---
+
+### 🔑 "I need to manage secrets"
+
+| Need | File |
+|---|---|
+| Store a secret for my app (AWS/Azure/GCP) | [`secrets/external-secrets/`](secrets/external-secrets/) |
+| Rotate a secret on a schedule | [`secrets/rotation/`](secrets/rotation/) |
+| Understand the full secret lifecycle | [`secrets/guides/secret-lifecycle.md`](secrets/guides/secret-lifecycle.md) |
+| Emergency: secret was exposed | [`secrets/guides/emergency-rotation.md`](secrets/guides/emergency-rotation.md) |
 
 ---
 
@@ -131,4 +144,5 @@ Use this guide to quickly find the right template for your scenario.
 | Helm vs Kustomize? | [`docs/decisions/ADR-002-helm-vs-kustomize.md`](docs/decisions/ADR-002-helm-vs-kustomize.md) |
 | GitOps strategy? | [`docs/decisions/ADR-003-gitops-strategy.md`](docs/decisions/ADR-003-gitops-strategy.md) |
 | Secrets management | [`docs/guides/secrets-management.md`](docs/guides/secrets-management.md) |
+| How do we demonstrate compliance? | [`docs/golden-paths/compliance-reporting.md`](docs/golden-paths/compliance-reporting.md) |
 | Branching strategy | [`docs/guides/branching-strategy.md`](docs/guides/branching-strategy.md) |

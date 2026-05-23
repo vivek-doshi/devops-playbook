@@ -1,0 +1,45 @@
+# ============================================================
+# TEMPLATE: GitHub Actions - .NET Supply Chain Integration
+# WHEN TO USE: Wire reusable Docker build with reusable supply chain controls
+# PREREQUISITES: Dotnet Dockerfile exists and GHCR access configured
+# SECRETS NEEDED: GITHUB_TOKEN (for GHCR) or registry-token equivalent
+# WHAT TO CHANGE: image-name, dockerfile, and image-tag strategy
+# RELATED FILES: ci/github-actions/_shared/reusable-supply-chain.yml
+# MATURITY: Stable
+# ============================================================
+
+name: .NET Supply Chain Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docker-build:
+    uses: ./ci/github-actions/_shared/reusable-docker-build.yml # <-- COPY THIS PATTERN
+    with:
+      image-name: ${{ github.repository }} # <-- COPY THIS PATTERN
+      dockerfile: docker/dotnet/Dockerfile.api # <-- COPY THIS PATTERN
+      context: .
+    secrets:
+      registry-token: ${{ secrets.GITHUB_TOKEN }} # <-- COPY THIS PATTERN
+
+  supply-chain:
+    needs: docker-build # <-- COPY THIS PATTERN
+    uses: ./ci/github-actions/_shared/reusable-supply-chain.yml # <-- COPY THIS PATTERN
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    with:
+      image-name: ${{ github.repository }} # <-- COPY THIS PATTERN
+      image-tag: sha-${{ github.sha }} # <-- COPY THIS PATTERN
+      registry: ghcr.io
+      certificate-identity-regexp: https://github.com/${{ github.repository }}/.github/workflows/.*
+      certificate-oidc-issuer: https://token.actions.githubusercontent.com
+    secrets:
+      registry-token: ${{ secrets.GITHUB_TOKEN }} # <-- COPY THIS PATTERN
+
+# Repeat this pattern for python, java, go, node - only the build step changes.

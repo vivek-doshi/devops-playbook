@@ -1,0 +1,109 @@
+# ============================================================
+# TEMPLATE: Kubernetes - Supply Chain Compliance Status Reporter
+# WHEN TO USE: Weekly compliance summary from Kyverno PolicyReport results
+# PREREQUISITES: Kyverno PolicyReport resources and secops namespace exist
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Cron schedule and reporter image
+# RELATED FILES: secops/supply-chain/cosign-verify-policy.yaml
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: supply-chain-status-reporter
+  namespace: secops
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: supply-chain-status-reporter
+rules:
+  # Permission model follows the least-privilege pattern used by
+  # cd/kubernetes/_base/rbac/ci-deployer.yaml and only adds read/report verbs.
+  - apiGroups: ["wgpolicyk8s.io"]
+    resources:
+      - policyreports
+      - clusterpolicyreports
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs: ["get", "list", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: supply-chain-status-reporter
+subjects:
+  - kind: ServiceAccount
+    name: supply-chain-status-reporter
+    namespace: secops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: supply-chain-status-reporter
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: supply-chain-status
+  namespace: secops
+spec:
+  schedule: "0 3 * * 1"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: supply-chain-status-reporter
+          restartPolicy: OnFailure
+          containers:
+            - name: reporter
+              image: bitnami/kubectl:1.31.2 # <-- CHANGE THIS: pin an approved kubectl image from your internal registry for provenance and patch cadence.
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  REPORT_FILE="/tmp/report.json"
+
+                  TABLE="$(kubectl get policyreport -A --no-headers 2>/dev/null || true)"
+                  TOTAL_REPORTS="$(printf '%s\n' "$TABLE" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+                  NAMESPACE_ROWS="$(kubectl get policyreport -A \
+                    -o custom-columns=NS:.metadata.namespace,PASS:.summary.pass,FAIL:.summary.fail,WARN:.summary.warn,ERROR:.summary.error,SKIP:.summary.skip \
+                    --no-headers 2>/dev/null || true)"
+
+                  {
+                    printf '{\n'
+                    printf '  "generatedAt": "%s",\n' "$TIMESTAMP"
+                    printf '  "totalPolicyReports": %s,\n' "${TOTAL_REPORTS:-0}"
+                    printf '  "namespaces": [\n'
+
+                    FIRST=1
+                    printf '%s\n' "$NAMESPACE_ROWS" | while read -r NS PASS FAIL WARN ERROR SKIP; do
+                      [ -z "$NS" ] && continue
+                      if [ "$FIRST" -eq 0 ]; then
+                        printf ',\n'
+                      fi
+                      FIRST=0
+                      printf '    {"namespace":"%s","pass":%s,"fail":%s,"warn":%s,"error":%s,"skip":%s}' \
+                        "$NS" "${PASS:-0}" "${FAIL:-0}" "${WARN:-0}" "${ERROR:-0}" "${SKIP:-0}"
+                    done
+
+                    printf '\n  ]\n'
+                    printf '}\n'
+                  } > "$REPORT_FILE"
+
+                  kubectl -n secops create configmap supply-chain-compliance-report \
+                    --from-file=report="$REPORT_FILE" \
+                    --dry-run=client -o yaml | kubectl apply -f -
+
+                  # View output with:
+                  # kubectl get configmap supply-chain-compliance-report -n secops -o jsonpath='{.data.report}'

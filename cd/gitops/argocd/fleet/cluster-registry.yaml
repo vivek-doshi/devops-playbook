@@ -1,0 +1,69 @@
+# ============================================================
+# TEMPLATE: ArgoCD Fleet - Cluster Registry
+# WHEN TO USE: Single source of truth for clusters managed by fleet ApplicationSets
+# PREREQUISITES: ArgoCD installed and fleet ApplicationSets deployed
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Cluster endpoints, labels, tier, and environment values
+# RELATED FILES: cd/gitops/argocd/fleet/fleet-applicationset.yaml
+# MATURITY: Beta
+# ============================================================
+
+# How to add a new cluster:
+# 1. Add a new entry in data.clusters below.
+# 2. Commit this file and run the fleet onboarding workflow documented in docs/golden-paths/multi-cluster-fleet.md.
+#
+# How ArgoCD reads this ConfigMap:
+# fleet ApplicationSets use a list generator where elementsYaml is sourced from this ConfigMap's data.clusters key.
+#
+# tier and Kyverno behavior:
+# critical clusters should use kyverno-enforcement: enforce; standard/dev clusters can start in audit.
+#
+# Scale limit:
+# this pattern supports up to 20 clusters per fleet ApplicationSet before moving to a pull-based generator model.
+# Cluster registry is human-maintained only. Do not automate writes to this file.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-registry
+  namespace: argocd
+  annotations:
+    fleet.argocd.io/description: "Single source of truth for all clusters in this fleet"
+    fleet.argocd.io/updated: "manual"
+data:
+  clusters: |
+    - name: prod-us-east-1
+      server: https://eks-prod-us-east-1.example.com # <-- CHANGE THIS: set the target cluster API server URL from your cloud control plane endpoint.
+      cloud: aws
+      region: us-east-1
+      environment: production
+      tier: critical
+      topology: hub-and-spoke
+      labels:
+        team: platform
+        cost-center: infrastructure
+      kyverno-enforcement: enforce
+      prometheus-remote-write: enabled
+    - name: staging-us-east-1
+      server: https://eks-staging-us-east-1.example.com # <-- CHANGE THIS: set the staging cluster API server URL; differs per account/region.
+      cloud: aws
+      region: us-east-1
+      environment: staging
+      tier: standard
+      topology: hub-and-spoke
+      labels:
+        team: platform
+        cost-center: infrastructure
+      kyverno-enforcement: audit
+      prometheus-remote-write: enabled
+    - name: dev-shared
+      server: https://eks-dev.example.com # <-- CHANGE THIS: set the development cluster API server URL for your shared dev fleet target.
+      cloud: aws
+      region: us-east-1
+      environment: dev
+      tier: dev
+      topology: distributed
+      labels:
+        team: platform
+        cost-center: engineering
+      kyverno-enforcement: audit
+      prometheus-remote-write: disabled

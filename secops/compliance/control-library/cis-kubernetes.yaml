@@ -1,0 +1,2597 @@
+# ============================================================
+# TEMPLATE: Compliance Control Library - CIS Kubernetes (Machine Readable)
+# WHEN TO USE: Automated compliance scoring and evidence mapping for CIS Benchmark
+# PREREQUISITES: Control sources in secops/compliance/controls/cis-kubernetes.md
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Control status, implementation links, and check metadata
+# RELATED FILES: secops/compliance/kube-bench-job.yaml
+# MATURITY: Beta
+# ============================================================
+
+framework: CIS-Kubernetes
+version: "v1.8"
+generated: "auto"
+controls:
+  - id: "1.1.1"
+    kube-bench-id: "1.1.1"
+    title: "CIS control 1.1.1"
+    description: "CIS Kubernetes Benchmark control 1.1.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.1."
+    automated_checks:
+      - name: kube-bench-check-1-1-1
+        tool: kube-bench
+        cis_id: "1.1.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.2"
+    kube-bench-id: "1.1.2"
+    title: "CIS control 1.1.2"
+    description: "CIS Kubernetes Benchmark control 1.1.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.2."
+    automated_checks:
+      - name: kube-bench-check-1-1-2
+        tool: kube-bench
+        cis_id: "1.1.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.3"
+    kube-bench-id: "1.1.3"
+    title: "CIS control 1.1.3"
+    description: "CIS Kubernetes Benchmark control 1.1.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.3."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.3."
+    automated_checks:
+      - name: kube-bench-check-1-1-3
+        tool: kube-bench
+        cis_id: "1.1.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.4"
+    kube-bench-id: "1.1.4"
+    title: "CIS control 1.1.4"
+    description: "CIS Kubernetes Benchmark control 1.1.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.4."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.4."
+    automated_checks:
+      - name: kube-bench-check-1-1-4
+        tool: kube-bench
+        cis_id: "1.1.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.5"
+    kube-bench-id: "1.1.5"
+    title: "CIS control 1.1.5"
+    description: "CIS Kubernetes Benchmark control 1.1.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.5."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.5."
+    automated_checks:
+      - name: kube-bench-check-1-1-5
+        tool: kube-bench
+        cis_id: "1.1.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.6"
+    kube-bench-id: "1.1.6"
+    title: "CIS control 1.1.6"
+    description: "CIS Kubernetes Benchmark control 1.1.6 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.6."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.6."
+    automated_checks:
+      - name: kube-bench-check-1-1-6
+        tool: kube-bench
+        cis_id: "1.1.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.7"
+    kube-bench-id: "1.1.7"
+    title: "CIS control 1.1.7"
+    description: "CIS Kubernetes Benchmark control 1.1.7 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.7."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.7."
+    automated_checks:
+      - name: kube-bench-check-1-1-7
+        tool: kube-bench
+        cis_id: "1.1.7"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.8"
+    kube-bench-id: "1.1.8"
+    title: "CIS control 1.1.8"
+    description: "CIS Kubernetes Benchmark control 1.1.8 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.8."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.8."
+    automated_checks:
+      - name: kube-bench-check-1-1-8
+        tool: kube-bench
+        cis_id: "1.1.8"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.9"
+    kube-bench-id: "1.1.9"
+    title: "CIS control 1.1.9"
+    description: "CIS Kubernetes Benchmark control 1.1.9 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.9."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.9."
+    automated_checks:
+      - name: kube-bench-check-1-1-9
+        tool: kube-bench
+        cis_id: "1.1.9"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.10"
+    kube-bench-id: "1.1.10"
+    title: "CIS control 1.1.10"
+    description: "CIS Kubernetes Benchmark control 1.1.10 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.10."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.10."
+    automated_checks:
+      - name: kube-bench-check-1-1-10
+        tool: kube-bench
+        cis_id: "1.1.10"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.11"
+    kube-bench-id: "1.1.11"
+    title: "CIS control 1.1.11"
+    description: "CIS Kubernetes Benchmark control 1.1.11 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.11."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.11."
+    automated_checks:
+      - name: kube-bench-check-1-1-11
+        tool: kube-bench
+        cis_id: "1.1.11"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.1.12"
+    kube-bench-id: "1.1.12"
+    title: "CIS control 1.1.12"
+    description: "CIS Kubernetes Benchmark control 1.1.12 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.1.12."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.1.12."
+    automated_checks:
+      - name: kube-bench-check-1-1-12
+        tool: kube-bench
+        cis_id: "1.1.12"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.1"
+    kube-bench-id: "1.2.1"
+    title: "CIS control 1.2.1"
+    description: "CIS Kubernetes Benchmark control 1.2.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.1."
+    automated_checks:
+      - name: kube-bench-check-1-2-1
+        tool: kube-bench
+        cis_id: "1.2.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.2"
+    kube-bench-id: "1.2.2"
+    title: "CIS control 1.2.2"
+    description: "CIS Kubernetes Benchmark control 1.2.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.2."
+    automated_checks:
+      - name: kube-bench-check-1-2-2
+        tool: kube-bench
+        cis_id: "1.2.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.3"
+    kube-bench-id: "1.2.3"
+    title: "CIS control 1.2.3"
+    description: "CIS Kubernetes Benchmark control 1.2.3 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.3."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.3."
+    automated_checks:
+      - name: kube-bench-check-1-2-3
+        tool: kube-bench
+        cis_id: "1.2.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 1.2.3 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "1.2.4"
+    kube-bench-id: "1.2.4"
+    title: "CIS control 1.2.4"
+    description: "CIS Kubernetes Benchmark control 1.2.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.4."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.4."
+    automated_checks:
+      - name: kube-bench-check-1-2-4
+        tool: kube-bench
+        cis_id: "1.2.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.5"
+    kube-bench-id: "1.2.5"
+    title: "CIS control 1.2.5"
+    description: "CIS Kubernetes Benchmark control 1.2.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.5."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.5."
+    automated_checks:
+      - name: kube-bench-check-1-2-5
+        tool: kube-bench
+        cis_id: "1.2.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.6"
+    kube-bench-id: "1.2.6"
+    title: "CIS control 1.2.6"
+    description: "CIS Kubernetes Benchmark control 1.2.6 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.6."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.6."
+    automated_checks:
+      - name: kube-bench-check-1-2-6
+        tool: kube-bench
+        cis_id: "1.2.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.7"
+    kube-bench-id: "1.2.7"
+    title: "CIS control 1.2.7"
+    description: "CIS Kubernetes Benchmark control 1.2.7 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.7."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.7."
+    automated_checks:
+      - name: kube-bench-check-1-2-7
+        tool: kube-bench
+        cis_id: "1.2.7"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.8"
+    kube-bench-id: "1.2.8"
+    title: "CIS control 1.2.8"
+    description: "CIS Kubernetes Benchmark control 1.2.8 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.8."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.8."
+    automated_checks:
+      - name: kube-bench-check-1-2-8
+        tool: kube-bench
+        cis_id: "1.2.8"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.9"
+    kube-bench-id: "1.2.9"
+    title: "CIS control 1.2.9"
+    description: "CIS Kubernetes Benchmark control 1.2.9 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.9."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.9."
+    automated_checks:
+      - name: kube-bench-check-1-2-9
+        tool: kube-bench
+        cis_id: "1.2.9"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 1.2.9 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "1.2.10"
+    kube-bench-id: "1.2.10"
+    title: "CIS control 1.2.10"
+    description: "CIS Kubernetes Benchmark control 1.2.10 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.10."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.10."
+    automated_checks:
+      - name: kube-bench-check-1-2-10
+        tool: kube-bench
+        cis_id: "1.2.10"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 1.2.10 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "1.2.11"
+    kube-bench-id: "1.2.11"
+    title: "CIS control 1.2.11"
+    description: "CIS Kubernetes Benchmark control 1.2.11 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.11."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.11."
+    automated_checks:
+      - name: kube-bench-check-1-2-11
+        tool: kube-bench
+        cis_id: "1.2.11"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.12"
+    kube-bench-id: "1.2.12"
+    title: "CIS control 1.2.12"
+    description: "CIS Kubernetes Benchmark control 1.2.12 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.12."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.12."
+    automated_checks:
+      - name: kube-bench-check-1-2-12
+        tool: kube-bench
+        cis_id: "1.2.12"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 1.2.12 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "1.2.13"
+    kube-bench-id: "1.2.13"
+    title: "CIS control 1.2.13"
+    description: "CIS Kubernetes Benchmark control 1.2.13 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.13."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.13."
+    automated_checks:
+      - name: kube-bench-check-1-2-13
+        tool: kube-bench
+        cis_id: "1.2.13"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.14"
+    kube-bench-id: "1.2.14"
+    title: "CIS control 1.2.14"
+    description: "CIS Kubernetes Benchmark control 1.2.14 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.14."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.14."
+    automated_checks:
+      - name: kube-bench-check-1-2-14
+        tool: kube-bench
+        cis_id: "1.2.14"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 1.2.14 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "1.2.15"
+    kube-bench-id: "1.2.15"
+    title: "CIS control 1.2.15"
+    description: "CIS Kubernetes Benchmark control 1.2.15 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.15."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.15."
+    automated_checks:
+      - name: kube-bench-check-1-2-15
+        tool: kube-bench
+        cis_id: "1.2.15"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 1.2.15 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "1.2.16"
+    kube-bench-id: "1.2.16"
+    title: "CIS control 1.2.16"
+    description: "CIS Kubernetes Benchmark control 1.2.16 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.16."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.16."
+    automated_checks:
+      - name: kube-bench-check-1-2-16
+        tool: kube-bench
+        cis_id: "1.2.16"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.17"
+    kube-bench-id: "1.2.17"
+    title: "CIS control 1.2.17"
+    description: "CIS Kubernetes Benchmark control 1.2.17 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.17."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.17."
+    automated_checks:
+      - name: kube-bench-check-1-2-17
+        tool: kube-bench
+        cis_id: "1.2.17"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.18"
+    kube-bench-id: "1.2.18"
+    title: "CIS control 1.2.18"
+    description: "CIS Kubernetes Benchmark control 1.2.18 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.18."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.18."
+    automated_checks:
+      - name: kube-bench-check-1-2-18
+        tool: kube-bench
+        cis_id: "1.2.18"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.19"
+    kube-bench-id: "1.2.19"
+    title: "CIS control 1.2.19"
+    description: "CIS Kubernetes Benchmark control 1.2.19 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.19."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.19."
+    automated_checks:
+      - name: kube-bench-check-1-2-19
+        tool: kube-bench
+        cis_id: "1.2.19"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.20"
+    kube-bench-id: "1.2.20"
+    title: "CIS control 1.2.20"
+    description: "CIS Kubernetes Benchmark control 1.2.20 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.20."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.20."
+    automated_checks:
+      - name: kube-bench-check-1-2-20
+        tool: kube-bench
+        cis_id: "1.2.20"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.21"
+    kube-bench-id: "1.2.21"
+    title: "CIS control 1.2.21"
+    description: "CIS Kubernetes Benchmark control 1.2.21 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.21."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.21."
+    automated_checks:
+      - name: kube-bench-check-1-2-21
+        tool: kube-bench
+        cis_id: "1.2.21"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.22"
+    kube-bench-id: "1.2.22"
+    title: "CIS control 1.2.22"
+    description: "CIS Kubernetes Benchmark control 1.2.22 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.22."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.22."
+    automated_checks:
+      - name: kube-bench-check-1-2-22
+        tool: kube-bench
+        cis_id: "1.2.22"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.23"
+    kube-bench-id: "1.2.23"
+    title: "CIS control 1.2.23"
+    description: "CIS Kubernetes Benchmark control 1.2.23 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.23."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.23."
+    automated_checks:
+      - name: kube-bench-check-1-2-23
+        tool: kube-bench
+        cis_id: "1.2.23"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.24"
+    kube-bench-id: "1.2.24"
+    title: "CIS control 1.2.24"
+    description: "CIS Kubernetes Benchmark control 1.2.24 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.24."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.24."
+    automated_checks:
+      - name: kube-bench-check-1-2-24
+        tool: kube-bench
+        cis_id: "1.2.24"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.2.25"
+    kube-bench-id: "1.2.25"
+    title: "CIS control 1.2.25"
+    description: "CIS Kubernetes Benchmark control 1.2.25 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.2.25."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.2.25."
+    automated_checks:
+      - name: kube-bench-check-1-2-25
+        tool: kube-bench
+        cis_id: "1.2.25"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.3.1"
+    kube-bench-id: "1.3.1"
+    title: "CIS control 1.3.1"
+    description: "CIS Kubernetes Benchmark control 1.3.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.3.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.3.1."
+    automated_checks:
+      - name: kube-bench-check-1-3-1
+        tool: kube-bench
+        cis_id: "1.3.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.3.2"
+    kube-bench-id: "1.3.2"
+    title: "CIS control 1.3.2"
+    description: "CIS Kubernetes Benchmark control 1.3.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.3.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.3.2."
+    automated_checks:
+      - name: kube-bench-check-1-3-2
+        tool: kube-bench
+        cis_id: "1.3.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.3.3"
+    kube-bench-id: "1.3.3"
+    title: "CIS control 1.3.3"
+    description: "CIS Kubernetes Benchmark control 1.3.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.3.3."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.3.3."
+    automated_checks:
+      - name: kube-bench-check-1-3-3
+        tool: kube-bench
+        cis_id: "1.3.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.3.4"
+    kube-bench-id: "1.3.4"
+    title: "CIS control 1.3.4"
+    description: "CIS Kubernetes Benchmark control 1.3.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.3.4."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.3.4."
+    automated_checks:
+      - name: kube-bench-check-1-3-4
+        tool: kube-bench
+        cis_id: "1.3.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.3.5"
+    kube-bench-id: "1.3.5"
+    title: "CIS control 1.3.5"
+    description: "CIS Kubernetes Benchmark control 1.3.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.3.5."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.3.5."
+    automated_checks:
+      - name: kube-bench-check-1-3-5
+        tool: kube-bench
+        cis_id: "1.3.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.3.6"
+    kube-bench-id: "1.3.6"
+    title: "CIS control 1.3.6"
+    description: "CIS Kubernetes Benchmark control 1.3.6 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.3.6."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.3.6."
+    automated_checks:
+      - name: kube-bench-check-1-3-6
+        tool: kube-bench
+        cis_id: "1.3.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.3.7"
+    kube-bench-id: "1.3.7"
+    title: "CIS control 1.3.7"
+    description: "CIS Kubernetes Benchmark control 1.3.7 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.3.7."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.3.7."
+    automated_checks:
+      - name: kube-bench-check-1-3-7
+        tool: kube-bench
+        cis_id: "1.3.7"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.4.1"
+    kube-bench-id: "1.4.1"
+    title: "CIS control 1.4.1"
+    description: "CIS Kubernetes Benchmark control 1.4.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.4.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.4.1."
+    automated_checks:
+      - name: kube-bench-check-1-4-1
+        tool: kube-bench
+        cis_id: "1.4.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "1.4.2"
+    kube-bench-id: "1.4.2"
+    title: "CIS control 1.4.2"
+    description: "CIS Kubernetes Benchmark control 1.4.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 1.4.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 1.4.2."
+    automated_checks:
+      - name: kube-bench-check-1-4-2
+        tool: kube-bench
+        cis_id: "1.4.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "2.1"
+    kube-bench-id: "2.1"
+    title: "CIS control 2.1"
+    description: "CIS Kubernetes Benchmark control 2.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 2.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 2.1."
+    automated_checks:
+      - name: kube-bench-check-2-1
+        tool: kube-bench
+        cis_id: "2.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "2.2"
+    kube-bench-id: "2.2"
+    title: "CIS control 2.2"
+    description: "CIS Kubernetes Benchmark control 2.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 2.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 2.2."
+    automated_checks:
+      - name: kube-bench-check-2-2
+        tool: kube-bench
+        cis_id: "2.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "2.3"
+    kube-bench-id: "2.3"
+    title: "CIS control 2.3"
+    description: "CIS Kubernetes Benchmark control 2.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 2.3."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 2.3."
+    automated_checks:
+      - name: kube-bench-check-2-3
+        tool: kube-bench
+        cis_id: "2.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "2.4"
+    kube-bench-id: "2.4"
+    title: "CIS control 2.4"
+    description: "CIS Kubernetes Benchmark control 2.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 2.4."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 2.4."
+    automated_checks:
+      - name: kube-bench-check-2-4
+        tool: kube-bench
+        cis_id: "2.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "2.5"
+    kube-bench-id: "2.5"
+    title: "CIS control 2.5"
+    description: "CIS Kubernetes Benchmark control 2.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 2.5."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 2.5."
+    automated_checks:
+      - name: kube-bench-check-2-5
+        tool: kube-bench
+        cis_id: "2.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "2.6"
+    kube-bench-id: "2.6"
+    title: "CIS control 2.6"
+    description: "CIS Kubernetes Benchmark control 2.6 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 2.6."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 2.6."
+    automated_checks:
+      - name: kube-bench-check-2-6
+        tool: kube-bench
+        cis_id: "2.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 2.6 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "2.7"
+    kube-bench-id: "2.7"
+    title: "CIS control 2.7"
+    description: "CIS Kubernetes Benchmark control 2.7 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 2.7."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 2.7."
+    automated_checks:
+      - name: kube-bench-check-2-7
+        tool: kube-bench
+        cis_id: "2.7"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 2.7 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "3.1.1"
+    kube-bench-id: "3.1.1"
+    title: "CIS control 3.1.1"
+    description: "CIS Kubernetes Benchmark control 3.1.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 3.1.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 3.1.1."
+    automated_checks:
+      - name: kube-bench-check-3-1-1
+        tool: kube-bench
+        cis_id: "3.1.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "3.2.1"
+    kube-bench-id: "3.2.1"
+    title: "CIS control 3.2.1"
+    description: "CIS Kubernetes Benchmark control 3.2.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 3.2.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 3.2.1."
+    automated_checks:
+      - name: kube-bench-check-3-2-1
+        tool: kube-bench
+        cis_id: "3.2.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "3.2.2"
+    kube-bench-id: "3.2.2"
+    title: "CIS control 3.2.2"
+    description: "CIS Kubernetes Benchmark control 3.2.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 3.2.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 3.2.2."
+    automated_checks:
+      - name: kube-bench-check-3-2-2
+        tool: kube-bench
+        cis_id: "3.2.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.1"
+    kube-bench-id: "4.1.1"
+    title: "CIS control 4.1.1"
+    description: "CIS Kubernetes Benchmark control 4.1.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.1."
+    automated_checks:
+      - name: kube-bench-check-4-1-1
+        tool: kube-bench
+        cis_id: "4.1.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.2"
+    kube-bench-id: "4.1.2"
+    title: "CIS control 4.1.2"
+    description: "CIS Kubernetes Benchmark control 4.1.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.2."
+    automated_checks:
+      - name: kube-bench-check-4-1-2
+        tool: kube-bench
+        cis_id: "4.1.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.3"
+    kube-bench-id: "4.1.3"
+    title: "CIS control 4.1.3"
+    description: "CIS Kubernetes Benchmark control 4.1.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.3."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.3."
+    automated_checks:
+      - name: kube-bench-check-4-1-3
+        tool: kube-bench
+        cis_id: "4.1.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.4"
+    kube-bench-id: "4.1.4"
+    title: "CIS control 4.1.4"
+    description: "CIS Kubernetes Benchmark control 4.1.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.4."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.4."
+    automated_checks:
+      - name: kube-bench-check-4-1-4
+        tool: kube-bench
+        cis_id: "4.1.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.5"
+    kube-bench-id: "4.1.5"
+    title: "CIS control 4.1.5"
+    description: "CIS Kubernetes Benchmark control 4.1.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.5."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.5."
+    automated_checks:
+      - name: kube-bench-check-4-1-5
+        tool: kube-bench
+        cis_id: "4.1.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.6"
+    kube-bench-id: "4.1.6"
+    title: "CIS control 4.1.6"
+    description: "CIS Kubernetes Benchmark control 4.1.6 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.6."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.6."
+    automated_checks:
+      - name: kube-bench-check-4-1-6
+        tool: kube-bench
+        cis_id: "4.1.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.7"
+    kube-bench-id: "4.1.7"
+    title: "CIS control 4.1.7"
+    description: "CIS Kubernetes Benchmark control 4.1.7 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.7."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.7."
+    automated_checks:
+      - name: kube-bench-check-4-1-7
+        tool: kube-bench
+        cis_id: "4.1.7"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.8"
+    kube-bench-id: "4.1.8"
+    title: "CIS control 4.1.8"
+    description: "CIS Kubernetes Benchmark control 4.1.8 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.8."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.8."
+    automated_checks:
+      - name: kube-bench-check-4-1-8
+        tool: kube-bench
+        cis_id: "4.1.8"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.9"
+    kube-bench-id: "4.1.9"
+    title: "CIS control 4.1.9"
+    description: "CIS Kubernetes Benchmark control 4.1.9 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.9."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.9."
+    automated_checks:
+      - name: kube-bench-check-4-1-9
+        tool: kube-bench
+        cis_id: "4.1.9"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.1.10"
+    kube-bench-id: "4.1.10"
+    title: "CIS control 4.1.10"
+    description: "CIS Kubernetes Benchmark control 4.1.10 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.1.10."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.1.10."
+    automated_checks:
+      - name: kube-bench-check-4-1-10
+        tool: kube-bench
+        cis_id: "4.1.10"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.1"
+    kube-bench-id: "4.2.1"
+    title: "CIS control 4.2.1"
+    description: "CIS Kubernetes Benchmark control 4.2.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.1."
+    automated_checks:
+      - name: kube-bench-check-4-2-1
+        tool: kube-bench
+        cis_id: "4.2.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.2"
+    kube-bench-id: "4.2.2"
+    title: "CIS control 4.2.2"
+    description: "CIS Kubernetes Benchmark control 4.2.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.2."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.2."
+    automated_checks:
+      - name: kube-bench-check-4-2-2
+        tool: kube-bench
+        cis_id: "4.2.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.3"
+    kube-bench-id: "4.2.3"
+    title: "CIS control 4.2.3"
+    description: "CIS Kubernetes Benchmark control 4.2.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.3."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.3."
+    automated_checks:
+      - name: kube-bench-check-4-2-3
+        tool: kube-bench
+        cis_id: "4.2.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.4"
+    kube-bench-id: "4.2.4"
+    title: "CIS control 4.2.4"
+    description: "CIS Kubernetes Benchmark control 4.2.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.4."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.4."
+    automated_checks:
+      - name: kube-bench-check-4-2-4
+        tool: kube-bench
+        cis_id: "4.2.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.5"
+    kube-bench-id: "4.2.5"
+    title: "CIS control 4.2.5"
+    description: "CIS Kubernetes Benchmark control 4.2.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.5."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.5."
+    automated_checks:
+      - name: kube-bench-check-4-2-5
+        tool: kube-bench
+        cis_id: "4.2.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.6"
+    kube-bench-id: "4.2.6"
+    title: "CIS control 4.2.6"
+    description: "CIS Kubernetes Benchmark control 4.2.6 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.6."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.6."
+    automated_checks:
+      - name: kube-bench-check-4-2-6
+        tool: kube-bench
+        cis_id: "4.2.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.7"
+    kube-bench-id: "4.2.7"
+    title: "CIS control 4.2.7"
+    description: "CIS Kubernetes Benchmark control 4.2.7 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.7."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.7."
+    automated_checks:
+      - name: kube-bench-check-4-2-7
+        tool: kube-bench
+        cis_id: "4.2.7"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.8"
+    kube-bench-id: "4.2.8"
+    title: "CIS control 4.2.8"
+    description: "CIS Kubernetes Benchmark control 4.2.8 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.8."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.8."
+    automated_checks:
+      - name: kube-bench-check-4-2-8
+        tool: kube-bench
+        cis_id: "4.2.8"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.9"
+    kube-bench-id: "4.2.9"
+    title: "CIS control 4.2.9"
+    description: "CIS Kubernetes Benchmark control 4.2.9 compliance mapping."
+    status: partial
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.9."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.9."
+    automated_checks:
+      - name: kube-bench-check-4-2-9
+        tool: kube-bench
+        cis_id: "4.2.9"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+    gap_description: "Control 4.2.9 has implementation dependencies outside repository templates and must be validated in each target cluster baseline."
+
+  - id: "4.2.10"
+    kube-bench-id: "4.2.10"
+    title: "CIS control 4.2.10"
+    description: "CIS Kubernetes Benchmark control 4.2.10 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.10."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.10."
+    automated_checks:
+      - name: kube-bench-check-4-2-10
+        tool: kube-bench
+        cis_id: "4.2.10"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.11"
+    kube-bench-id: "4.2.11"
+    title: "CIS control 4.2.11"
+    description: "CIS Kubernetes Benchmark control 4.2.11 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.11."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.11."
+    automated_checks:
+      - name: kube-bench-check-4-2-11
+        tool: kube-bench
+        cis_id: "4.2.11"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.12"
+    kube-bench-id: "4.2.12"
+    title: "CIS control 4.2.12"
+    description: "CIS Kubernetes Benchmark control 4.2.12 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.12."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.12."
+    automated_checks:
+      - name: kube-bench-check-4-2-12
+        tool: kube-bench
+        cis_id: "4.2.12"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "4.2.13"
+    kube-bench-id: "4.2.13"
+    title: "CIS control 4.2.13"
+    description: "CIS Kubernetes Benchmark control 4.2.13 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 4.2.13."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 4.2.13."
+    automated_checks:
+      - name: kube-bench-check-4-2-13
+        tool: kube-bench
+        cis_id: "4.2.13"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.1.1"
+    kube-bench-id: "5.1.1"
+    title: "CIS control 5.1.1"
+    description: "CIS Kubernetes Benchmark control 5.1.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.1.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 5.1.1."
+    automated_checks:
+      - name: kube-bench-check-5-1-1
+        tool: kube-bench
+        cis_id: "5.1.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.1.2"
+    kube-bench-id: "5.1.2"
+    title: "CIS control 5.1.2"
+    description: "CIS Kubernetes Benchmark control 5.1.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.1.2."
+      - type: implementation
+        path: policy/kyverno/require-labels.yaml
+        description: "Implementation or reference mapped for control 5.1.2."
+    automated_checks:
+      - name: kube-bench-check-5-1-2
+        tool: kube-bench
+        cis_id: "5.1.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.1.3"
+    kube-bench-id: "5.1.3"
+    title: "CIS control 5.1.3"
+    description: "CIS Kubernetes Benchmark control 5.1.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.1.3."
+      - type: implementation
+        path: policy/kyverno/require-labels.yaml
+        description: "Implementation or reference mapped for control 5.1.3."
+    automated_checks:
+      - name: kube-bench-check-5-1-3
+        tool: kube-bench
+        cis_id: "5.1.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.1.4"
+    kube-bench-id: "5.1.4"
+    title: "CIS control 5.1.4"
+    description: "CIS Kubernetes Benchmark control 5.1.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.1.4."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 5.1.4."
+    automated_checks:
+      - name: kube-bench-check-5-1-4
+        tool: kube-bench
+        cis_id: "5.1.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.1.5"
+    kube-bench-id: "5.1.5"
+    title: "CIS control 5.1.5"
+    description: "CIS Kubernetes Benchmark control 5.1.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.1.5."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 5.1.5."
+    automated_checks:
+      - name: kube-bench-check-5-1-5
+        tool: kube-bench
+        cis_id: "5.1.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.1.6"
+    kube-bench-id: "5.1.6"
+    title: "CIS control 5.1.6"
+    description: "CIS Kubernetes Benchmark control 5.1.6 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.1.6."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.1.6."
+    automated_checks:
+      - name: kube-bench-check-5-1-6
+        tool: kube-bench
+        cis_id: "5.1.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.1"
+    kube-bench-id: "5.2.1"
+    title: "CIS control 5.2.1"
+    description: "CIS Kubernetes Benchmark control 5.2.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.1."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.1."
+    automated_checks:
+      - name: kube-bench-check-5-2-1
+        tool: kube-bench
+        cis_id: "5.2.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.2"
+    kube-bench-id: "5.2.2"
+    title: "CIS control 5.2.2"
+    description: "CIS Kubernetes Benchmark control 5.2.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.2."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.2."
+    automated_checks:
+      - name: kube-bench-check-5-2-2
+        tool: kube-bench
+        cis_id: "5.2.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.3"
+    kube-bench-id: "5.2.3"
+    title: "CIS control 5.2.3"
+    description: "CIS Kubernetes Benchmark control 5.2.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.3."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.3."
+    automated_checks:
+      - name: kube-bench-check-5-2-3
+        tool: kube-bench
+        cis_id: "5.2.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.4"
+    kube-bench-id: "5.2.4"
+    title: "CIS control 5.2.4"
+    description: "CIS Kubernetes Benchmark control 5.2.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.4."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.4."
+    automated_checks:
+      - name: kube-bench-check-5-2-4
+        tool: kube-bench
+        cis_id: "5.2.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.5"
+    kube-bench-id: "5.2.5"
+    title: "CIS control 5.2.5"
+    description: "CIS Kubernetes Benchmark control 5.2.5 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.5."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.5."
+    automated_checks:
+      - name: kube-bench-check-5-2-5
+        tool: kube-bench
+        cis_id: "5.2.5"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.6"
+    kube-bench-id: "5.2.6"
+    title: "CIS control 5.2.6"
+    description: "CIS Kubernetes Benchmark control 5.2.6 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.6."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.6."
+    automated_checks:
+      - name: kube-bench-check-5-2-6
+        tool: kube-bench
+        cis_id: "5.2.6"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.7"
+    kube-bench-id: "5.2.7"
+    title: "CIS control 5.2.7"
+    description: "CIS Kubernetes Benchmark control 5.2.7 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.7."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.7."
+    automated_checks:
+      - name: kube-bench-check-5-2-7
+        tool: kube-bench
+        cis_id: "5.2.7"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.8"
+    kube-bench-id: "5.2.8"
+    title: "CIS control 5.2.8"
+    description: "CIS Kubernetes Benchmark control 5.2.8 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.8."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.8."
+    automated_checks:
+      - name: kube-bench-check-5-2-8
+        tool: kube-bench
+        cis_id: "5.2.8"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.2.9"
+    kube-bench-id: "5.2.9"
+    title: "CIS control 5.2.9"
+    description: "CIS Kubernetes Benchmark control 5.2.9 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.2.9."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.2.9."
+    automated_checks:
+      - name: kube-bench-check-5-2-9
+        tool: kube-bench
+        cis_id: "5.2.9"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.3.1"
+    kube-bench-id: "5.3.1"
+    title: "CIS control 5.3.1"
+    description: "CIS Kubernetes Benchmark control 5.3.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.3.1."
+      - type: implementation
+        path: cd/kubernetes/_base/network-policies/
+        description: "Implementation or reference mapped for control 5.3.1."
+    automated_checks:
+      - name: kube-bench-check-5-3-1
+        tool: kube-bench
+        cis_id: "5.3.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.3.2"
+    kube-bench-id: "5.3.2"
+    title: "CIS control 5.3.2"
+    description: "CIS Kubernetes Benchmark control 5.3.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.3.2."
+      - type: implementation
+        path: cd/kubernetes/_base/network-policies/
+        description: "Implementation or reference mapped for control 5.3.2."
+    automated_checks:
+      - name: kube-bench-check-5-3-2
+        tool: kube-bench
+        cis_id: "5.3.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.4.1"
+    kube-bench-id: "5.4.1"
+    title: "CIS control 5.4.1"
+    description: "CIS Kubernetes Benchmark control 5.4.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.4.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 5.4.1."
+    automated_checks:
+      - name: kube-bench-check-5-4-1
+        tool: kube-bench
+        cis_id: "5.4.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.4.2"
+    kube-bench-id: "5.4.2"
+    title: "CIS control 5.4.2"
+    description: "CIS Kubernetes Benchmark control 5.4.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.4.2."
+      - type: implementation
+        path: secrets/
+        description: "Implementation or reference mapped for control 5.4.2."
+    automated_checks:
+      - name: kube-bench-check-5-4-2
+        tool: kube-bench
+        cis_id: "5.4.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.5.1"
+    kube-bench-id: "5.5.1"
+    title: "CIS control 5.5.1"
+    description: "CIS Kubernetes Benchmark control 5.5.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.5.1."
+      - type: implementation
+        path: secops/supply-chain/cosign-verify-policy.yaml
+        description: "Implementation or reference mapped for control 5.5.1."
+    automated_checks:
+      - name: kube-bench-check-5-5-1
+        tool: kube-bench
+        cis_id: "5.5.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.7.1"
+    kube-bench-id: "5.7.1"
+    title: "CIS control 5.7.1"
+    description: "CIS Kubernetes Benchmark control 5.7.1 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.7.1."
+      - type: implementation
+        path: secops/compliance/controls/cis-kubernetes.md
+        description: "Implementation or reference mapped for control 5.7.1."
+    automated_checks:
+      - name: kube-bench-check-5-7-1
+        tool: kube-bench
+        cis_id: "5.7.1"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.7.2"
+    kube-bench-id: "5.7.2"
+    title: "CIS control 5.7.2"
+    description: "CIS Kubernetes Benchmark control 5.7.2 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.7.2."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.7.2."
+    automated_checks:
+      - name: kube-bench-check-5-7-2
+        tool: kube-bench
+        cis_id: "5.7.2"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.7.3"
+    kube-bench-id: "5.7.3"
+    title: "CIS control 5.7.3"
+    description: "CIS Kubernetes Benchmark control 5.7.3 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.7.3."
+      - type: implementation
+        path: policy/kyverno/require-non-root.yaml
+        description: "Implementation or reference mapped for control 5.7.3."
+    automated_checks:
+      - name: kube-bench-check-5-7-3
+        tool: kube-bench
+        cis_id: "5.7.3"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"
+
+  - id: "5.7.4"
+    kube-bench-id: "5.7.4"
+    title: "CIS control 5.7.4"
+    description: "CIS Kubernetes Benchmark control 5.7.4 compliance mapping."
+    status: implemented
+    evidence:
+      - type: kube-bench-job
+        path: secops/compliance/kube-bench-job.yaml
+        description: "Primary scanner that evaluates control 5.7.4."
+      - type: implementation
+        path: cd/kubernetes/_base/network-policies/
+        description: "Implementation or reference mapped for control 5.7.4."
+    automated_checks:
+      - name: kube-bench-check-5-7-4
+        tool: kube-bench
+        cis_id: "5.7.4"
+        command: "kube-bench run --targets=master,etcd,controlplane,policies,node --json"
+        pass_condition: "PASS"
+      - name: kube-bench-results-configmap
+        tool: kubectl
+        command: "kubectl get configmap -n secops -l scan-type=cis-benchmark -o json"
+        pass_condition: ".items | length > 0"
+    audit_query: |
+      {source="k8s-audit"} | json | verb=~"create|update|patch|delete"

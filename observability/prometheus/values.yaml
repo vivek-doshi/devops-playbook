@@ -193,3 +193,28 @@ grafana:
     limits:
       cpu: 500m
       memory: 1Gi
+
+# Fleet observability: enable remote_write to aggregate metrics from all clusters
+# into a central Prometheus or Thanos instance.
+# Uncomment and configure when you have a central metrics store.
+# <-- UPGRADE PATH: Replace central Prometheus with Thanos for long-term storage
+#                   See: https://thanos.io/tip/thanos/quick-tutorial.md
+#
+# prometheus:
+#   prometheusSpec:
+#     remoteWrite:
+#       - url: https://central-prometheus.example.com/api/v1/write  # <-- CHANGE THIS: set to your central write endpoint; value differs by environment and observability account.
+#         basicAuth:
+#           username:
+#             name: central-prometheus-auth
+#             key: username
+#           password:
+#             name: central-prometheus-auth
+#             key: password
+#         writeRelabelConfigs:
+#           - sourceLabels: [__name__]
+#             regex: fleet:.*    # Only send fleet-level recording rules, not raw metrics
+#             action: keep
+#         externalLabels:
+#           cluster_name: <cluster-name>   # <-- CHANGE THIS: set per-cluster via overlay patch so aggregated data preserves source cluster identity.
+#           environment: <environment>     # <-- CHANGE THIS: set per-cluster via overlay patch to support environment-scoped fleet dashboards.

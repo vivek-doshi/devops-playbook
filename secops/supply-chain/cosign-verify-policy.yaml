@@ -196,3 +196,70 @@ spec:
           To enforce: remove label 'policy.kyverno.io/supply-chain=audit' from namespace.
           Documentation: secops/supply-chain/cosign-verify-policy.yaml
         deny: {}
+
+---
+# Kyverno ClusterPolicy: Namespace PolicyReport summary for image signature compliance
+#
+# Reporting only: this policy always runs in Audit mode so teams can measure compliance
+# without changing admission enforcement behavior configured in verify-image-signature.
+#
+# Use `kubectl get policyreport -A` to see compliance across all namespaces.
+# Wire this to a Grafana dashboard using the kube-state-metrics PolicyReport metrics.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signature-namespace-report
+  annotations:
+    policies.kyverno.io/title: Verify Image Signature Namespace Report
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/minversion: "1.10.0"
+    policies.kyverno.io/description: >-
+      Emits pass/fail PolicyReport results for image signature compliance per namespace
+      without enforcing admission denials. Use this to monitor migration progress.
+spec:
+  validationFailureAction: Audit
+  background: true
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: verify-image-signature-namespace-report
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+          - resources:
+              namespaces:
+                - "*"
+              selector:
+                matchLabels:
+                  policy.kyverno.io/supply-chain: disabled
+      verifyImages:
+        - imageReferences:
+            - "*"
+          skipImageReferences:
+            - "registry.k8s.io/*"
+            - "k8s.gcr.io/*"
+            - "quay.io/kiwigrid/*"
+            - "docker.io/falcosecurity/*"
+          attestors:
+            - count: 1
+              entries:
+                - keyless:
+                    subject: "https://github.com/*/github/workflows/*@*"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: "https://rekor.sigstore.dev"
+          mutateDigest: false
+          verifyDigest: true

@@ -3,7 +3,7 @@
 Generated from current workspace structure.
 
 - Root: d:/projects/cicd-reference
-- Generated: 2026-05-23 19:39:59
+- Generated: 2026-05-23 21:02:02
 - Exclusions: .ai/, .git/, .github/prompts/, .github/skills/, .kiro/, website/
 
 ```text
@@ -40,8 +40,22 @@ Generated from current workspace structure.
 │       ├── README.md
 │       └── schedule.yaml
 ├── cd
+│   ├── fleet-overlays
+│   │   ├── dev
+│   │   │   └── .gitkeep
+│   │   ├── production
+│   │   │   └── .gitkeep
+│   │   ├── staging
+│   │   │   └── webapp-example
+│   │   │       └── kustomization.yaml
+│   │   └── README.md
 │   ├── gitops
 │   │   ├── argocd
+│   │   │   ├── fleet
+│   │   │   │   ├── cluster-registry.yaml
+│   │   │   │   ├── fleet-applicationset.yaml
+│   │   │   │   ├── fleet-project.yaml
+│   │   │   │   └── fleet-workload-applicationset.yaml
 │   │   │   ├── application.yaml
 │   │   │   ├── applicationset.yaml
 │   │   │   └── app-of-apps.yaml
@@ -177,7 +191,9 @@ Generated from current workspace structure.
 │   │   │   ├── reusable-attest.yml
 │   │   │   ├── reusable-docker-build.yml
 │   │   │   ├── reusable-notify-slack.yml
-│   │   │   └── reusable-security-scan.yml
+│   │   │   ├── reusable-security-scan.yml
+│   │   │   ├── reusable-supply-chain.yml
+│   │   │   └── reusable-supply-chain-verify.yml
 │   │   ├── _strategies
 │   │   │   ├── matrix-build.yml
 │   │   │   ├── monorepo-affected.yml
@@ -189,7 +205,8 @@ Generated from current workspace structure.
 │   │   ├── dotnet
 │   │   │   ├── build-test.yml
 │   │   │   ├── docker-publish.yml
-│   │   │   └── sonar-scan.yml
+│   │   │   ├── sonar-scan.yml
+│   │   │   └── supply-chain-integration.yml
 │   │   ├── go
 │   │   │   ├── build-test.yml
 │   │   │   └── docker-publish.yml
@@ -319,6 +336,7 @@ Generated from current workspace structure.
 │   │   ├── pipeline-overview.drawio
 │   │   └── pipeline-overview.svg
 │   ├── golden-paths
+│   │   ├── compliance-reporting.md
 │   │   ├── database-migrations.md
 │   │   ├── data-pipeline.md
 │   │   ├── frontend-spa.md
@@ -326,9 +344,11 @@ Generated from current workspace structure.
 │   │   ├── kubernetes-microservice.md
 │   │   ├── mlops-workflow.md
 │   │   ├── mobile-backend.md
+│   │   ├── multi-cluster-fleet.md
 │   │   ├── multi-tenant-saas.md
 │   │   ├── platform-onboarding.md
-│   │   └── serverless-app.md
+│   │   ├── serverless-app.md
+│   │   └── supply-chain-security.md
 │   ├── guides
 │   │   ├── branching-strategy.md
 │   │   ├── conventional-commits.md
@@ -467,6 +487,7 @@ Generated from current workspace structure.
 │   │   │   ├── availability-slo.yaml
 │   │   │   ├── latency-slo.yaml
 │   │   │   └── README.md
+│   │   ├── fleet-aggregation.yaml
 │   │   ├── README.md
 │   │   └── values.yaml
 │   ├── tempo
@@ -489,6 +510,7 @@ Generated from current workspace structure.
 │   ├── kyverno
 │   │   ├── disallow-latest-tag.yaml
 │   │   ├── enforce-finops-labels.yaml
+│   │   ├── fleet-policy-propagation.yaml
 │   │   ├── README.md
 │   │   ├── require-labels.yaml
 │   │   ├── require-liveness-readiness.yaml
@@ -518,12 +540,27 @@ Generated from current workspace structure.
 │   └── tag-release.sh
 ├── secops
 │   ├── compliance
+│   │   ├── alerts
+│   │   │   └── compliance-alerts.yaml
+│   │   ├── control-library
+│   │   │   ├── cis-kubernetes.yaml
+│   │   │   ├── control-to-policy-map.yaml
+│   │   │   ├── iso27001.yaml
+│   │   │   └── soc2-controls.yaml
 │   │   ├── controls
 │   │   │   ├── cis-kubernetes.md
 │   │   │   ├── iso27001.md
 │   │   │   └── soc2.md
+│   │   ├── kubernetes
+│   │   │   └── compliance-report-cronjob.yaml
+│   │   ├── scripts
+│   │   │   ├── __pycache__
+│   │   │   │   └── generate-compliance-report.cpython-314.pyc
+│   │   │   ├── collect-evidence.sh
+│   │   │   └── generate-compliance-report.py
 │   │   ├── kube-bench-cronjob.yaml
-│   │   └── kube-bench-job.yaml
+│   │   ├── kube-bench-job.yaml
+│   │   └── README.md
 │   ├── runbooks
 │   │   ├── compromised-pod.md
 │   │   ├── node-compromise.md
@@ -540,8 +577,10 @@ Generated from current workspace structure.
 │   │       └── values.yaml
 │   ├── supply-chain
 │   │   ├── cosign-verify-policy.yaml
+│   │   ├── README.md
 │   │   ├── sbom-policy.yaml
-│   │   └── slsa-verify.yaml
+│   │   ├── slsa-verify.yaml
+│   │   └── supply-chain-status.yaml
 │   └── README.md
 ├── secrets
 │   ├── external-secrets
@@ -550,10 +589,15 @@ Generated from current workspace structure.
 │   │   ├── example-external-secret.yaml
 │   │   ├── gcp-secret-store.yaml
 │   │   └── README.md
-│   └── rotation
-│       ├── aws-rotation.yml
-│       ├── azure-rotation.yml
-│       └── gcp-rotation.yml
+│   ├── guides
+│   │   ├── emergency-rotation.md
+│   │   ├── secret-lifecycle.md
+│   │   └── secret-offboarding.md
+│   ├── rotation
+│   │   ├── aws-rotation.yml
+│   │   ├── azure-rotation.yml
+│   │   └── gcp-rotation.yml
+│   └── README.md
 ├── terraform
 │   ├── _bootstrap
 │   │   ├── aws

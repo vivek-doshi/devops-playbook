@@ -1,0 +1,147 @@
+# ============================================================
+# TEMPLATE: Kubernetes - Compliance Report CronJob Pipeline
+# WHEN TO USE: Weekly compliance evidence collection and score reporting
+# PREREQUISITES: kube-bench CronJob, Kyverno PolicyReports, and secops namespace
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Reporter image and optional Pushgateway URL
+# RELATED FILES: secops/compliance/scripts/collect-evidence.sh
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: compliance-reporter
+  namespace: secops
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: compliance-reporter-readonly
+rules:
+  # Read-only evidence permissions aligned with readonly-developer pattern.
+  - apiGroups: [""]
+    resources: ["pods", "namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
+    verbs: ["get", "list"]
+  - apiGroups: ["kyverno.io"]
+    resources: ["clusterpolicies"]
+    verbs: ["get", "list"]
+  - apiGroups: ["wgpolicyk8s.io"]
+    resources: ["policyreports", "clusterpolicyreports"]
+    verbs: ["get", "list"]
+  - apiGroups: ["external-secrets.io"]
+    resources: ["externalsecrets"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: compliance-reporter-readonly
+subjects:
+  - kind: ServiceAccount
+    name: compliance-reporter
+    namespace: secops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: compliance-reporter-readonly
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: compliance-reporter-configmap-writer
+  namespace: secops
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: compliance-reporter-configmap-writer
+  namespace: secops
+subjects:
+  - kind: ServiceAccount
+    name: compliance-reporter
+    namespace: secops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: compliance-reporter-configmap-writer
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: compliance-report-weekly
+  namespace: secops
+  annotations:
+    secops.requirements: "CC7.1, 5.36, 8.8, 8.9"
+spec:
+  schedule: "0 6 * * 0"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      ttlSecondsAfterFinished: 7776000
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          serviceAccountName: compliance-reporter
+          restartPolicy: OnFailure
+          containers:
+            - name: compliance-reporter
+              image: ghcr.io/your-org/compliance-reporter:0.1.0 # <-- CHANGE THIS: build and pin a minimal Python+kubectl reporter image from this repository CI pipeline.
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  RUN_DATE="$(date -u +%Y%m%d)"
+                  EVIDENCE_DIR="/tmp/evidence-${RUN_DATE}"
+                  REPORT_JSON="/tmp/compliance-report.json"
+
+                  bash secops/compliance/scripts/collect-evidence.sh --output-dir "${EVIDENCE_DIR}" --namespace all
+
+                  python secops/compliance/scripts/generate-compliance-report.py \
+                    --control-library-dir secops/compliance/control-library \
+                    --evidence-dir "${EVIDENCE_DIR}" \
+                    --format json \
+                    --output "${REPORT_JSON}"
+
+                  kubectl -n secops create configmap compliance-report-latest \
+                    --from-file=report.json="${REPORT_JSON}" \
+                    --dry-run=client -o yaml | kubectl apply -f -
+
+                  MANIFEST_NAME="compliance-evidence-manifest-${RUN_DATE}"
+                  kubectl -n secops create configmap "${MANIFEST_NAME}" \
+                    --from-file=manifest.json="${EVIDENCE_DIR}/manifest.json" \
+                    --dry-run=client -o yaml | \
+                    kubectl annotate --local -f - \
+                      secops.retention.ttl="90d" \
+                      compliance.run.date="${RUN_DATE}" \
+                      -o yaml | \
+                    kubectl apply -f -
+
+                    SOC2_SCORE="$(python -c "import json; r=json.load(open('/tmp/compliance-report.json','r',encoding='utf-8')); print(((r.get('frameworks',{}).get('SOC2',{}) or {}).get('score',0.0))/100.0)")"
+                    CIS_SCORE="$(python -c "import json; r=json.load(open('/tmp/compliance-report.json','r',encoding='utf-8')); print(((r.get('frameworks',{}).get('CIS-Kubernetes',{}) or {}).get('score',0.0))/100.0)")"
+                    ISO_SCORE="$(python -c "import json; r=json.load(open('/tmp/compliance-report.json','r',encoding='utf-8')); print(((r.get('frameworks',{}).get('ISO27001',{}) or {}).get('score',0.0))/100.0)")"
+
+                  PUSHGATEWAY_URL="http://pushgateway.monitoring.svc.cluster.local:9091" # <-- CHANGE THIS: set your cluster Pushgateway service URL or leave unset to disable push.
+                  if [ -n "${PUSHGATEWAY_URL}" ]; then
+                    printf 'compliance_score{framework="SOC2"} %s\ncompliance_score{framework="CIS-Kubernetes"} %s\ncompliance_score{framework="ISO27001"} %s\n' \
+                      "${SOC2_SCORE}" "${CIS_SCORE}" "${ISO_SCORE}" \
+                      | curl --silent --show-error --fail --data-binary @- "${PUSHGATEWAY_URL}/metrics/job/compliance-reporter"
+                  fi

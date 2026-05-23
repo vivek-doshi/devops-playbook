@@ -1,0 +1,58 @@
+# ============================================================
+# TEMPLATE: PrometheusRule - Compliance Alerts
+# WHEN TO USE: Alerting on compliance score regressions and stale evidence
+# PREREQUISITES: compliance_score metric and kube-state-metrics configmap metrics
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: runbook URLs and threshold tuning by environment
+# RELATED FILES: secops/compliance/kubernetes/compliance-report-cronjob.yaml
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: compliance-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: compliance.rules
+      rules:
+        - alert: ComplianceScoreCritical
+          expr: compliance_score < 0.70
+          for: 24h
+          labels:
+            severity: critical
+          annotations:
+            summary: Compliance score is critically low for framework {{ $labels.framework }}.
+            description: Compliance score for framework {{ $labels.framework }} has stayed below 0.70 for 24 hours.
+            runbook_url: https://runbooks.example.com/compliancescorecritical # <-- CHANGE THIS
+
+        - alert: ComplianceScoreWarning
+          expr: compliance_score < 0.85
+          for: 24h
+          labels:
+            severity: warning
+          annotations:
+            summary: Compliance score is below target for framework {{ $labels.framework }}.
+            description: Compliance score for framework {{ $labels.framework }} has stayed below 0.85 for 24 hours.
+            runbook_url: https://runbooks.example.com/compliancescorewarning # <-- CHANGE THIS
+
+        - alert: ComplianceEvidenceStale
+          expr: time() - max(kube_configmap_created{namespace="secops",configmap="compliance-report-latest"}) > 691200
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: Compliance evidence appears stale in namespace {{ $labels.namespace }}.
+            description: The compliance-report-latest ConfigMap has not been refreshed within the expected weekly window (8 days).
+            runbook_url: https://runbooks.example.com/complianceevidencestale # <-- CHANGE THIS
+
+        - alert: KyveryoPolicyViolationsHigh
+          expr: sum(kyverno_policy_report_result{result="fail"}) > 10
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: Kyverno policy violations are above threshold across the cluster.
+            description: Kyverno PolicyReport failures are above 10 for at least one hour, indicating unresolved admission or background policy issues.
+            runbook_url: https://runbooks.example.com/kyveryopolicyviolationshigh # <-- CHANGE THIS

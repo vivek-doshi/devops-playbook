@@ -1,0 +1,30 @@
+# ============================================================
+# TEMPLATE: Prometheus - Fleet Aggregation Recording Rules
+# WHEN TO USE: Aggregate per-cluster metrics into fleet-level views
+# PREREQUISITES: cluster_name and environment labels present on scraped metrics
+# SECRETS NEEDED: None
+# WHAT TO CHANGE: Metric names and labels for your telemetry conventions
+# RELATED FILES: observability/prometheus/values.yaml
+# MATURITY: Beta
+# ============================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: fleet-aggregation
+  namespace: monitoring
+spec:
+  groups:
+    - name: fleet.aggregate
+      interval: 5m
+      rules:
+        - record: fleet:up:ratio
+          expr: avg(up) by (cluster_name, environment)
+          labels:
+            fleet: "true"
+
+        - record: fleet:pod_restart_rate:5m
+          expr: sum(rate(kube_pod_container_status_restarts_total[5m])) by (cluster_name, namespace)
+
+        - record: fleet:kyverno_violations:count
+          expr: sum(kyverno_policy_results_total{result="fail"}) by (cluster_name, policy_name)
