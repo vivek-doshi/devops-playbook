@@ -1,0 +1,8 @@
+# One relative folder path per line.
+# Lines starting with # are ignored.
+
+.ai
+.kiro
+.github/prompts
+.github/skills
+website
