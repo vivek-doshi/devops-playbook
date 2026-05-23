@@ -84,7 +84,7 @@ function App() {
         theme={theme}
         onThemeChange={setTheme}
       />
-      <CodeViewer file={selectedFile} />
+      <CodeViewer file={selectedFile} files={files} onFileSelect={setSelectedFile} />
     </div>
   );
 }

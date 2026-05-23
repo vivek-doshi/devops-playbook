@@ -1,4 +1,4 @@
-# Golden Path - Supply Chain Security
+﻿# Golden Path - Supply Chain Security
 
 > **An opinionated, end-to-end workflow that guides developers from idea -> production**
 
@@ -10,7 +10,7 @@
 - You must satisfy supply chain controls such as SOC 2 CC6.8, SLSA Level 2+, or internal provenance policy.
 - You want signing, SBOM, provenance, and admission verification wired as a standard path.
 
-Not the right path? See [kubernetes-microservice.md](kubernetes-microservice.md) Step 5 if you only need baseline container scanning without full provenance attestations.
+Not the right path? See [Kubernetes Microservice](kubernetes-microservice.md) Step 5 if you only need baseline container scanning without full provenance attestations.
 
 ---
 
@@ -155,6 +155,6 @@ Also deploy the weekly reporter at [secops/supply-chain/supply-chain-status.yaml
 
 ## Related paths
 
-- [kubernetes-microservice.md](kubernetes-microservice.md) Step 5 - baseline scanning path.
-- [platform-onboarding.md](platform-onboarding.md) Step 7 - team platform enablement sequence.
+- [Kubernetes Microservice](kubernetes-microservice.md) Step 5 - baseline scanning path.
+- [Platform Onboarding](platform-onboarding.md) Step 7 - team platform enablement sequence.
 - [docs/guides/secrets-management.md](../guides/secrets-management.md) - secret handling baseline.

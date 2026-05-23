@@ -28,6 +28,20 @@ interface FileItem {
 
 interface CodeViewerProps {
   file: FileItem | null;
+  files: FileItem[];
+  onFileSelect: (file: FileItem) => void;
+}
+
+function resolveRelativePath(currentFilePath: string, href: string): string {
+  // Strip leading ./
+  const cleaned = href.replace(/^\.\//,'');
+  const currentDir = currentFilePath.split('/').slice(0, -1);
+  const parts = [...currentDir];
+  for (const part of cleaned.split('/')) {
+    if (part === '..') parts.pop();
+    else if (part !== '.') parts.push(part);
+  }
+  return parts.join('/');
 }
 
 interface TemplateMetadata {
@@ -73,7 +87,7 @@ function MaturityBadge({ value }: { value: string }) {
   );
 }
 
-export const CodeViewer: React.FC<CodeViewerProps> = ({ file }) => {
+export const CodeViewer: React.FC<CodeViewerProps> = ({ file, files, onFileSelect }) => {
   const [copied, setCopied] = React.useState(false);
 
   useEffect(() => {
@@ -169,7 +183,45 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file }) => {
             </div>
           ) : file.language === 'markdown' ? (
             <div className="markdown-body">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{file.content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ href, children, ...props }) => {
+                    if (
+                      href &&
+                      !href.startsWith('http://') &&
+                      !href.startsWith('https://') &&
+                      !href.startsWith('#') &&
+                      !href.startsWith('mailto:')
+                    ) {
+                      const resolved = resolveRelativePath(file.path, href);
+                      const target = files.find(f => f.path === resolved);
+                      if (target) {
+                        return (
+                          <a
+                            {...props}
+                            href="#"
+                            title={resolved}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              onFileSelect(target);
+                            }}
+                          >
+                            {children}
+                          </a>
+                        );
+                      }
+                    }
+                    return (
+                      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                        {children}
+                      </a>
+                    );
+                  },
+                }}
+              >
+                {file.content}
+              </ReactMarkdown>
             </div>
           ) : file.language === 'svg' ? (
             <div className="svg-viewer">

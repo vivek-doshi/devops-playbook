@@ -1,4 +1,4 @@
-# Golden Path — Kubernetes Microservice
+﻿# Golden Path — Kubernetes Microservice
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -11,12 +11,12 @@
 - You want CI/CD, security scanning, and observability wired up by default
 
 Not the right path? See:
-- [frontend-spa.md](frontend-spa.md) — React or Angular app
-- [serverless-app.md](serverless-app.md) — Lambda / Cloud Run
-- [data-pipeline.md](data-pipeline.md) — batch jobs and scheduled tasks
-- [mobile-backend.md](mobile-backend.md) — BFF for mobile apps (API versioning, OAuth/OIDC, push notifications, rate limiting)
-- [database-migrations.md](database-migrations.md) — end-to-end workflow for zero-downtime schema migrations
-- [multi-tenant-saas.md](multi-tenant-saas.md) — namespace-per-tenant isolation, automated onboarding, billing instrumentation
+- [Frontend SPA](frontend-spa.md) — React or Angular app
+- [Serverless App](serverless-app.md) — Lambda / Cloud Run
+- [Data Pipeline](data-pipeline.md) — batch jobs and scheduled tasks
+- [Mobile Backend](mobile-backend.md) — BFF for mobile apps (API versioning, OAuth/OIDC, push notifications, rate limiting)
+- [Database Migrations](database-migrations.md) — end-to-end workflow for zero-downtime schema migrations
+- [Multi-Tenant SaaS](multi-tenant-saas.md) — namespace-per-tenant isolation, automated onboarding, billing instrumentation
 
 ---
 
@@ -504,4 +504,4 @@ When something goes wrong in production, start here:
 
 - [`docs/runbooks/podcrashloobackoff.md`](../runbooks/podcrashloobackoff.md) — pod crash loop diagnosis
 - [`docs/runbooks/template.md`](../runbooks/template.md) — write a new runbook for your service
-- Full incident procedure: [incident-response.md](incident-response.md)
+- Full incident procedure: [Incident Response](incident-response.md)

@@ -1,4 +1,4 @@
-# Golden Path — Platform Onboarding
+﻿# Golden Path — Platform Onboarding
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -17,7 +17,7 @@ By the end of this path your team will have:
 - Secrets management configured
 - An on-call rotation and alert routing set up
 
-This path does not build an application. It gets your team's platform foundations in place so that the application paths ([kubernetes-microservice.md](kubernetes-microservice.md), [frontend-spa.md](frontend-spa.md), etc.) work on first attempt.
+This path does not build an application. It gets your team's platform foundations in place so that the application paths ([Kubernetes Microservice](kubernetes-microservice.md), [Frontend SPA](frontend-spa.md), etc.) work on first attempt.
 
 ---
 
@@ -459,10 +459,10 @@ With platform foundations in place, pick the right path for what you're building
 
 | What you're building | Path |
 |---------------------|------|
-| Backend API / microservice | [kubernetes-microservice.md](kubernetes-microservice.md) |
-| React or Angular app | [frontend-spa.md](frontend-spa.md) |
-| Lambda / Cloud Run function | [serverless-app.md](serverless-app.md) |
-| Batch job / CronJob | [data-pipeline.md](data-pipeline.md) |
+| Backend API / microservice | [Kubernetes Microservice](kubernetes-microservice.md) |
+| React or Angular app | [Frontend SPA](frontend-spa.md) |
+| Lambda / Cloud Run function | [Serverless App](serverless-app.md) |
+| Batch job / CronJob | [Data Pipeline](data-pipeline.md) |
 
 ---
 

@@ -1,4 +1,4 @@
-# Golden Path — MLOps Workflow
+﻿# Golden Path — MLOps Workflow
 
 > **An opinionated, end-to-end workflow for teams training, validating, and deploying ML workloads on shared platform infrastructure.**
 
@@ -11,9 +11,9 @@
 - You want Terraform, CI cost controls, Kubernetes policy, and deployment patterns wired together
 
 Not the right path? See:
-- [kubernetes-microservice.md](kubernetes-microservice.md) — general service workloads on Kubernetes
-- [data-pipeline.md](data-pipeline.md) — non-GPU batch and scheduled data jobs
-- [platform-onboarding.md](platform-onboarding.md) — team and platform setup
+- [Kubernetes Microservice](kubernetes-microservice.md) — general service workloads on Kubernetes
+- [Data Pipeline](data-pipeline.md) — non-GPU batch and scheduled data jobs
+- [Platform Onboarding](platform-onboarding.md) — team and platform setup
 
 ---
 

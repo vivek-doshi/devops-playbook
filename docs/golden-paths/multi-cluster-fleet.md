@@ -10,7 +10,7 @@
 - You need consistent platform component delivery and policy enforcement across clusters.
 - You need fleet observability without manual per-cluster configuration.
 
-Not the right path? See [platform-onboarding.md](platform-onboarding.md) Step 11 for single-cluster ArgoCD setup, and [kubernetes-microservice.md](kubernetes-microservice.md) Step 11 for deploying one application to one cluster.
+Not the right path? See [Platform Onboarding](platform-onboarding.md) Step 11 for single-cluster ArgoCD setup, and [Kubernetes Microservice](kubernetes-microservice.md) Step 11 for deploying one application to one cluster.
 
 ---
 

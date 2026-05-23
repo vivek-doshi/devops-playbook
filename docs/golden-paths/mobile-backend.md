@@ -1,4 +1,4 @@
-# Golden Path — Mobile Backend
+﻿# Golden Path — Mobile Backend
 
 > **An opinionated, end-to-end workflow that guides developers from idea → production**
 
@@ -14,8 +14,8 @@
 - You need rate limiting to protect against aggressive mobile client retry behaviour
 
 Not the right path? See:
-- [kubernetes-microservice.md](kubernetes-microservice.md) — standard backend microservice without mobile-specific concerns
-- [serverless-app.md](serverless-app.md) — lightweight BFF on Lambda / Cloud Run
+- [Kubernetes Microservice](kubernetes-microservice.md) — standard backend microservice without mobile-specific concerns
+- [Serverless App](serverless-app.md) — lightweight BFF on Lambda / Cloud Run
 
 ---
 
@@ -415,7 +415,7 @@ notifications/pagerduty-notify.yml
 
 ## Related paths and guides
 
-- [kubernetes-microservice.md](kubernetes-microservice.md) — base path this extends; covers cluster provisioning, GitOps, and standard observability
-- [serverless-app.md](serverless-app.md) — alternative for lightweight BFFs that do not need Kubernetes
+- [Kubernetes Microservice](kubernetes-microservice.md) — base path this extends; covers cluster provisioning, GitOps, and standard observability
+- [Serverless App](serverless-app.md) — alternative for lightweight BFFs that do not need Kubernetes
 - [docs/guides/secrets-management.md](../guides/secrets-management.md) — storing APNs/FCM keys and JWKS credentials
 - [docs/guides/github-actions-oidc.md](../guides/github-actions-oidc.md) — OIDC for CI/CD pipelines
