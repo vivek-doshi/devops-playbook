@@ -1,0 +1,85 @@
+version: 1
+updated: 2026-05-22
+workflow_to_files:
+  kubernetes_microservice:
+    entrypoints:
+      - docs/golden-paths/kubernetes-microservice.md
+      - docs/ARCHITECTURE_DECISION_GUIDE.md
+    implementation:
+      - docker/
+      - ci/
+      - terraform/aws-eks/
+      - terraform/azure-aks/
+      - terraform/gcp-gke/
+      - cd/targets/aws-eks/
+      - cd/targets/azure-aks/
+      - cd/targets/gcp-gke/
+      - cd/kubernetes/
+      - cd/helm/
+    guardrails:
+      - security/
+      - policy/
+      - finops/policies/
+  serverless_app:
+    entrypoints:
+      - docs/golden-paths/serverless-app.md
+      - docs/ARCHITECTURE_DECISION_GUIDE.md
+    implementation:
+      - ci/
+      - terraform/aws-lambda/
+      - cd/targets/aws-lambda/
+    guardrails:
+      - security/secret-detection/
+      - security/dependency-audit/
+  frontend_spa:
+    entrypoints:
+      - docs/golden-paths/frontend-spa.md
+      - docs/ARCHITECTURE_DECISION_GUIDE.md
+    implementation:
+      - docker/react/
+      - docker/angular/
+      - ci/github-actions/react/
+      - ci/github-actions/angular/
+      - cd/targets/azure-app-service/
+      - website/
+    guardrails:
+      - security/
+      - observability/
+  data_pipeline:
+    entrypoints:
+      - docs/golden-paths/data-pipeline.md
+    implementation:
+      - ci/
+      - cd/kubernetes/
+      - terraform/
+    guardrails:
+      - security/
+      - finops/
+  incident_response:
+    entrypoints:
+      - docs/golden-paths/incident-response.md
+      - secops/runbooks/
+    implementation:
+      - secops/runbooks/compromised-pod.md
+      - secops/runbooks/node-compromise.md
+      - secops/runbooks/secret-exposure.md
+      - secops/runbooks/supply-chain-incident.md
+      - observability/
+      - notifications/
+    guardrails:
+      - secops/
+      - policy/
+  platform_onboarding:
+    entrypoints:
+      - docs/golden-paths/platform-onboarding.md
+    implementation:
+      - local-dev/
+      - ci/
+      - cd/
+      - terraform/
+      - security/
+      - observability/
+      - finops/
+    guardrails:
+      - policy/
+      - secops/

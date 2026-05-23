@@ -1,0 +1,73 @@
+version: 1
+updated: 2026-05-22
+defaults:
+  start_with:
+    - README.md
+    - docs/ARCHITECTURE_DECISION_GUIDE.md
+  guardrails:
+    - security/
+    - policy/
+    - finops/
+task_to_domain:
+  containerize_application:
+    domains: [docker, compose, local-dev]
+    paths:
+      - docker/
+      - compose/
+      - local-dev/
+  setup_ci_pipeline:
+    domains: [ci, quality, security]
+    paths:
+      - ci/
+      - quality/
+      - security/
+  deploy_application:
+    domains: [cd, terraform, kubernetes]
+    paths:
+      - cd/targets/
+      - terraform/
+      - cd/kubernetes/
+  kubernetes_workload:
+    domains: [cd-kubernetes, helm, gitops, policy]
+    paths:
+      - cd/kubernetes/
+      - cd/helm/
+      - cd/gitops/
+      - policy/
+  infrastructure_provisioning:
+    domains: [terraform, pulumi]
+    paths:
+      - terraform/
+      - cd/pulumi/
+      - backup/terraform/
+  security_hardening:
+    domains: [security, policy, secrets, secops]
+    paths:
+      - security/
+      - policy/
+      - secrets/
+      - secops/
+  incident_response:
+    domains: [secops, docs-runbooks, observability, notifications]
+    paths:
+      - secops/runbooks/
+      - docs/runbooks/
+      - observability/
+      - notifications/
+  observability_setup:
+    domains: [observability, notifications]
+    paths:
+      - observability/
+      - notifications/
+  finops_governance:
+    domains: [finops, policy, ci]
+    paths:
+      - finops/
+      - finops/policies/
+      - finops/cicd/
+  documentation_or_decision_support:
+    domains: [docs, runbooks]
+    paths:
+      - docs/
+      - docs/golden-paths/
+      - docs/decisions/

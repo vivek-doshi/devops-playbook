@@ -10,7 +10,28 @@
 ## Overview
 
 
-This repository is a comprehensive, real-world reference for building, deploying, and operating applications on Kubernetes, serverless, and cloud platforms. It is designed for:
+This repository is a comprehensive, real-world reference for building, deploying, and operating applications on Kubernetes, serverless, and cloud platforms.
+
+## Purpose And Scope
+
+This repository exists to help teams adopt production-grade DevOps practices quickly, with reusable templates and clear guardrails instead of one-off implementations.
+
+- Establish a standardized baseline for CI/CD, IaC, deployment, security, observability, and FinOps
+- Accelerate onboarding and implementation by providing copy-ready, connected examples
+- Improve reliability and governance by making safe defaults explicit and repeatable
+
+It is not intended to be a rigid framework. Teams are expected to adapt templates to their environment while preserving core guardrails.
+
+## At A Glance
+
+- Start from workflow guidance in [docs/golden-paths/](docs/golden-paths/)
+- Use implementation templates from [docker/](docker/), [ci/](ci/), [cd/](cd/), and [terraform/](terraform/)
+- Apply controls from [security/](security/), [policy/](policy/), [secrets/](secrets/), and [finops/](finops/)
+- Operate with [observability/](observability/) patterns and [docs/runbooks/](docs/runbooks/)
+
+Reference context for maintainers is also available in [.ai/context/readme.mf](.ai/context/readme.mf).
+
+It is designed for:
 
 - **New teams**: Onboard quickly with proven patterns and guardrails
 - **Org-wide adoption**: Standardize on best practices, reduce risk, and accelerate delivery
