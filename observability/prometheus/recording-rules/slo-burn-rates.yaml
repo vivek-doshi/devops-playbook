@@ -1,0 +1,187 @@
+# ============================================================
+# TEMPLATE: SLO Recording Rules — Burn Rates
+# WHEN TO USE: Pre-compute SLO error ratios, burn rates, and error-budget remaining.
+# MATURITY: Stable
+# ============================================================
+# Naming convention required in this repository:
+#   slo:<service>:<metric>:<window>
+# Example: slo:api_gateway:availability_error_ratio:1h
+#
+# Recording rules are mandatory. Do not compute multi-window ratios directly
+# inside alert expressions. At fleet scale, direct multi-window expressions create
+# O(n) query load per evaluation interval; recording rules reduce alerts to O(1)
+# lookups and keep evaluation latency stable.
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-burn-rates-api-gateway
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+    slo: "true"
+spec:
+  groups:
+    - name: slo.api_gateway.availability.recording
+      interval: 30s
+      rules:
+        - record: slo:api_gateway:good_requests_rate:5m
+          expr: sum(rate(http_requests_total{job="api-gateway",status_code!~"5.."}[5m]))
+        - record: slo:api_gateway:total_requests_rate:5m
+          expr: sum(rate(http_requests_total{job="api-gateway"}[5m]))
+
+        - record: slo:api_gateway:availability_error_ratio:1m
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[1m]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[1m]))
+        - record: slo:api_gateway:availability_error_ratio:5m
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[5m]))
+        - record: slo:api_gateway:availability_error_ratio:30m
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[30m]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[30m]))
+        - record: slo:api_gateway:availability_error_ratio:1h
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[1h]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[1h]))
+        - record: slo:api_gateway:availability_error_ratio:2h
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[2h]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[2h]))
+        - record: slo:api_gateway:availability_error_ratio:6h
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[6h]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[6h]))
+        - record: slo:api_gateway:availability_error_ratio:24h
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[24h]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[24h]))
+        - record: slo:api_gateway:availability_error_ratio:72h
+          expr: |
+            sum(rate(http_requests_total{job="api-gateway",status_code=~"5.."}[72h]))
+            /
+            sum(rate(http_requests_total{job="api-gateway"}[72h]))
+
+        - record: slo:api_gateway:availability_error_budget_remaining:30d
+          expr: |
+            1 - (
+              (
+                sum(increase(http_requests_total{job="api-gateway",status_code=~"5.."}[30d]))
+                /
+                sum(increase(http_requests_total{job="api-gateway"}[30d]))
+              )
+              / (1 - 0.999)
+            )
+
+        - record: slo:api_gateway:availability_burn_rate:5m
+          expr: slo:api_gateway:availability_error_ratio:5m / (1 - 0.999)
+        - record: slo:api_gateway:availability_burn_rate:30m
+          expr: slo:api_gateway:availability_error_ratio:30m / (1 - 0.999)
+        - record: slo:api_gateway:availability_burn_rate:1h
+          expr: slo:api_gateway:availability_error_ratio:1h / (1 - 0.999)
+        - record: slo:api_gateway:availability_burn_rate:2h
+          expr: slo:api_gateway:availability_error_ratio:2h / (1 - 0.999)
+        - record: slo:api_gateway:availability_burn_rate:6h
+          expr: slo:api_gateway:availability_error_ratio:6h / (1 - 0.999)
+        - record: slo:api_gateway:availability_burn_rate:24h
+          expr: slo:api_gateway:availability_error_ratio:24h / (1 - 0.999)
+        - record: slo:api_gateway:availability_burn_rate:72h
+          expr: slo:api_gateway:availability_error_ratio:72h / (1 - 0.999)
+
+    - name: slo.api_gateway.latency.recording
+      interval: 30s
+      rules:
+        - record: slo:api_gateway:latency_error_ratio:1m
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[1m]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[1m]))
+            )
+        - record: slo:api_gateway:latency_error_ratio:5m
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[5m]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[5m]))
+            )
+        - record: slo:api_gateway:latency_error_ratio:30m
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[30m]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[30m]))
+            )
+        - record: slo:api_gateway:latency_error_ratio:1h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[1h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[1h]))
+            )
+        - record: slo:api_gateway:latency_error_ratio:2h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[2h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[2h]))
+            )
+        - record: slo:api_gateway:latency_error_ratio:6h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[6h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[6h]))
+            )
+        - record: slo:api_gateway:latency_error_ratio:24h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[24h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[24h]))
+            )
+        - record: slo:api_gateway:latency_error_ratio:72h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[72h]))
+              /
+              sum(rate(http_request_duration_seconds_count{job="api-gateway"}[72h]))
+            )
+
+        - record: slo:api_gateway:latency_error_budget_remaining:30d
+          expr: |
+            1 - (
+              (
+                1 - (
+                  sum(increase(http_request_duration_seconds_bucket{job="api-gateway",le="0.5"}[30d]))
+                  /
+                  sum(increase(http_request_duration_seconds_count{job="api-gateway"}[30d]))
+                )
+              )
+              / (1 - 0.99)
+            )
+
+        - record: slo:api_gateway:latency_burn_rate:5m
+          expr: slo:api_gateway:latency_error_ratio:5m / (1 - 0.99)
+        - record: slo:api_gateway:latency_burn_rate:30m
+          expr: slo:api_gateway:latency_error_ratio:30m / (1 - 0.99)
+        - record: slo:api_gateway:latency_burn_rate:1h
+          expr: slo:api_gateway:latency_error_ratio:1h / (1 - 0.99)
+        - record: slo:api_gateway:latency_burn_rate:2h
+          expr: slo:api_gateway:latency_error_ratio:2h / (1 - 0.99)
+        - record: slo:api_gateway:latency_burn_rate:6h
+          expr: slo:api_gateway:latency_error_ratio:6h / (1 - 0.99)
+        - record: slo:api_gateway:latency_burn_rate:24h
+          expr: slo:api_gateway:latency_error_ratio:24h / (1 - 0.99)
+        - record: slo:api_gateway:latency_burn_rate:72h
+          expr: slo:api_gateway:latency_error_ratio:72h / (1 - 0.99)

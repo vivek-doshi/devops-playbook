@@ -80,6 +80,16 @@ policies:
       - framework: ISO27001
         controls: ["8.9", "8.16"]
 
+  - path: policy/kyverno/require-catalog-registration.yaml
+    name: require-catalog-registration
+    satisfies:
+      - framework: SOC2
+        controls: ["CC1.2", "CC2.1"]
+      - framework: CIS-Kubernetes
+        controls: ["5.7.1"]
+      - framework: ISO27001
+        controls: ["5.9", "5.12"]
+
   - path: secops/supply-chain/cosign-verify-policy.yaml
     name: verify-image-signature
     satisfies:

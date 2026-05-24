@@ -78,6 +78,8 @@ Post the incident record immediately:
 
 One person can hold multiple roles for SEV-3/4.
 
+Before assigning roles, confirm ownership in the service catalog entry (`catalog/services/<service-name>.yaml`) and use `metadata.owner`, `spec.oncall.pagerduty_service`, and `spec.oncall.slack_channel` as the source of truth for responder routing.
+
 ---
 
 ## Phase 2 — Triage

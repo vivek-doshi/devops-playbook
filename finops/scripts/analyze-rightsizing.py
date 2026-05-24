@@ -337,8 +337,8 @@ def main() -> None:
     parser.add_argument("--kubecost-url", default="http://kubecost.finops.svc.cluster.local:9090",
                         help="Kubecost/OpenCost API base URL")
     parser.add_argument("--format", choices=["text", "json"], default="text")
-    parser.add_argument("--savings-threshold", type=float, default=20.0,
-                        help="% savings to classify as high-priority (default: 20)")
+    parser.add_argument("--savings-threshold", "--min-savings", dest="savings_threshold", type=float, default=20.0,
+                        help="%% savings to classify as high-priority (default: 20%%)")
     parser.add_argument("--output", "-o", help="Output file path (default: stdout)")
     args = parser.parse_args()
 

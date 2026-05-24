@@ -123,6 +123,14 @@ Use this guide to quickly find the right template for your scenario.
 
 ---
 
+### 📊 "I need observability"
+
+| Need | File |
+|---|---|
+| Define reliability targets and get alerted when at risk | [`docs/golden-paths/slo-driven-development.md`](docs/golden-paths/slo-driven-development.md) |
+
+---
+
 ### 🔑 "I need to manage secrets"
 
 | Need | File |
@@ -131,6 +139,26 @@ Use this guide to quickly find the right template for your scenario.
 | Rotate a secret on a schedule | [`secrets/rotation/`](secrets/rotation/) |
 | Understand the full secret lifecycle | [`secrets/guides/secret-lifecycle.md`](secrets/guides/secret-lifecycle.md) |
 | Emergency: secret was exposed | [`secrets/guides/emergency-rotation.md`](secrets/guides/emergency-rotation.md) |
+
+---
+
+### 💰 FinOps - Cloud Cost Governance
+
+| Need | File |
+|---|---|
+| I got a cost alert - what do I do? | [`finops/docs/optimization-runbook.md`](finops/docs/optimization-runbook.md) |
+| Optimize resource requests based on VPA recommendations | [`docs/golden-paths/finops-optimization.md`](docs/golden-paths/finops-optimization.md) |
+| Compare costs across AWS, Azure, and GCP | [`finops/scripts/normalize-cloud-costs.py`](finops/scripts/normalize-cloud-costs.py) |
+
+---
+
+### 📚 Service Registration and Ownership
+
+| Need | File |
+|---|---|
+| Register a service owner, on-call route, and operational metadata | [`docs/golden-paths/service-catalog.md`](docs/golden-paths/service-catalog.md) |
+| Validate catalog schema, references, and governance rules | [`catalog/scripts/validate-catalog.py`](catalog/scripts/validate-catalog.py) |
+| Generate ownership mappings for repository paths | [`catalog/scripts/generate-codeowners.py`](catalog/scripts/generate-codeowners.py) |
 
 ---
 

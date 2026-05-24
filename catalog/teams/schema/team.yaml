@@ -1,0 +1,25 @@
+apiVersion: catalog/v1
+kind: Team
+metadata:
+  name: platform-team # <-- CHANGE THIS: set kebab-case team identifier; valid example backend-team.
+  display_name: "Platform Engineering" # <-- CHANGE THIS: set human-readable team name.
+
+spec:
+  lead: jane.smith@example.com # <-- CHANGE THIS: set team lead email.
+
+  members:
+    - alice@example.com # <-- CHANGE THIS: set member email.
+    - bob@example.com # <-- CHANGE THIS: set member email.
+
+  slack_channel: "#platform-eng" # <-- CHANGE THIS: set team Slack channel.
+
+  pagerduty_schedule: SXXXXXX # <-- CHANGE THIS: set PagerDuty schedule id from team on-call schedule.
+
+  cost_centers:
+    - engineering
+    - platform-infra
+
+  owns:
+    - cd/kubernetes/_base/
+    - observability/
+    - policy/kyverno/

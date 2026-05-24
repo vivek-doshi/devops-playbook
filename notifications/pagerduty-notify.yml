@@ -24,11 +24,27 @@ on:
         # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
         type: string
+      team:
+        required: false
+        type: string
+        default: platform
+      slo:
+        required: false
+        type: string
+        default: ""
     # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     secrets:
       pagerduty-integration-key:
         # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         required: true
+      pagerduty-platform-key:
+        required: false # <-- CHANGE THIS: set to platform team PagerDuty Events API v2 integration key; source PagerDuty Service -> Integrations.
+      pagerduty-backend-key:
+        required: false # <-- CHANGE THIS: set to backend team PagerDuty Events API v2 integration key; source PagerDuty Service -> Integrations.
+      pagerduty-frontend-key:
+        required: false # <-- CHANGE THIS: set to frontend team PagerDuty Events API v2 integration key; source PagerDuty Service -> Integrations.
+      slack-webhook-url:
+        required: false
 
 jobs:
   # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -39,12 +55,50 @@ jobs:
       - name: Trigger PagerDuty
         # Note 10: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
+          # SLO critical alerts bypass the standard team routing and go directly to the on-call rotation.
+          # This is intentional — SLO exhaustion is a user-impacting event regardless of which team's code caused it.
+          #
+          # routes:
+          #   - match: severity=critical and slo is set -> PagerDuty key selected by team label
+          #   - match: severity=warning and slo is set -> Slack only, no PagerDuty trigger
+
+          ROUTING_KEY="${{ secrets.pagerduty-integration-key }}"
+          TEAM_LOWER="${{ inputs.team }}"
+
+          if [ "${{ inputs.slo }}" != "" ] && [ "${{ inputs.severity }}" = "warning" ]; then
+            echo "SLO warning routed to Slack only (PagerDuty suppressed)."
+            if [ -n "${{ secrets.slack-webhook-url }}" ]; then
+              curl -X POST -H "Content-type: application/json" \
+                --data "{\"text\":\"[SLO warning] ${{ inputs.summary }} (team=${{ inputs.team }}, slo=${{ inputs.slo }})\"}" \
+                "${{ secrets.slack-webhook-url }}"
+            fi
+            exit 0
+          fi
+
+          if [ "${{ inputs.slo }}" != "" ] && [ "${{ inputs.severity }}" = "critical" ]; then
+            case "$TEAM_LOWER" in
+              platform)
+                ROUTING_KEY="${{ secrets.pagerduty-platform-key }}" ;;
+              backend)
+                ROUTING_KEY="${{ secrets.pagerduty-backend-key }}" ;;
+              frontend)
+                ROUTING_KEY="${{ secrets.pagerduty-frontend-key }}" ;;
+              *)
+                ROUTING_KEY="${{ secrets.pagerduty-integration-key }}" ;;
+            esac
+          fi
+
+          if [ -z "$ROUTING_KEY" ]; then
+            echo "No PagerDuty routing key resolved."
+            exit 1
+          fi
+
           curl -X POST https://events.pagerduty.com/v2/enqueue \
             # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             -H "Content-Type: application/json" \
             -d "{
               # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-              \"routing_key\": \"${{ secrets.pagerduty-integration-key }}\",
+              \"routing_key\": \"$ROUTING_KEY\",
               \"event_action\": \"trigger\",
               \"payload\": {
                 \"summary\": \"${{ inputs.summary }}\",
@@ -53,7 +107,13 @@ jobs:
                 \"custom_details\": {
                   \"repository\": \"${{ github.repository }}\",
                   \"branch\": \"${{ github.ref_name }}\",
+                  \"team\": \"${{ inputs.team }}\",
+                  \"slo\": \"${{ inputs.slo }}\",
                   \"run_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
                 }
               }
             }"
+
+# <-- CHANGE THIS: Configure team-specific PagerDuty integration secrets.
+# Valid values: Events API v2 integration keys for each team service.
+# Source: PagerDuty Service -> Integrations -> Events API v2.

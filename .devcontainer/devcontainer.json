@@ -12,16 +12,19 @@
       "helm": "latest",
       "minikube": "none"
     },
+    // Pinned to match the Terraform version in .devcontainer/Dockerfile ARG TERRAFORM_VERSION=v1.14.9
+    // <-- UPDATE QUARTERLY when bumping the Dockerfile ARG
     "ghcr.io/devcontainers/features/terraform:1": {
-      "version": "1.10",
+      "version": "1.14",
       "tflint": "none",
       "terragrunt": "none"
     },
     "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/google-cloud-cli:1": {},
+    // Pinned to match Dockerfile NODE_MAJOR=20
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "22"
+      "version": "20"
     },
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.12"
@@ -36,7 +39,7 @@
 
   "postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
   "remoteUser": "vscode",
-  "forwardPorts": [3000, 8000, 8080, 9090, 3100, 16686],
+  "forwardPorts": [3000, 8000, 8080, 9090, 3100, 16686, 4040, 8888],
   "portsAttributes": {
     "3000": {
       "label": "Web UI"
@@ -54,20 +57,48 @@
       "label": "Loki"
     },
     "16686": {
-      "label": "Jaeger"
+      "label": "Jaeger / Tempo"
+    },
+    "4040": {
+      "label": "Spark / Pulumi Preview"
+    },
+    "8888": {
+      "label": "Jupyter / OpenTelemetry Collector"
     }
   },
   "customizations": {
     "vscode": {
       "extensions": [
+        // IaC
         "hashicorp.terraform",
+        // Kubernetes and Helm
         "ms-kubernetes-tools.vscode-kubernetes-tools",
+        // YAML and JSON
         "redhat.vscode-yaml",
+        // GitHub Actions workflow authoring
         "github.vscode-github-actions",
+        // Container authoring and management
         "ms-azuretools.vscode-docker",
+        // Go
         "golang.go",
+        // Python — language support
         "ms-python.python",
-        "ms-dotnettools.csdevkit"
+        // Python — type checking
+        "ms-python.pylance",
+        // Python — fast linting and formatting (Ruff)
+        "charliermarsh.ruff",
+        // .NET / C#
+        "ms-dotnettools.csdevkit",
+        // Prettier — JS/TS/JSON/Markdown formatter
+        "esbenp.prettier-vscode",
+        // Shell script linting
+        "timonwong.shellcheck",
+        // Markdown linting and style
+        "davidanson.vscode-markdownlint",
+        // GitLens for inline blame and history
+        "eamodio.gitlens",
+        // Kyverno policy authoring
+        "kyverno.kyverno"
       ],
       "settings": {
         "editor.formatOnSave": true,

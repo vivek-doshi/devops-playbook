@@ -1,0 +1,51 @@
+# ============================================================
+# TEMPLATE: Service SLO Definition Example — Latency
+# WHEN TO USE: Copy and adapt for request-latency SLOs.
+# MATURITY: Stable
+# ============================================================
+# Why histogram buckets (_bucket) and not summary percentiles (_p99):
+# - Histogram buckets are aggregatable across pods and instances.
+# - Summary quantiles are pre-aggregated at scrape target scope and cannot be
+#   merged correctly across replicas.
+# - Burn-rate math requires consistent good/total event counting, which buckets provide.
+#
+# Choosing the le threshold:
+# - Set threshold to your measured p95 baseline first, not an aspirational number.
+# - Example: if observed p95 is 420ms, start with le="0.5" then improve over time.
+# - Review threshold quarterly with service and product stakeholders.
+#
+# Pod-level vs ingress-level latency:
+# - Pod-level metrics isolate application and dependency behavior.
+# - Ingress-level metrics include network and edge behavior seen by users.
+# - For user-facing SLOs, prefer ingress-level metrics when available; for
+#   service-internal SLOs, pod-level is acceptable.
+
+apiVersion: slo/v1
+kind: ServiceLevelObjective
+metadata:
+  name: api-gateway-latency
+  service: api-gateway
+  namespace: production # <-- CHANGE THIS: set workload namespace; valid values are namespace names in Kubernetes overlays.
+  team: platform # <-- CHANGE THIS: set owning team label; valid values match team labels in Deployment metadata.
+  owner: platform-oncall@example.com # <-- CHANGE THIS: set owner email or PagerDuty identifier; source from team on-call roster.
+  runbook_url: https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md # <-- CHANGE THIS: set service runbook URL.
+
+spec:
+  type: latency
+  target: 99.0 # <-- CHANGE THIS: set latency success target; valid values usually 95.0 to 99.9 based on baseline and business need.
+  window: 30d # <-- CHANGE THIS: use 7d for new services, then 30d after baseline stabilizes.
+
+  good_events:
+    metric: http_request_duration_seconds_bucket
+    filters:
+      job: api-gateway # <-- CHANGE THIS: set Prometheus job label for this service.
+      le: "0.5" # <-- CHANGE THIS: set latency objective bucket in seconds; valid values must exist in your histogram buckets.
+
+  total_events:
+    metric: http_request_duration_seconds_count
+    filters:
+      job: api-gateway # <-- CHANGE THIS: set the same job label used in good_events.
+
+  compliance:
+    soc2_controls: ["CC7.2", "CC7.4"]
+    review_cadence: quarterly

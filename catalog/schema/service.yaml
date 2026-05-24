@@ -1,0 +1,112 @@
+# Service Catalog Entry
+# =====================
+# Copy this file to catalog/services/<your-service-name>.yaml
+# Fill in all required fields before your first production deployment.
+# This file is validated automatically on every PR.
+#
+# REQUIRED: This file must exist before deploying to production.
+# Kyverno policy policy/kyverno/require-catalog-registration.yaml enforces this.
+#
+# MATURITY: Stable
+
+apiVersion: catalog/v1 # API contract version for catalog service entries. Valid value: catalog/v1. Required for parser compatibility.
+kind: Service # Resource type for service entries. Valid value: Service. Required for schema discrimination.
+metadata:
+  # Unique identifier for the service. Must match:
+  # - The app label on Kubernetes Deployment metadata and pod template labels
+  # - The Prometheus job label used for service telemetry
+  # - The file name catalog/services/<name>.yaml
+  # Use kebab-case and keep stable over time.
+  name: my-service # <-- CHANGE THIS: set unique kebab-case service id; valid value example api-gateway; source from deployment app label.
+
+  # Owning team identifier. Must match:
+  # - The team label on Deployment metadata
+  # - A registered team file under catalog/teams/
+  # - Alert routing team value for PagerDuty/Slack workflows
+  owner: platform-team # <-- CHANGE THIS: set registered team id; valid value must exist as catalog/teams/<team>.yaml metadata.name.
+
+  # Human-readable service display name for dashboards and reports.
+  display_name: "My Service" # <-- CHANGE THIS: set readable title; valid value is short title text.
+
+  # One-sentence service description for incident triage context.
+  description: "Handles X for Y users." # <-- CHANGE THIS: set concise service purpose statement.
+
+  # Lifecycle stage controlling validation strictness and guardrail requirements.
+  # alpha: development, no production expectation
+  # beta: production usage with reduced strictness
+  # stable: full production guardrails required
+  # deprecated: no new feature work, retirement path active
+  lifecycle: stable # <-- CHANGE THIS: choose one of alpha|beta|stable|deprecated based on production posture.
+
+spec:
+  # Primary operational contact for non-urgent ownership requests.
+  # Valid value: team email alias or monitored mailbox.
+  contact: platform-team@example.com # <-- CHANGE THIS: set monitored owner contact email.
+
+  oncall:
+    # PagerDuty service identifier used for critical routing.
+    # Valid value: PagerDuty service id like PXXXXXX from PagerDuty Service settings.
+    pagerduty_service: PXXXXXX # <-- CHANGE THIS: set PagerDuty service id; source PagerDuty -> Service -> Details.
+    # Slack channel for warning/info notifications.
+    # Valid value: channel name with # prefix.
+    slack_channel: "#platform-alerts" # <-- CHANGE THIS: set team alerts channel.
+
+  # Runtime deployment locations in format <namespace>/<deployment-name>.
+  # Required for ownership discovery by namespace during incidents.
+  namespaces:
+    - production/my-service # <-- CHANGE THIS: replace with real namespace/deployment pair.
+    - staging/my-service # <-- CHANGE THIS: replace with staging namespace/deployment pair.
+    - dev/my-service # <-- CHANGE THIS: replace with dev namespace/deployment pair.
+
+  # Container image repository without tag.
+  # Used by tooling to connect to vulnerability and provenance reports.
+  image: ghcr.io/your-org/my-service # <-- CHANGE THIS: set registry/repository path used by deployment.
+
+  # Runtime dependencies used for blast-radius and change-risk analysis.
+  dependencies:
+    - type: service # Dependency category. Valid values: service|database|external-api.
+      name: auth-service # <-- CHANGE THIS: set internal service dependency name or remove.
+    - type: database # Dependency category.
+      name: postgres-prod # <-- CHANGE THIS: set database dependency name or remove.
+      cloud: aws # Cloud provider for this dependency. Valid values: aws|azure|gcp|onprem.
+      region: us-east-1 # Region where dependency is hosted. Valid value: provider region code.
+    - type: external-api # Dependency category.
+      name: stripe # <-- CHANGE THIS: set external API name or remove.
+      url: https://api.stripe.com # <-- CHANGE THIS: set base URL for external API dependency.
+
+  slo:
+    # Availability objective percentage for service reliability planning.
+    # Valid value: numeric percentage, typically 95.0-99.99.
+    availability_target: 99.9
+    # p99 latency target in milliseconds for user-facing requests.
+    # Valid value: positive integer representing ms threshold.
+    latency_target_ms: 500
+    # Path to SLO definition file tracked in repository.
+    # Required for lifecycle beta/stable.
+    definition_file: observability/prometheus/slos/my-service-slo.yaml # <-- CHANGE THIS: set existing SLO definition path.
+
+  # Primary runbook URL for incidents and operational actions.
+  # Required for lifecycle stable.
+  runbook_url: https://github.com/your-org/repo/blob/main/docs/runbooks/my-service.md # <-- CHANGE THIS: set markdown runbook URL for this service.
+
+  # Architecture or service documentation URL.
+  # Optional but recommended for onboarding and incident triage context.
+  docs_url: https://confluence.example.com/my-service # <-- CHANGE THIS: set architecture docs URL or remove if unavailable.
+
+  # FinOps cost center owner for this service spend.
+  # Must match finops/config/budgets.yaml cost_center value.
+  cost_center: engineering # <-- CHANGE THIS: set one of configured cost centers from finops/config/budgets.yaml.
+
+  # Environment label value used on runtime resources.
+  # Valid values: dev|staging|production.
+  environment: production # <-- CHANGE THIS: set primary environment label value.
+
+  # Data classification for security and compliance policy selection.
+  # Valid values: public|internal|confidential|restricted.
+  data_classification: confidential # <-- CHANGE THIS: set classification matching data sensitivity.
+
+  # Compliance frameworks that apply to this service.
+  # For stable confidential services, SOC2 is required.
+  compliance_frameworks:
+    - SOC2 # <-- CHANGE THIS: keep if service is SOC2 scoped.
+    - ISO27001 # <-- CHANGE THIS: remove if framework not applicable.

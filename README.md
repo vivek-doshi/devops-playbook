@@ -26,10 +26,10 @@ It is not intended to be a rigid framework. Teams are expected to adapt template
 
 - Start from workflow guidance in [docs/golden-paths/](docs/golden-paths/)
 - Use implementation templates from [docker/](docker/), [ci/](ci/), [cd/](cd/), and [terraform/](terraform/)
-- Apply controls from [security/](security/), [policy/](policy/), [secrets/](secrets/), and [finops/](finops/)
+- Apply controls from [ci-security/](ci-security/), [secops/](secops/), [policy/](policy/), [secrets/](secrets/), [catalog/](catalog/), and [finops/](finops/)
 - Operate with [observability/](observability/) patterns and [docs/runbooks/](docs/runbooks/)
 
-Reference context for maintainers is also available in [.ai/context/readme.mf](.ai/context/readme.mf).
+Reference context for maintainers is also available in [.ai/context/repo-summary.md](.ai/context/repo-summary.md).
 
 It is designed for:
 
@@ -39,7 +39,7 @@ It is designed for:
 
 It provides:
 
-- **Golden paths**: End-to-end, copy-pasteable workflows for microservices, serverless, frontend SPAs, data pipelines, MLOps, and platform onboarding
+- **Golden paths**: End-to-end, copy-pasteable workflows for microservices, serverless, frontend SPAs, data pipelines, MLOps, FinOps optimization, SLO-driven development, and service catalog governance
 - **Ready-to-use CI/CD templates**: GitHub Actions, Azure Pipelines, GitLab CI, Jenkins
 - **Infrastructure as Code**: Terraform, Pulumi, Helm, Kustomize
 - **Security & compliance**: Built-in scanning, policies, and secret management
@@ -82,7 +82,7 @@ It provides:
 → Go to [compose/python-postgres-redis/docker-compose.yml](compose/python-postgres-redis/docker-compose.yml)
 
 **"I need to add security scanning to my pipeline"**
-→ Go to [security/](security/) and pick your scanner
+→ Go to [ci-security/](ci-security/) and pick your scanner
 
 **"I need to provision an EKS cluster with Terraform"**
 → Go to [terraform/aws-eks/](terraform/aws-eks/)
@@ -117,6 +117,15 @@ It provides:
 **"I need to find over-provisioned workloads to cut costs"**
 → Run `python finops/scripts/analyze-rightsizing.py --all-namespaces`
 
+**"I need to operationalize SLOs with burn-rate alerting"**
+→ Follow [docs/golden-paths/slo-driven-development.md](docs/golden-paths/slo-driven-development.md)
+
+**"I need to register service ownership and on-call routing"**
+→ Follow [docs/golden-paths/service-catalog.md](docs/golden-paths/service-catalog.md)
+
+**"I need end-to-end FinOps optimization from recommendation to PR"**
+→ Follow [docs/golden-paths/finops-optimization.md](docs/golden-paths/finops-optimization.md)
+
 ---
 
 ## Golden Paths
@@ -132,6 +141,9 @@ Golden paths are **opinionated, end-to-end workflows** that guide you from idea 
 | [mlops-workflow.md](docs/golden-paths/mlops-workflow.md) | GPU-backed model training, fine-tuning, and inference delivery |
 | [platform-onboarding.md](docs/golden-paths/platform-onboarding.md) | New team onboarding, platform setup |
 | [incident-response.md](docs/golden-paths/incident-response.md) | Production incident response & ops |
+| [finops-optimization.md](docs/golden-paths/finops-optimization.md) | Cost optimization loop with validated savings |
+| [slo-driven-development.md](docs/golden-paths/slo-driven-development.md) | SLO definitions, burn-rate recording rules, and alerting |
+| [service-catalog.md](docs/golden-paths/service-catalog.md) | Git-native service registration and ownership governance |
 
 Each path:
 - Names the exact files to copy/edit at every step
@@ -151,10 +163,12 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 ├── ci/                   # CI pipeline templates (GitHub, GitLab, Azure, Jenkins)
 ├── cd/                   # CD pipeline templates + K8s manifests + Helm charts
 ├── terraform/            # Infrastructure provisioning (AKS, EKS, GKE, ECS, Lambda)
-├── security/             # Security scanning integrations
+├── ci-security/          # Security scanning integrations for CI
+├── secops/               # Runtime security, supply chain, and compliance operations
 ├── quality/              # Code quality configs (SonarQube, linters, formatters)
 ├── notifications/        # Slack, Teams, PagerDuty alert templates
 ├── scripts/              # Utility shell scripts
+├── catalog/              # Git-native service and team ownership catalog
 ├── finops/               # FinOps: cost monitoring, governance, alerting, reporting
 │   ├── dashboards/       #   Grafana dashboards (9 JSON files)
 │   ├── policies/         #   Kyverno cost governance policies
@@ -171,7 +185,7 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 
 ---
 
-## Quickstart
+## Quick Start
 
 1. **Check your environment:**
    ```bash
@@ -183,6 +197,9 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
    - [Frontend SPA](docs/golden-paths/frontend-spa.md)
    - [Data pipeline](docs/golden-paths/data-pipeline.md)
    - [Platform onboarding](docs/golden-paths/platform-onboarding.md)
+   - [FinOps optimization](docs/golden-paths/finops-optimization.md)
+   - [SLO-driven development](docs/golden-paths/slo-driven-development.md)
+   - [Service catalog registration](docs/golden-paths/service-catalog.md)
 3. **Follow the steps:**
    - Each path tells you which files to copy/edit, and links to runbooks and guides.
 
@@ -199,6 +216,7 @@ See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree wi
 - **GitOps**: ArgoCD, overlays, and patterns for safe, automated delivery
 - **Security**: Gitleaks, Trivy, Semgrep, Snyk, Kyverno policies
 - **Observability**: Prometheus rules, Grafana dashboards, SLOs, alert routing
+- **Service ownership governance**: Catalog validation, CODEOWNERS generation, and admission checks
 - **Disaster recovery**: Velero, DB PITR, runbooks for cluster and DB restore
 - **Platform guardrails**: Enforced via Kyverno, IaC, and CI checks
 - **FinOps governance**: Cost labels enforced at admission, resource limits required, GPU workloads gated, budget alerts at 80/100/120%, PR-level cost estimation via Infracost
@@ -304,16 +322,6 @@ metadata:
 - **[docs/repo_structure.md](docs/repo_structure.md)** — Full n-level repo tree with explanations
 - **[.devcontainer/gpu/README.md](.devcontainer/gpu/README.md)** — Local CUDA/GPU devcontainer usage
 - **[finops/README.md](finops/README.md)** — FinOps architecture, components, quick-start, and full documentation index
-
----
-
-
-## Who is this for?
-
-- Platform engineers and SREs
-- Product teams building APIs, SPAs, or data jobs
-- Engineering leadership seeking a proven, production-ready DevOps foundation
-- Any team or org ready to standardize and scale cloud-native delivery
 
 ---
 

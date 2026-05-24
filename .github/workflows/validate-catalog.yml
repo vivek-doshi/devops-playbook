@@ -1,0 +1,37 @@
+name: Validate Service Catalog
+
+on:
+  pull_request:
+    paths:
+      - "catalog/**"
+      - "finops/config/budgets.yaml"
+      - "cd/kubernetes/_base/deployment.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "catalog/**"
+      - "finops/config/budgets.yaml"
+      - "cd/kubernetes/_base/deployment.yaml"
+
+jobs:
+  validate-catalog:
+    name: Validate Service Catalog Schema and References
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml requests
+
+      - name: Validate Catalog (strict mode)
+        run: |
+          python catalog/scripts/validate-catalog.py --strict --skip-url-check

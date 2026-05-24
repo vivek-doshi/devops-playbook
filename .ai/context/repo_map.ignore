@@ -6,3 +6,6 @@
 .github/prompts
 .github/skills
 website
+catalog/scripts/__pycache__
+finops/scripts/__pycache__
+secops/compliance/scripts/__pycache__

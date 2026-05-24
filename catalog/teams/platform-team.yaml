@@ -1,0 +1,20 @@
+apiVersion: catalog/v1
+kind: Team
+metadata:
+  name: platform-team
+  display_name: "Platform Engineering"
+
+spec:
+  lead: platform-lead@example.com
+  members:
+    - platform-oncall@example.com
+    - sre@example.com
+  slack_channel: "#platform-alerts"
+  pagerduty_schedule: SCHED-PLATFORM
+  cost_centers:
+    - engineering
+    - platform-infra
+  owns:
+    - cd/
+    - observability/
+    - policy/kyverno/
