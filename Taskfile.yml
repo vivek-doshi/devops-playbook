@@ -251,8 +251,120 @@ tasks:
       - golangci-lint run ./...
 
   # ---------------------------------------------------------------------------
+  # SERVICE CATALOG
+  # ---------------------------------------------------------------------------
+
+  catalog:validate:
+    desc: "Validate the service catalog against the schema (strict mode, skip URL checks)"
+    deps:
+      - _require:python
+    cmds:
+      - python3 catalog/scripts/validate-catalog.py --strict --skip-url-check
+
+  catalog:codeowners:
+    desc: "Regenerate .github/CODEOWNERS from team ownership specs"
+    deps:
+      - _require:python
+    cmds:
+      - python3 catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS
+
+  # ---------------------------------------------------------------------------
+  # FINOPS
+  # ---------------------------------------------------------------------------
+
+  finops:rightsizing:
+    desc: "Analyse pod resource requests vs actual usage across all namespaces"
+    deps:
+      - _require:kubectl
+      - _require:python
+    cmds:
+      - python3 finops/scripts/analyze-rightsizing.py --all-namespaces
+
+  finops:optimize-pr:
+    desc: "Generate a pull-request with rightsizing patches (memory reduction cap: 50%)"
+    deps:
+      - _require:kubectl
+      - _require:python
+    cmds:
+      - python3 finops/scripts/generate-optimization-pr.py --all-namespaces
+
+  finops:normalize-costs:
+    desc: "Normalize cloud costs across AWS/Azure/GCP to a common unit"
+    deps:
+      - _require:python
+    cmds:
+      - python3 finops/scripts/normalize-cloud-costs.py
+
+  finops:reserved-capacity:
+    desc: "Produce reserved-capacity recommendations with risk scoring"
+    deps:
+      - _require:kubectl
+      - _require:python
+    cmds:
+      - python3 finops/scripts/reserved-capacity-advisor.py
+
+  # ---------------------------------------------------------------------------
+  # SECURITY AND POLICY
+  # ---------------------------------------------------------------------------
+
+  security:policy-report:
+    desc: "Print Kyverno policy-report and cluster-policy-report summaries"
+    deps:
+      - _require:kubectl
+    cmds:
+      - kubectl get policyreport --all-namespaces -o wide 2>/dev/null || true
+      - kubectl get clusterpolicyreport --all-namespaces -o wide 2>/dev/null || true
+
+  security:compliance-report:
+    desc: "Generate compliance report and fail if score is below 80%"
+    deps:
+      - _require:python
+    cmds:
+      - python3 secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json
+
+  security:slo-validate:
+    desc: "Validate SLO YAML files are parseable and follow the slo:<service>:<metric>:<window> naming convention"
+    deps:
+      - _require:yq
+    cmds:
+      - |
+        set -e
+        find observability/prometheus/slos -name '*.yaml' -o -name '*.yml' | while read -r f; do
+          yq eval '.' "$f" > /dev/null || { echo "Invalid YAML: $f"; exit 1; }
+        done
+      - |
+        if grep -rE 'record:' observability/prometheus/slos/ | grep -vE 'record:\s+slo:'; then
+          echo "SLO recording rules found that do not follow slo:<service>:<metric>:<window> convention" >&2
+          exit 1
+        fi
+
+  # ---------------------------------------------------------------------------
+  # RELEASE
+  # ---------------------------------------------------------------------------
+
+  release:tag:
+    desc: "Create and push a signed annotated Git tag. Args: VERSION=vX.Y.Z"
+    requires:
+      vars: [VERSION]
+    prompt: "This will create and push tag {{.VERSION}} — proceed?"
+    cmds:
+      - bash scripts/tag-release.sh "{{.VERSION}}"
+
+  # ---------------------------------------------------------------------------
   # INTERNAL GUARDS
   # ---------------------------------------------------------------------------
+
+  _require:python:
+    internal: true
+    preconditions:
+      - sh: command -v python3
+        msg: "'python3' is not on PATH — install Python 3: https://www.python.org/downloads/"
+
+  _require:yq:
+    internal: true
+    preconditions:
+      - sh: command -v yq
+        msg: "'yq' is not on PATH — install yq: https://github.com/mikefarah/yq#install"
 
   _require:docker:
     internal: true

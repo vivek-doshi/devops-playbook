@@ -1,7 +1,8 @@
 # Pre-commit is the first local gate before CI.
 # Heavy repository-wide hooks such as Checkov and mypy are intentionally excluded from the default pre-push stage
 # so final push feedback stays fast; only the lightweight gitleaks secret scan runs at pre-push by default.
-minimum_pre_commit_version: '3.7.0'
+# minimum_pre_commit_version must be >= the version pinned in .devcontainer/Dockerfile ARG PRE_COMMIT_VERSION
+minimum_pre_commit_version: '4.0.0'
 default_install_hook_types:
   - pre-commit
   - pre-push
@@ -15,7 +16,7 @@ repos:
   # Mirrors the CI gitleaks workflow but runs locally so secrets never leave the machine.
   # ------------------------------------------------------------
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.4
+    rev: v8.30.1  # <-- UPDATE QUARTERLY — keep in sync with Dockerfile ARG GITLEAKS_VERSION
     hooks:
       - id: gitleaks
         stages: [pre-push]
@@ -27,7 +28,7 @@ repos:
   # and Dockerfile issues are caught before the slower CI security workflows run.
   # ------------------------------------------------------------
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.96.3
+    rev: v1.96.3  # <-- UPDATE QUARTERLY — run: pre-commit autoupdate --repo https://github.com/antonbabenko/pre-commit-terraform
     hooks:
       - id: terraform_fmt
         files: ^terraform/.*\.tf(vars)?$
@@ -42,12 +43,12 @@ repos:
         entry: checkov --directory terraform --framework terraform --quiet --compact
         language: python
         additional_dependencies:
-          - checkov==3.2.72
+          - checkov==3.2.524  # <-- UPDATE QUARTERLY — keep in sync with Dockerfile ARG CHECKOV_VERSION
         files: ^terraform/.*\.tf(vars)?$
         pass_filenames: false
 
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: v2.14.0  # <-- UPDATE QUARTERLY — keep in sync with Dockerfile ARG HADOLINT_VERSION
     hooks:
       - id: hadolint
         files: (^|/)([Dd]ockerfile|.*\.Dockerfile)$
@@ -58,7 +59,7 @@ repos:
   # and structured-data hygiene before language-specific linters spend time on deeper analysis.
   # ------------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v5.0.0  # <-- UPDATE QUARTERLY — run: pre-commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -82,21 +83,21 @@ repos:
         entry: ruff check --config quality/python/pyproject.toml
         language: python
         additional_dependencies:
-          - ruff==0.6.9
+          - ruff==0.6.9  # <-- UPDATE QUARTERLY
         files: \.py$
       - id: ruff-format
         name: ruff format
         entry: ruff format --config quality/python/pyproject.toml
         language: python
         additional_dependencies:
-          - ruff==0.6.9
+          - ruff==0.6.9  # <-- UPDATE QUARTERLY
         files: \.py$
       - id: mypy
         name: mypy
         entry: mypy --config-file quality/python/pyproject.toml
         language: python
         additional_dependencies:
-          - mypy==1.10.0
+          - mypy==1.10.0  # <-- UPDATE QUARTERLY
         files: \.py$
         pass_filenames: false
 
@@ -106,7 +107,7 @@ repos:
   # in this repository because they are usually executed in automation after only a light manual review.
   # ------------------------------------------------------------
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.10.0.1  # <-- UPDATE QUARTERLY — run: pre-commit autoupdate --repo https://github.com/shellcheck-py/shellcheck-py
     hooks:
       - id: shellcheck
         files: \.sh$
