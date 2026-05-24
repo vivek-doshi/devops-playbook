@@ -2,38 +2,40 @@
 
 ## What This Repository Is
 
-This repository is a production-oriented DevOps playbook and starter kit for modern cloud-native teams.
-It provides copy-ready templates, workflow patterns, and operational guardrails that can be adapted for real projects.
+This repository is a production-oriented DevOps playbook and starter kit for cloud-native teams.
+It provides copy-ready templates, policy guardrails, golden paths, and operational runbooks that teams can adapt without losing baseline governance.
 
-## Purpose
+## Current Focus Areas
 
-- Give teams a fast, safe starting point for CI/CD and platform delivery.
-- Standardize proven implementation patterns across clouds and tooling stacks.
-- Shift security, compliance, reliability, and FinOps controls earlier into daily delivery workflows.
-- Reduce time spent searching for examples by providing practical, connected templates.
+- Multi-cloud delivery patterns (AWS, Azure, GCP) for CI/CD, Kubernetes, and serverless.
+- Policy-first operations with Kyverno enforcement and compliance mapping.
+- Reliability engineering with SLO definitions, recording rules, burn-rate alerts, and runbooks.
+- FinOps optimization loop from recommendation to merged change and savings verification.
+- Git-native service catalog for ownership, on-call routing, and deployment governance.
 
 ## Target Audience
 
-- Developers who need ready-to-use templates for app build and deploy pipelines.
-- DevOps and platform engineers who need reusable baseline patterns.
-- SRE and operations teams who need runbooks, observability, and incident-response references.
-- Security and compliance teams who need policy and scanning integrations.
-- Engineering leaders who want a standardized internal platform baseline.
+- Developers needing ready-to-use pipeline and deployment templates.
+- Platform and DevOps engineers standardizing delivery patterns.
+- SRE teams operating alerts, SLOs, and incident response.
+- Security and compliance teams validating policy/control coverage.
+- Engineering leadership driving reusable platform baselines.
 
-## Overall Structure (High Level)
+## Key Repository Domains
 
 - `docker/`, `compose/`, `local-dev/`: build and local runtime foundations.
-- `ci/`: CI templates for GitHub Actions, Azure Pipelines, GitLab CI, and Jenkins.
-- `cd/`: deployment targets, Kubernetes manifests, Helm, GitOps, and Pulumi examples.
-- `terraform/`: IaC blueprints and test scaffolding for major cloud targets.
-- `security/`, `secops/`, `policy/`, `secrets/`: security, policy, and secret-management guardrails.
-- `observability/`, `notifications/`: telemetry, alerting, and operational visibility.
-- `finops/`: cost governance, budget alerts, rightsizing, dashboards, and CI cost checks.
-- `docs/`: golden paths, guides, runbooks, and architecture decisions.
+- `ci/`: CI templates across GitHub Actions, Azure Pipelines, GitLab CI, Jenkins.
+- `cd/`: Kubernetes base/overlays, GitOps, Helm, and deployment targets.
+- `terraform/`, `cd/pulumi/`: infrastructure as code blueprints.
+- `ci-security/`, `secops/`, `policy/`, `secrets/`: security scanning, runtime controls, policy, and secret lifecycle.
+- `observability/`, `notifications/`: metrics, logs, traces, dashboards, and routing.
+- `finops/`: budget governance, rightsizing, normalization, reserved-capacity analysis.
+- `catalog/`: team and service registration, ownership metadata, validation tooling.
+- `docs/`: golden paths, guides, runbooks, and architectural decision records.
 
 ## Suggested Navigation
 
-1. Start with a workflow in `docs/golden-paths/`.
-2. Pick matching templates from `ci/`, `cd/`, `docker/`, and `terraform/`.
-3. Apply required controls from `security/`, `policy/`, and `finops/`.
-4. Validate operations with runbooks in `docs/runbooks/` and monitoring in `observability/`.
+1. Start with `docs/golden-paths/` (kubernetes, incident, finops optimization, SLO-driven development, service catalog).
+2. Implement templates from `ci/`, `cd/`, `docker/`, `terraform/`.
+3. Apply guardrails from `policy/`, `secops/`, `ci-security/`, `finops/`, and `catalog/`.
+4. Operate using `observability/`, `notifications/`, and `docs/runbooks/`.

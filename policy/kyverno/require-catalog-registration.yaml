@@ -1,0 +1,56 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-catalog-registration-audit
+  annotations:
+    policies.kyverno.io/title: Require Service Catalog Registration (Audit)
+    policies.kyverno.io/category: Governance
+    policies.kyverno.io/subject: Deployment
+    policies.kyverno.io/severity: medium
+    secops.requirements: "SOC2:CC1.2,SOC2:CC2.1"
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-catalog-annotation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+      validate:
+        message: "Deployments must be registered in service catalog via annotation catalog.io/registered=true"
+        pattern:
+          metadata:
+            annotations:
+              catalog.io/registered: "true"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-catalog-registration-enforce-production
+  annotations:
+    policies.kyverno.io/title: Require Service Catalog Registration (Enforce Production)
+    policies.kyverno.io/category: Governance
+    policies.kyverno.io/subject: Deployment
+    policies.kyverno.io/severity: high
+    secops.requirements: "SOC2:CC1.2,SOC2:CC2.1"
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: enforce-catalog-annotation-production
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaceSelector:
+                matchLabels:
+                  environment: production
+      validate:
+        message: "Production deployments must include catalog.io/registered=true before admission"
+        pattern:
+          metadata:
+            annotations:
+              catalog.io/registered: "true"

@@ -1,0 +1,201 @@
+# =============================================================================
+# SLO Burn-Rate Alerts — api-gateway example
+# Extends observability/prometheus/alerts/slo-rules.yaml using a separate file.
+# =============================================================================
+# Burn-rate thresholds (14.4, 6, 3, 1) are from the Google SRE Workbook
+# multi-window burn-rate model and must not be changed.
+#
+# Tier durations are fixed to reduce flapping while preserving response value:
+# - Tier 1 for: 2m    (short stabilization for immediate page)
+# - Tier 2 for: 15m   (filters short-lived bursts)
+# - Tier 3 for: 1h    (sustained degradation before ticket)
+# - Tier 4 for: 3h    (trend-level warning only)
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-burn-rate-alerts-api-gateway
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+    slo: "true"
+spec:
+  groups:
+    - name: slo.api_gateway.availability.alerts
+      rules:
+        # Tier 1: burn rate >= 14.4 means error budget will be exhausted in ~2 hours.
+        # Action: page immediately, open incident channel now.
+        - alert: SLOBurnRateCritical
+          expr: |
+            slo:api_gateway:availability_burn_rate:1h >= 14.4
+            and
+            slo:api_gateway:availability_burn_rate:5m >= 14.4
+          for: 2m
+          labels:
+            severity: critical
+            team: platform
+            slo: api-gateway-availability
+          annotations:
+            summary: "api-gateway availability burning budget at {{ $value | humanize }}x"
+            description: |
+              Tier 1 burn-rate alert for api-gateway availability.
+              Budget exhaustion ETA is approximately 2 hours at this burn rate.
+              Immediate action: page on-call and start incident response.
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set the runbook URL; valid value is an accessible runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set the Grafana dashboard URL; valid value is your SLO dashboard URL.
+
+        # Tier 2: burn rate >= 6 means error budget will be exhausted in ~5 days.
+        # Action: page and investigate within 15 minutes.
+        - alert: SLOBurnRateHigh
+          expr: |
+            slo:api_gateway:availability_burn_rate:6h >= 6
+            and
+            slo:api_gateway:availability_burn_rate:30m >= 6
+          for: 15m
+          labels:
+            severity: critical
+            team: platform
+            slo: api-gateway-availability
+          annotations:
+            summary: "api-gateway availability burning budget at {{ $value | humanize }}x"
+            description: |
+              Tier 2 burn-rate alert for api-gateway availability.
+              Budget exhaustion ETA is approximately 5 days at this burn rate.
+              Immediate action: page on-call and begin mitigation within 15 minutes.
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+        # Tier 3: burn rate >= 3 means error budget will be exhausted in ~10 days.
+        # Action: create ticket and investigate within 1 hour.
+        - alert: SLOBurnRateMedium
+          expr: |
+            slo:api_gateway:availability_burn_rate:24h >= 3
+            and
+            slo:api_gateway:availability_burn_rate:2h >= 3
+          for: 1h
+          labels:
+            severity: warning
+            team: platform
+            slo: api-gateway-availability
+          annotations:
+            summary: "api-gateway availability burning budget at {{ $value | humanize }}x"
+            description: |
+              Tier 3 burn-rate alert for api-gateway availability.
+              Budget exhaustion ETA is approximately 10 days at this burn rate.
+              Action: create a reliability ticket and investigate within 1 hour.
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+        # Tier 4: burn rate >= 1 means service is on track to miss month-end target.
+        # Action: warning only, review in next standup and plan corrective work.
+        - alert: SLOBurnRateLow
+          expr: |
+            slo:api_gateway:availability_burn_rate:72h >= 1
+            and
+            slo:api_gateway:availability_burn_rate:6h >= 1
+          for: 3h
+          labels:
+            severity: info
+            team: platform
+            slo: api-gateway-availability
+          annotations:
+            summary: "api-gateway availability is on track to miss SLO"
+            description: |
+              Tier 4 warning for api-gateway availability.
+              Burn rate indicates month-end SLO miss risk if trend continues.
+              Action: review in standup and prioritize reliability fixes.
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+        - alert: SLOErrorBudgetExhausted
+          expr: slo:api_gateway:availability_error_budget_remaining:30d <= 0
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+            slo: api-gateway-availability
+          annotations:
+            summary: "api-gateway availability error budget exhausted"
+            description: "All monthly error budget is consumed. Every additional error is an SLO violation."
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+    - name: slo.api_gateway.latency.alerts
+      rules:
+        - alert: SLOLatencyBurnRateCritical
+          expr: |
+            slo:api_gateway:latency_burn_rate:1h >= 14.4
+            and
+            slo:api_gateway:latency_burn_rate:5m >= 14.4
+          for: 2m
+          labels:
+            severity: critical
+            team: platform
+            slo: api-gateway-latency
+          annotations:
+            summary: "api-gateway latency burning budget at {{ $value | humanize }}x"
+            description: "Tier 1 latency burn. Budget exhaustion ETA is approximately 2 hours. Page immediately."
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+        - alert: SLOLatencyBurnRateHigh
+          expr: |
+            slo:api_gateway:latency_burn_rate:6h >= 6
+            and
+            slo:api_gateway:latency_burn_rate:30m >= 6
+          for: 15m
+          labels:
+            severity: critical
+            team: platform
+            slo: api-gateway-latency
+          annotations:
+            summary: "api-gateway latency burning budget at {{ $value | humanize }}x"
+            description: "Tier 2 latency burn. Budget exhaustion ETA is approximately 5 days. Investigate within 15 minutes."
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+        - alert: SLOLatencyBurnRateMedium
+          expr: |
+            slo:api_gateway:latency_burn_rate:24h >= 3
+            and
+            slo:api_gateway:latency_burn_rate:2h >= 3
+          for: 1h
+          labels:
+            severity: warning
+            team: platform
+            slo: api-gateway-latency
+          annotations:
+            summary: "api-gateway latency burning budget at {{ $value | humanize }}x"
+            description: "Tier 3 latency burn. Budget exhaustion ETA is approximately 10 days. File ticket and investigate within 1 hour."
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+        - alert: SLOLatencyBurnRateLow
+          expr: |
+            slo:api_gateway:latency_burn_rate:72h >= 1
+            and
+            slo:api_gateway:latency_burn_rate:6h >= 1
+          for: 3h
+          labels:
+            severity: info
+            team: platform
+            slo: api-gateway-latency
+          annotations:
+            summary: "api-gateway latency trend indicates month-end SLO miss risk"
+            description: "Tier 4 latency warning. Burn trend indicates likely month-end SLO miss without corrective action."
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.
+
+        - alert: SLOLatencyErrorBudgetExhausted
+          expr: slo:api_gateway:latency_error_budget_remaining:30d <= 0
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+            slo: api-gateway-latency
+          annotations:
+            summary: "api-gateway latency error budget exhausted"
+            description: "All monthly latency error budget is consumed. Additional latency misses violate the SLO."
+            runbook_url: "https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md" # <-- CHANGE THIS: set runbook URL for this service.
+            dashboard_url: "https://grafana.example.com/d/slo-api-gateway" # <-- CHANGE THIS: set dashboard URL for this service.

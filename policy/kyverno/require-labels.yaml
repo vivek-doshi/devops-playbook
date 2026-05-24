@@ -8,6 +8,8 @@
 # Labels are required because:
 #   - Prometheus ServiceMonitor selectors use `app` to discover scrape targets
 #   - Grafana dashboards use `version` / `app.kubernetes.io/version` to filter by release
+#   - Service catalog records require metadata.name to match Deployment app label
+#     for reliable ownership discovery and incident routing
 #   - The `environment` namespace label is used by Kyverno's own namespace selectors
 #     (e.g. disallow-latest-tag.yaml) to apply stricter rules in production
 #

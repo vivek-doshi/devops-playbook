@@ -1,16 +1,23 @@
-# SecOps - Operational Security for Kubernetes
+# SecOps - Runtime Security and Compliance for Kubernetes
 
 ## Overview
 
-The SecOps feature provides operational security workflows and runtime controls for Kubernetes environments. This feature complements the existing shift-left security scanning in the `security/` folder by adding runtime threat detection, compliance auditing, supply chain verification at admission time, and incident response runbooks.
+The SecOps feature provides operational security workflows and runtime controls for Kubernetes environments. This feature complements the existing shift-left security scanning in the `ci-security/` folder by adding runtime threat detection, compliance auditing, supply chain verification at admission time, and incident response runbooks.
 
 ### Purpose
 
 SecOps addresses the gap between pre-deployment security scanning (shift-left) and runtime security operations:
 
-- **Shift-Left Security** (`security/` folder): Pre-deployment scanning including container scanning, secret detection, SAST, dependency auditing, and IaC scanning. These tools catch vulnerabilities before code reaches production.
+- **Shift-Left Security** (`ci-security/` folder): Pre-deployment scanning including container scanning, secret detection, SAST, dependency auditing, and IaC scanning. These tools catch vulnerabilities before code reaches production.
 
 - **Runtime Security** (`secops/` folder): Runtime threat detection, admission control for supply chain verification, compliance scanning, and incident response. These tools monitor and enforce security policies during runtime and provide structured incident response procedures.
+
+## Quick Links
+
+- Supply-chain policy set: [secops/supply-chain/](supply-chain/)
+- Compliance control mappings: [secops/compliance/control-library/](compliance/control-library/)
+- Incident response runbooks: [secops/runbooks/](runbooks/)
+- Golden path for compliance reporting: [docs/golden-paths/compliance-reporting.md](../docs/golden-paths/compliance-reporting.md)
 
 ### Scope
 
@@ -23,9 +30,9 @@ SecOps addresses the gap between pre-deployment security scanning (shift-left) a
 - Integration with existing observability (Loki, Prometheus) and notification (Slack, PagerDuty) infrastructure
 
 **Out of Scope:**
-- Pre-deployment security scanning (covered by `security/` folder)
+- Pre-deployment security scanning (covered by `ci-security/` folder)
 - Network policy generation (covered by `cd/kubernetes/_base/network-policies/`)
-- Secret management and rotation (covered by `security/secret-rotation/`)
+- Secret management and rotation (covered by `secrets/rotation/`)
 - Container image building and signing (covered by CI/CD pipelines)
 
 ## Architecture
@@ -48,10 +55,10 @@ secops/
 ├── compliance/                # Compliance scanning and control mapping
 │   ├── kube-bench-job.yaml          # One-time CIS Benchmark scan
 │   ├── kube-bench-cronjob.yaml      # Scheduled CIS Benchmark scan
-│   └── controls/              # Compliance control mapping documentation
-│       ├── cis-kubernetes.md        # CIS Kubernetes Benchmark mapping
-│       ├── soc2.md                  # SOC2 control mapping
-│       └── iso27001.md              # ISO 27001 control mapping
+│   └── control-library/       # Compliance control and policy mapping
+│       ├── soc2-controls.yaml       # SOC2 control catalog
+│       ├── control-to-policy-map.yaml # Control to Kyverno policy crosswalk
+│       └── policy-evidence-map.yaml # Evidence mapping for controls
 └── runbooks/                  # Incident response runbooks
     ├── compromised-pod.md           # Compromised pod response
     ├── secret-exposure.md           # Credential leak response
@@ -77,8 +84,8 @@ SecOps integrates seamlessly with existing infrastructure:
 - **Kyverno** (`policy/kyverno/`): Supply chain verification policies leverage existing Kyverno installation for admission control
 
 ### Security Tools
-- **Secret Rotation** (`security/secret-rotation/`): Incident response runbooks reference existing secret rotation procedures
-- **Container Scanning** (`security/container-scanning/`): Incident response runbooks reference existing container scanning tools for malware analysis
+- **Secret Rotation** (`secrets/rotation/`): Incident response runbooks reference existing secret rotation procedures
+- **Container Scanning** (`ci-security/container-scanning/`): Incident response runbooks reference existing container scanning tools for malware analysis
 
 ## Installation
 

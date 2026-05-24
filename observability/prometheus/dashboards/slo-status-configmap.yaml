@@ -1,0 +1,162 @@
+# slo-status-configmap.yaml
+# Dashboard delivery pattern mirrors slo-burn-rate-configmap.yaml.
+#
+# Important: this dashboard intentionally queries ONLY recording-rule metrics
+# (slo:api_gateway:*) instead of raw request metrics. This keeps dashboard
+# queries cheap and reliable under fleet-scale query load.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-slo-status
+  namespace: monitoring # <-- CHANGE THIS: set namespace where Grafana sidecar watches ConfigMaps; valid values are monitoring namespaces in your cluster.
+  labels:
+    grafana_dashboard: "1"
+    app: grafana
+    release: kube-prometheus-stack # <-- CHANGE THIS: set to your Helm release label for Grafana discovery.
+data:
+  slo-status.json: |-
+    {
+      "__inputs": [
+        {
+          "name": "DS_PROMETHEUS",
+          "label": "Prometheus",
+          "description": "",
+          "type": "datasource",
+          "pluginId": "prometheus",
+          "pluginName": "Prometheus"
+        }
+      ],
+      "__requires": [
+        { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+        { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+        { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+        { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+        { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+        { "type": "panel", "id": "bargauge", "name": "Bar gauge", "version": "" }
+      ],
+      "title": "SLO Status - api-gateway",
+      "uid": "slo-status-api-gateway",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "30s",
+      "time": { "from": "now-30d", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "SLO Status",
+          "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "targets": [
+            { "refId": "A", "expr": "slo:api_gateway:availability_error_budget_remaining:30d", "instant": true }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "yellow", "value": 0.1 },
+                  { "color": "green", "value": 0.5 }
+                ]
+              },
+              "color": { "mode": "thresholds" }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "reduceOptions": { "calcs": ["lastNotNull"] }
+          }
+        },
+        {
+          "id": 2,
+          "type": "gauge",
+          "title": "Error Budget Remaining",
+          "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "targets": [
+            { "refId": "A", "expr": "slo:api_gateway:availability_error_budget_remaining:30d", "instant": true }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "yellow", "value": 0.1 },
+                  { "color": "green", "value": 0.5 }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Burn Rate History",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "targets": [
+            { "refId": "A", "expr": "slo:api_gateway:availability_burn_rate:1h", "legendFormat": "1h" },
+            { "refId": "B", "expr": "slo:api_gateway:availability_burn_rate:6h", "legendFormat": "6h" },
+            { "refId": "C", "expr": "slo:api_gateway:availability_burn_rate:24h", "legendFormat": "24h" },
+            { "refId": "D", "expr": "slo:api_gateway:availability_burn_rate:72h", "legendFormat": "72h" },
+            { "refId": "E", "expr": "vector(14.4)", "legendFormat": "critical threshold" },
+            { "refId": "F", "expr": "vector(6)", "legendFormat": "high threshold" }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Error Ratio",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "targets": [
+            { "refId": "A", "expr": "slo:api_gateway:availability_error_ratio:5m", "legendFormat": "error ratio 5m" },
+            { "refId": "B", "expr": "vector(1-0.999)", "legendFormat": "SLO target error budget" }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "percentunit" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Good/Total Requests",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "targets": [
+            { "refId": "A", "expr": "slo:api_gateway:good_requests_rate:5m", "legendFormat": "good" },
+            { "refId": "B", "expr": "slo:api_gateway:total_requests_rate:5m", "legendFormat": "total" }
+          }
+        },
+        {
+          "id": 6,
+          "type": "bargauge",
+          "title": "Error Budget Consumption This Month",
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "targets": [
+            { "refId": "A", "expr": "(1 - slo:api_gateway:availability_error_budget_remaining:30d) * 100", "instant": true, "legendFormat": "consumed %" }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100
+            },
+            "overrides": []
+          }
+        }
+      ]
+    }

@@ -1,34 +1,32 @@
 {
   "name": "DevOps Starter",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  // Build from the custom Dockerfile so all version-pinned tools are available.
+  // terraform, kubectl, helm, k9s, kind, pulumi, node, python, AWS/Azure/gcloud CLIs,
+  // and every security tool (hadolint, gitleaks, tfsec, checkov, etc.) are installed
+  // in the Dockerfile — NOT through features — keeping a single authoritative version source.
+  // Version pins live in .devcontainer/Dockerfile ARG declarations. Update them there.
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "VARIANT": "ubuntu-22.04"
+    }
+  },
 
   // --privileged is required for docker-in-docker and kind
   "runArgs": ["--privileged"],
 
   "features": {
+    // docker-in-docker is a runtime feature (starts the daemon); keep it regardless of Dockerfile.
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
-      "version": "latest",
-      "helm": "latest",
-      "minikube": "none"
-    },
-    "ghcr.io/devcontainers/features/terraform:1": {
-      "version": "1.10",
-      "tflint": "none",
-      "terragrunt": "none"
-    },
-    "ghcr.io/devcontainers/features/azure-cli:1": {},
-    "ghcr.io/devcontainers/features/aws-cli:1": {},
-    "ghcr.io/devcontainers/features/google-cloud-cli:1": {},
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "22"
-    },
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.12"
-    },
+    // Go is not installed in the Dockerfile — provided via feature.
+    // <-- UPDATE QUARTERLY when a new Go LTS is released
     "ghcr.io/devcontainers/features/go:1": {
       "version": "1.24"
     },
+    // .NET is not installed in the Dockerfile — provided via feature.
+    // <-- UPDATE QUARTERLY when a new .NET LTS is released
     "ghcr.io/devcontainers/features/dotnet:2": {
       "version": "8.0"
     }
@@ -36,7 +34,7 @@
 
   "postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
   "remoteUser": "vscode",
-  "forwardPorts": [3000, 8000, 8080, 9090, 3100, 16686],
+  "forwardPorts": [3000, 8000, 8080, 9090, 3100, 16686, 4040, 8888],
   "portsAttributes": {
     "3000": {
       "label": "Web UI"
@@ -54,20 +52,48 @@
       "label": "Loki"
     },
     "16686": {
-      "label": "Jaeger"
+      "label": "Jaeger / Tempo"
+    },
+    "4040": {
+      "label": "Spark / Pulumi Preview"
+    },
+    "8888": {
+      "label": "Jupyter / OpenTelemetry Collector"
     }
   },
   "customizations": {
     "vscode": {
       "extensions": [
+        // IaC
         "hashicorp.terraform",
+        // Kubernetes and Helm
         "ms-kubernetes-tools.vscode-kubernetes-tools",
+        // YAML and JSON
         "redhat.vscode-yaml",
+        // GitHub Actions workflow authoring
         "github.vscode-github-actions",
+        // Container authoring and management
         "ms-azuretools.vscode-docker",
+        // Go
         "golang.go",
+        // Python — language support
         "ms-python.python",
-        "ms-dotnettools.csdevkit"
+        // Python — type checking
+        "ms-python.pylance",
+        // Python — fast linting and formatting (Ruff)
+        "charliermarsh.ruff",
+        // .NET / C#
+        "ms-dotnettools.csdevkit",
+        // Prettier — JS/TS/JSON/Markdown formatter
+        "esbenp.prettier-vscode",
+        // Shell script linting
+        "timonwong.shellcheck",
+        // Markdown linting and style
+        "davidanson.vscode-markdownlint",
+        // GitLens for inline blame and history
+        "eamodio.gitlens",
+        // Kyverno policy authoring
+        "kyverno.kyverno"
       ],
       "settings": {
         "editor.formatOnSave": true,

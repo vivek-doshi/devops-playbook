@@ -14,7 +14,9 @@
     { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
     { "type": "panel", "id": "table", "name": "Table", "version": "" },
     { "type": "panel", "id": "bargauge", "name": "Bar gauge", "version": "" },
-    { "type": "panel", "id": "stat", "name": "Stat", "version": "" }
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "piechart", "name": "Pie chart", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" }
   ],
   "annotations": { "list": [] },
   "description": "Top 20 cost optimization opportunities: underutilized workloads and unused volumes ranked by potential savings",
@@ -188,6 +190,103 @@
           "instant": true,
           "refId": "A",
           "format": "table"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "displayMode": "auto", "filterable": true },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 7 }, { "color": "red", "value": 30 }] },
+          "unit": "dtdurations"
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "estimated_monthly_savings_usd" }, "properties": [{ "id": "displayName", "value": "Estimated Monthly Savings" }, { "id": "unit", "value": "currencyUSD" }] },
+          { "matcher": { "id": "byName", "options": "generate_pr_command" }, "properties": [{ "id": "displayName", "value": "Generate PR Command" }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 28 },
+      "id": 7,
+      "options": { "footer": { "show": false }, "sortBy": [{ "displayName": "recommendation_age_days", "desc": true }] },
+      "title": "VPA Recommendation Age",
+      "type": "table",
+      "description": "Workloads with VPA recommendations older than 7 days and expected savings.",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "finops_vpa_recommendation_age_days > 7",
+          "instant": true,
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "renameByName": { "namespace": "Namespace", "workload": "Workload", "Value": "recommendation_age_days", "estimated_monthly_savings_usd": "estimated_monthly_savings_usd", "generate_pr_command": "generate_pr_command" } } }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 100 }, { "color": "green", "value": 500 }] },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 38 },
+      "id": 8,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
+      "title": "Optimization Savings Realized",
+      "type": "stat",
+      "description": "Monthly savings realized from merged optimization changes. Metric source: ConfigMap updates written by generate-optimization-pr.py.",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(finops_optimization_savings_realized_monthly_usd)",
+          "legendFormat": "Savings Realized",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 38 },
+      "id": 9,
+      "title": "Reserved vs On-Demand Spend",
+      "type": "piechart",
+      "description": "Breakdown by commitment type. # <-- CHANGE THIS: apply finops.io/commitment-type label via your Terraform modules.",
+      "options": { "displayLabels": ["name", "percent"], "legend": { "displayMode": "table", "placement": "right" }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (commitment_type) (finops_commitment_spend_monthly_usd)",
+          "legendFormat": "{{commitment_type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "currencyUSD" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 38 },
+      "id": 10,
+      "title": "Cross-Cloud Cost Comparison",
+      "type": "barchart",
+      "description": "Normalized cost per team per cloud from normalize-cloud-costs.py ConfigMap publication.",
+      "options": { "orientation": "auto", "showValue": "auto", "stacking": "normal" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (team, cloud) (finops_normalized_cost_usd)",
+          "legendFormat": "{{team}}/{{cloud}}",
+          "refId": "A"
         }
       ]
     }

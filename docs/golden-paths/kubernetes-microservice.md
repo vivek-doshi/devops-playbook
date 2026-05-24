@@ -334,7 +334,7 @@ observability/prometheus/
   values.yaml   ← kube-prometheus-stack Helm values
 ```
 
-Start with [`observability/prometheus/alerts/`](../../observability/prometheus/alerts/) — copy the pod-level alerts and edit the `app` label selector to match your service.
+For a complete SLO implementation with burn-rate alerting, quarterly review process, and error budget policy, follow the [SLO-Driven Development golden path](slo-driven-development.md). For a quick alert setup, copy `observability/prometheus/alerts/pod-alerts.yaml` and adapt the job label.
 
 Define an SLO:
 

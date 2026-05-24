@@ -169,6 +169,86 @@ rollout-status:
 	bash scripts/k8s-rollout-check.sh
 
 # =============================================================================
+# SERVICE CATALOG
+# =============================================================================
+
+.PHONY: catalog-validate
+## catalog-validate: Validate all service and team catalog entries (CI gate equivalent)
+catalog-validate:
+	@echo "$(BOLD)Validating service catalog...$(RESET)"
+	python3 catalog/scripts/validate-catalog.py --strict --skip-url-check
+	@echo "$(GREEN)Catalog validation passed.$(RESET)"
+
+.PHONY: catalog-codeowners
+## catalog-codeowners: Regenerate .github/CODEOWNERS from catalog team definitions
+catalog-codeowners:
+	@echo "$(BOLD)Regenerating .github/CODEOWNERS from catalog/teams/...$(RESET)"
+	python3 catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS
+	@echo "$(GREEN)CODEOWNERS updated.$(RESET)"
+
+# =============================================================================
+# FINOPS — Optimization Loop
+# =============================================================================
+
+.PHONY: finops-rightsizing
+## finops-rightsizing: Analyze CPU/memory rightsizing across all namespaces
+finops-rightsizing:
+	@echo "$(BOLD)Running rightsizing analysis (requires Kubecost access)...$(RESET)"
+	python3 finops/scripts/analyze-rightsizing.py --all-namespaces
+
+.PHONY: finops-optimize-pr
+## finops-optimize-pr: Generate a draft optimization PR with rightsizing changes
+finops-optimize-pr:
+	@echo "$(BOLD)Generating optimization PR draft...$(RESET)"
+	python3 finops/scripts/generate-optimization-pr.py --all-namespaces
+
+.PHONY: finops-normalize-costs
+## finops-normalize-costs: Normalize cross-cloud costs to a standard unit for comparison
+finops-normalize-costs:
+	@echo "$(BOLD)Normalizing cloud costs...$(RESET)"
+	python3 finops/scripts/normalize-cloud-costs.py
+
+.PHONY: finops-reserved-capacity
+## finops-reserved-capacity: Evaluate reserved instance / savings plan recommendations
+finops-reserved-capacity:
+	@echo "$(BOLD)Running reserved capacity advisor...$(RESET)"
+	python3 finops/scripts/reserved-capacity-advisor.py
+
+# =============================================================================
+# SECURITY AND POLICY
+# =============================================================================
+
+.PHONY: policy-report
+## policy-report: Show Kyverno policy violation report across all namespaces
+policy-report:
+	@echo "$(BOLD)Policy violation report:$(RESET)"
+	kubectl get policyreport --all-namespaces 2>/dev/null || \
+		kubectl get clusterpolicyreport --all-namespaces 2>/dev/null || \
+		echo "No policy reports found. Ensure Kyverno is installed."
+
+.PHONY: compliance-report
+## compliance-report: Generate SOC 2 / CIS / ISO 27001 compliance evidence report
+compliance-report:
+	@echo "$(BOLD)Generating compliance report...$(RESET)"
+	python3 secops/compliance/scripts/generate-compliance-report.py \
+		--fail-below 80 \
+		--output compliance-report.json
+	@echo "$(GREEN)Report written to compliance-report.json.$(RESET)"
+
+.PHONY: slo-validate
+## slo-validate: Lint SLO YAML files and verify recording rule naming conventions
+slo-validate:
+	@echo "$(BOLD)Validating SLO files...$(RESET)"
+	@find observability/prometheus/slos/ -name '*.yaml' -o -name '*.yml' 2>/dev/null | \
+		xargs -I{} yq eval '.' {} > /dev/null && echo "$(GREEN)All SLO YAML files parse successfully.$(RESET)" || \
+		(echo "$(YELLOW)SLO YAML parse errors found.$(RESET)"; exit 1)
+	@echo "$(BOLD)Checking recording rule naming convention slo:<service>:<metric>:<window>...$(RESET)"
+	@find observability/prometheus/recording-rules/ -name '*.yaml' -o -name '*.yml' 2>/dev/null | \
+		xargs grep -h 'record:' | grep -v 'slo:' && \
+		echo "$(YELLOW)WARNING: Recording rules found that do not follow slo:<service>:<metric>:<window> convention.$(RESET)" || \
+		echo "$(GREEN)Recording rule naming convention check passed.$(RESET)"
+
+# =============================================================================
 # RELEASE
 # =============================================================================
 

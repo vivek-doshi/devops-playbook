@@ -1,0 +1,62 @@
+# ============================================================
+# SLO Definition Schema
+# Copy this file to observability/prometheus/slos/<your-service>-slo.yaml
+# Then run: make slo-generate SERVICE=<your-service>
+# This generates the recording rules and alert rules for your SLO.
+# MATURITY: Stable
+# WHEN TO USE: Any service that needs a reliability target and alerting
+# ============================================================
+# Common mistakes teams make:
+# 1) Setting the target too high without a business need (for example 99.99%)
+#    creates alert fatigue and unsustainable on-call load.
+# 2) Using the wrong total-events metric (for example counting only 5xx as total)
+#    hides real user-impacting failures like timeouts or policy-driven failures.
+# 3) Starting with a 30d window before measuring a baseline leads to immediate
+#    SLO violations; start with 7d, measure, then move to 30d.
+
+apiVersion: slo/v1
+kind: ServiceLevelObjective
+metadata:
+  name: my-service-availability
+  service: my-service
+  namespace: production
+  team: platform
+  owner: platform-team@example.com # <-- CHANGE THIS: set to team email or PagerDuty service key; valid values are RFC5322 emails or PD integration identifiers; source from team on-call ownership docs.
+  runbook_url: https://github.com/your-org/repo/blob/main/docs/runbooks/my-service.md # <-- CHANGE THIS: set to the service runbook URL; valid value is a reachable markdown runbook URL; source from docs/runbooks/.
+
+spec:
+  # SLO type: availability | latency | throughput | error-rate
+  type: availability
+
+  # The reliability target.
+  # 99.9% = 43.8 minutes/month downtime budget
+  # 99.5% = 3.6 hours/month downtime budget
+  # 99.0% = 7.3 hours/month downtime budget
+  # Guardrail: do not set above measured baseline.
+  target: 99.9
+
+  # 30d is standard after baseline is proven.
+  # Use 7d first for new services.
+  window: 30d
+
+  good_events:
+    metric: http_requests_total
+    filters:
+      job: my-service # <-- CHANGE THIS: must match Prometheus job label; valid value is the exact job label from Prometheus target discovery.
+      status_code: "2xx" # <-- CHANGE THIS: set success criteria; valid values include regex classes like 2xx or service-specific success labels.
+
+  total_events:
+    metric: http_requests_total
+    filters:
+      job: my-service # <-- CHANGE THIS: must match Prometheus job label; valid value is exact job label from Prometheus.
+
+  # Optional alert routing overrides.
+  # alerts:
+  #   critical:
+  #     pagerduty_service: PXXXXXX # <-- CHANGE THIS: set team PagerDuty service id; valid value is PD service id (for example P123ABC); source PagerDuty service settings.
+  #   warning:
+  #     slack_channel: "#my-team-alerts" # <-- CHANGE THIS: set team Slack channel; valid value is #channel-name.
+
+  compliance:
+    soc2_controls: ["CC7.2", "CC7.4"]
+    review_cadence: quarterly

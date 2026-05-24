@@ -1,10 +1,19 @@
-# FinOps — Main README
+# FinOps - Cost Governance and Optimization
 
 > Enterprise-grade cloud cost management, visibility, and governance for multi-cloud Kubernetes environments.
 
 ---
 
-## Architecture Overview
+## Quick Links
+
+- Workflow and operating model: [`finops/docs/finops-workflow.md`](docs/finops-workflow.md)
+- Optimization decision runbook: [`finops/docs/optimization-runbook.md`](docs/optimization-runbook.md)
+- End-to-end implementation path: [`docs/golden-paths/finops-optimization.md`](../docs/golden-paths/finops-optimization.md)
+- Budget and cost-center source of truth: [`finops/config/budgets.yaml`](config/budgets.yaml)
+
+---
+
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -55,6 +64,26 @@
 
 ---
 
+## The Optimization Loop
+
+The FinOps layer now supports a closed loop from recommendation to merged change and verified savings:
+
+1. Detect spend change in alerts or reports
+2. Analyze rightsizing and reserved-capacity opportunities
+3. Generate implementation artifacts (patches/PR text/proposals)
+4. Validate in staging and merge to production
+5. Confirm realized savings in dashboards and monthly report
+
+Use these assets end-to-end:
+
+- Decision guide: [`finops/docs/optimization-runbook.md`](docs/optimization-runbook.md)
+- Rightsizing automation: [`finops/scripts/generate-optimization-pr.py`](scripts/generate-optimization-pr.py)
+- Cross-cloud normalization: [`finops/scripts/normalize-cloud-costs.py`](scripts/normalize-cloud-costs.py)
+- Commitment planning: [`finops/scripts/reserved-capacity-advisor.py`](scripts/reserved-capacity-advisor.py)
+- End-to-end path: [`docs/golden-paths/finops-optimization.md`](../docs/golden-paths/finops-optimization.md)
+
+---
+
 ## Components
 
 | Component | Purpose | Location |
@@ -66,7 +95,7 @@
 | **Budget Alerts** | Prometheus alerting at 80/100/120% thresholds | `prometheus/` |
 | **Anomaly Detection** | Alert on unexpected cost spikes | `prometheus/` |
 | **Cost Reports** | Monthly chargeback/showback in CSV+JSON | `scripts/`, `kubernetes/` |
-| **Grafana Dashboards** | 8 dashboards for cost visibility | `dashboards/` |
+| **Grafana Dashboards** | 9 dashboards for cost visibility | `dashboards/` |
 
 ---
 
@@ -87,6 +116,15 @@ python finops/scripts/validate-cost-tags.py --all-namespaces
 
 # 5. Find rightsizing opportunities
 python finops/scripts/analyze-rightsizing.py --all-namespaces
+
+# 6. Generate optimization patch and PR summary from recommendations
+python finops/scripts/generate-optimization-pr.py --all-namespaces
+
+# 7. Compare normalized cost across providers
+python finops/scripts/normalize-cloud-costs.py --group-by namespace
+
+# 8. Generate reserved-capacity recommendations with risk scoring
+python finops/scripts/reserved-capacity-advisor.py --lookback-days 30
 ```
 
 Full installation: [`docs/installation.md`](docs/installation.md)
@@ -131,7 +169,10 @@ finops/
 │   ├── validate-cost-tags.py
 │   ├── detect-underutilized.py
 │   ├── detect-unused-volumes.py
-│   └── analyze-reserved-capacity.py
+│   ├── analyze-reserved-capacity.py
+│   ├── generate-optimization-pr.py
+│   ├── normalize-cloud-costs.py
+│   └── reserved-capacity-advisor.py
 ├── config/                  # Configuration files
 │   └── budgets.yaml
 ├── cicd/                    # CI/CD pipeline templates

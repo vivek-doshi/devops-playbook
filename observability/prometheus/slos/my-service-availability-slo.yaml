@@ -1,0 +1,35 @@
+# ============================================================
+# TEMPLATE: Service SLO Definition Example — Availability
+# WHEN TO USE: Copy and adapt for an HTTP service availability SLO.
+# MATURITY: Stable
+# ============================================================
+
+apiVersion: slo/v1
+kind: ServiceLevelObjective
+metadata:
+  name: api-gateway-availability
+  service: api-gateway
+  namespace: production # <-- CHANGE THIS: set workload namespace; valid values are your Kubernetes namespaces from overlays.
+  team: platform # <-- CHANGE THIS: set owning team label; valid values are team labels used on Deployments.
+  owner: platform-oncall@example.com # <-- CHANGE THIS: set on-call contact email or PagerDuty identifier; source from team roster.
+  runbook_url: https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md # <-- CHANGE THIS: set runbook URL for this service; source docs/runbooks/.
+
+spec:
+  type: availability
+  target: 99.9 # <-- CHANGE THIS: set availability target; valid values usually 99.0 to 99.95 based on baseline.
+  window: 30d # <-- CHANGE THIS: set to 7d while baseline is unknown, then 30d.
+
+  good_events:
+    metric: http_requests_total
+    filters:
+      job: api-gateway # <-- CHANGE THIS: must match Prometheus job label from scrape config.
+      status_code: "2xx|3xx" # <-- CHANGE THIS: define success codes; valid regex depends on service contract.
+
+  total_events:
+    metric: http_requests_total
+    filters:
+      job: api-gateway # <-- CHANGE THIS: must match Prometheus job label.
+
+  compliance:
+    soc2_controls: ["CC7.2", "CC7.4"]
+    review_cadence: quarterly

@@ -3,8 +3,8 @@
 Generated from current workspace structure.
 
 - Root: d:/projects/cicd-reference
-- Generated: 2026-05-23 21:02:02
-- Exclusions: .ai/, .git/, .github/prompts/, .github/skills/, .kiro/, website/
+- Generated: 2026-05-24 14:31:43
+- Exclusions: .ai/, .git/, .github/prompts/, .github/skills/, .kiro/, catalog/scripts/__pycache__/, finops/scripts/__pycache__/, secops/compliance/scripts/__pycache__/, website/
 
 ```text
 .
@@ -24,7 +24,8 @@ Generated from current workspace structure.
 │   │   └── feature-request.yml
 │   ├── workflows
 │   │   ├── dependabot-automerge.yml
-│   │   └── deploy.yml
+│   │   ├── deploy.yml
+│   │   └── validate-catalog.yml
 │   ├── CODEOWNERS
 │   ├── copilot-instructions.md
 │   ├── dependabot.yml
@@ -39,6 +40,21 @@ Generated from current workspace structure.
 │       ├── namespace-backup.yaml
 │       ├── README.md
 │       └── schedule.yaml
+├── catalog
+│   ├── schema
+│   │   └── service.yaml
+│   ├── scripts
+│   │   ├── generate-codeowners.py
+│   │   ├── migrate-to-backstage.py
+│   │   └── validate-catalog.py
+│   ├── services
+│   │   └── example-api-gateway.yaml
+│   ├── teams
+│   │   ├── schema
+│   │   │   └── team.yaml
+│   │   ├── platform-team.yaml
+│   │   └── README.md
+│   └── README.md
 ├── cd
 │   ├── fleet-overlays
 │   │   ├── dev
@@ -339,6 +355,7 @@ Generated from current workspace structure.
 │   │   ├── compliance-reporting.md
 │   │   ├── database-migrations.md
 │   │   ├── data-pipeline.md
+│   │   ├── finops-optimization.md
 │   │   ├── frontend-spa.md
 │   │   ├── incident-response.md
 │   │   ├── kubernetes-microservice.md
@@ -348,6 +365,8 @@ Generated from current workspace structure.
 │   │   ├── multi-tenant-saas.md
 │   │   ├── platform-onboarding.md
 │   │   ├── serverless-app.md
+│   │   ├── service-catalog.md
+│   │   ├── slo-driven-development.md
 │   │   └── supply-chain-security.md
 │   ├── guides
 │   │   ├── branching-strategy.md
@@ -362,10 +381,11 @@ Generated from current workspace structure.
 │   │   └── versioning-strategy.md
 │   ├── runbooks
 │   │   ├── podcrashloobackoff.md
+│   │   ├── slo-breach-response.md
+│   │   ├── slo-quarterly-review.md
 │   │   └── template.md
 │   ├── ARCHITECTURE_DECISION_GUIDE.md
-│   ├── ARCHITECTURE_DECISION_GUIDE.pdf
-│   └── repo_structure.md
+│   └── ARCHITECTURE_DECISION_GUIDE.pdf
 ├── finops
 │   ├── cicd
 │   │   ├── azure-pipelines-infracost.yml
@@ -394,6 +414,7 @@ Generated from current workspace structure.
 │   │   ├── infracost-integration.md
 │   │   ├── installation.md
 │   │   ├── kubecost-vs-opencost.md
+│   │   ├── optimization-runbook.md
 │   │   ├── prometheus-api-examples.md
 │   │   ├── README.md
 │   │   ├── reserved-capacity-recommendations.md
@@ -431,8 +452,11 @@ Generated from current workspace structure.
 │   │   ├── detect-unused-volumes.py
 │   │   ├── export-cost-report.sh
 │   │   ├── generate-cost-report.py
+│   │   ├── generate-optimization-pr.py
 │   │   ├── install-cost-monitoring.sh
+│   │   ├── normalize-cloud-costs.py
 │   │   ├── README.md
+│   │   ├── reserved-capacity-advisor.py
 │   │   ├── send-to-billing-api.py
 │   │   ├── test_analyze_reserved_capacity.py
 │   │   ├── test_analyze_rightsizing.py
@@ -479,14 +503,21 @@ Generated from current workspace structure.
 │   │   │   ├── cert-manager-alerts.yaml
 │   │   │   ├── deployment-alerts.yaml
 │   │   │   ├── pod-alerts.yaml
+│   │   │   ├── slo-burn-rate-alerts.yaml
 │   │   │   └── slo-rules.yaml
 │   │   ├── dashboards
 │   │   │   ├── slo-burn-rate.json
-│   │   │   └── slo-burn-rate-configmap.yaml
+│   │   │   ├── slo-burn-rate-configmap.yaml
+│   │   │   └── slo-status-configmap.yaml
+│   │   ├── recording-rules
+│   │   │   └── slo-burn-rates.yaml
 │   │   ├── slos
 │   │   │   ├── availability-slo.yaml
 │   │   │   ├── latency-slo.yaml
-│   │   │   └── README.md
+│   │   │   ├── my-service-availability-slo.yaml
+│   │   │   ├── my-service-latency-slo.yaml
+│   │   │   ├── README.md
+│   │   │   └── slo-schema.yaml
 │   │   ├── fleet-aggregation.yaml
 │   │   ├── README.md
 │   │   └── values.yaml
@@ -512,6 +543,7 @@ Generated from current workspace structure.
 │   │   ├── enforce-finops-labels.yaml
 │   │   ├── fleet-policy-propagation.yaml
 │   │   ├── README.md
+│   │   ├── require-catalog-registration.yaml
 │   │   ├── require-labels.yaml
 │   │   ├── require-liveness-readiness.yaml
 │   │   ├── require-non-root.yaml
@@ -554,8 +586,6 @@ Generated from current workspace structure.
 │   │   ├── kubernetes
 │   │   │   └── compliance-report-cronjob.yaml
 │   │   ├── scripts
-│   │   │   ├── __pycache__
-│   │   │   │   └── generate-compliance-report.cpython-314.pyc
 │   │   │   ├── collect-evidence.sh
 │   │   │   └── generate-compliance-report.py
 │   │   ├── kube-bench-cronjob.yaml

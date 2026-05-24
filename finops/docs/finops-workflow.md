@@ -6,6 +6,37 @@ This guide answers the core question: **when do I need to think about cost?**
 
 ---
 
+## The Optimization Loop
+
+```
+Data collection (Kubecost, VPA, billing APIs)
+   ↓
+Analysis (analyze-rightsizing.py, reserved-capacity-advisor.py)
+   ↓
+Alert or report fires
+   ↓
+Engineer follows optimization-runbook.md
+   ↓
+generate-optimization-pr.py creates the change
+   ↓
+PR reviewed and merged
+   ↓
+Cost reduction realized within 24-48 hours
+   ↓
+Cost report confirms savings -> loop closes
+```
+
+### Time To Value
+
+| Optimization type | Time to identify | Time to implement | Time to realize savings |
+|---|---|---|---|
+| Resource rightsizing | Immediate (VPA running) | 1-2 days (PR review) | 24-48 hours after merge |
+| Unused volumes | Daily (detect-unused-volumes.py) | 1 hour | Immediate after deletion |
+| Reserved capacity | Quarterly (advisor script) | 1 week (approval + commitment) | Next billing cycle |
+| Cross-cloud migration | Monthly (normalize-cloud-costs.py) | Weeks-months | Next billing cycle |
+
+---
+
 ## The Four FinOps Moments
 
 ### Moment 1: Writing Terraform (Infrastructure Changes)
