@@ -3,7 +3,7 @@
 Generated from current workspace structure.
 
 - Root: d:/projects/cicd-reference
-- Generated: 2026-05-24 14:31:43
+- Generated: 2026-05-25 21:39:39
 - Exclusions: .ai/, .git/, .github/prompts/, .github/skills/, .kiro/, catalog/scripts/__pycache__/, finops/scripts/__pycache__/, secops/compliance/scripts/__pycache__/, website/
 
 ```text
@@ -345,12 +345,16 @@ Generated from current workspace structure.
 │   ├── decisions
 │   │   ├── ADR-001-folder-structure.md
 │   │   ├── ADR-002-helm-vs-kustomize.md
-│   │   └── ADR-003-gitops-strategy.md
+│   │   ├── ADR-003-gitops-strategy.md
+│   │   ├── ADR-004-policy-enforcement-layering.md
+│   │   ├── ADR-005-slo-driven-operations-standard.md
+│   │   └── README.md
 │   ├── diagrams
 │   │   ├── deployment-flow.png
 │   │   ├── deployment-flow.svg
 │   │   ├── pipeline-overview.drawio
-│   │   └── pipeline-overview.svg
+│   │   ├── pipeline-overview.svg
+│   │   └── README.md
 │   ├── golden-paths
 │   │   ├── compliance-reporting.md
 │   │   ├── database-migrations.md
@@ -370,6 +374,7 @@ Generated from current workspace structure.
 │   │   └── supply-chain-security.md
 │   ├── guides
 │   │   ├── branching-strategy.md
+│   │   ├── concepts.md
 │   │   ├── conventional-commits.md
 │   │   ├── database-migrations.md
 │   │   ├── disaster-recovery.md
@@ -381,6 +386,7 @@ Generated from current workspace structure.
 │   │   └── versioning-strategy.md
 │   ├── runbooks
 │   │   ├── podcrashloobackoff.md
+│   │   ├── README.md
 │   │   ├── slo-breach-response.md
 │   │   ├── slo-quarterly-review.md
 │   │   └── template.md
@@ -679,6 +685,5 @@ Generated from current workspace structure.
 ├── GETTING_STARTED.md
 ├── Makefile
 ├── README.md
-├── SETUP_GITHUB_PAGES.md
 └── Taskfile.yml
 ```

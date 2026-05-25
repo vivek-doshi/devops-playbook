@@ -316,8 +316,12 @@ metadata:
 
 
 - **[docs/golden-paths/](docs/golden-paths/)** — Start here for all workflows, including the new MLOps path
-- **[docs/guides/](docs/guides/)** — Deep dives: onboarding, secrets, environments, migrations, DR
-- **[docs/runbooks/](docs/runbooks/)** — Incident response, troubleshooting, templates
+- **[docs/guides/](docs/guides/)** — Deep dives: onboarding, branching, commits, environments, OIDC, secrets, migrations, DR, and core concepts
+- **[docs/runbooks/](docs/runbooks/)** — Incident response, troubleshooting, and operational templates
+- **[docs/runbooks/README.md](docs/runbooks/README.md)** — Runbook catalog and authoring standard
+- **[docs/decisions/](docs/decisions/)** — Architecture Decision Records (ADRs)
+- **[docs/decisions/README.md](docs/decisions/README.md)** — ADR index and lifecycle model
+- **[docs/diagrams/README.md](docs/diagrams/README.md)** — Diagram inventory and update workflow
 - **[docs/ARCHITECTURE_DECISION_GUIDE.md](docs/ARCHITECTURE_DECISION_GUIDE.md)** — How decisions are made
 - **[docs/repo_structure.md](docs/repo_structure.md)** — Full n-level repo tree with explanations
 - **[.devcontainer/gpu/README.md](.devcontainer/gpu/README.md)** — Local CUDA/GPU devcontainer usage

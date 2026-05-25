@@ -13,6 +13,25 @@ It provides copy-ready templates, policy guardrails, golden paths, and operation
 - FinOps optimization loop from recommendation to merged change and savings verification.
 - Git-native service catalog for ownership, on-call routing, and deployment governance.
 
+## Documentation And Decision Baseline (Latest)
+
+- ADR set expanded to include policy-layering and SLO-operations standards:
+	- `docs/decisions/ADR-004-policy-enforcement-layering.md`
+	- `docs/decisions/ADR-005-slo-driven-operations-standard.md`
+- ADR index and lifecycle reference added:
+	- `docs/decisions/README.md`
+- Runbook catalog and authoring standard added:
+	- `docs/runbooks/README.md`
+- Diagram inventory and maintenance guidance added:
+	- `docs/diagrams/README.md`
+- Guides refreshed for consistency and repository alignment:
+	- `docs/guides/branching-strategy.md`
+	- `docs/guides/environment-strategy.md`
+	- `docs/guides/github-actions-oidc.md`
+	- `docs/guides/secrets-management.md`
+	- `docs/guides/versioning-strategy.md`
+	- `docs/guides/concepts.md`
+
 ## Target Audience
 
 - Developers needing ready-to-use pipeline and deployment templates.

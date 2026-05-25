@@ -32,6 +32,7 @@ It spans development, build, test, security scanning, deployment, runtime operat
 - catalog/ defines Git-native service and team inventory, ownership metadata, and routing details.
 - observability/prometheus/slos/, recording-rules/, and alerts/ implement SLO-driven operations.
 - docs/runbooks/ and docs/golden-paths/ provide breach response and reliability workflows.
+- docs/decisions/ captures architecture and operational decisions, indexed in `docs/decisions/README.md`.
 
 ### 6. Cost And Operational Excellence Layer
 
@@ -51,3 +52,10 @@ It spans development, build, test, security scanning, deployment, runtime operat
 
 - docs/ for architectural and procedural guidance.
 - cd/, ci/, terraform/, ci-security/, secops/, finops/, catalog/ for executable patterns.
+
+## Documentation Navigation Anchors
+
+- ADR index: `docs/decisions/README.md`
+- Runbook index and authoring standard: `docs/runbooks/README.md`
+- Diagram inventory: `docs/diagrams/README.md`
+- Concepts guide: `docs/guides/concepts.md`
