@@ -41,3 +41,25 @@ It provides reusable templates, guardrails, and runbooks for building, securing,
 	- `catalog/` (service and team registration)
 	- `.github/workflows/validate-catalog.yml`
 	- `policy/kyverno/require-catalog-registration.yaml`
+
+## Recently Updated Documentation And ADR Coverage
+
+- ADR updates and expansion:
+	- `docs/decisions/ADR-001-folder-structure.md`
+	- `docs/decisions/ADR-002-helm-vs-kustomize.md`
+	- `docs/decisions/ADR-003-gitops-strategy.md`
+	- `docs/decisions/ADR-004-policy-enforcement-layering.md`
+	- `docs/decisions/ADR-005-slo-driven-operations-standard.md`
+	- `docs/decisions/README.md`
+- Guide normalization and refresh:
+	- `docs/guides/branching-strategy.md`
+	- `docs/guides/environment-strategy.md`
+	- `docs/guides/github-actions-oidc.md`
+	- `docs/guides/secrets-management.md`
+	- `docs/guides/versioning-strategy.md`
+	- `docs/guides/concepts.md`
+	- `docs/guides/conventional-commits.md`
+	- `docs/guides/onboarding.md`
+- Runbook and diagram indexes:
+	- `docs/runbooks/README.md`
+	- `docs/diagrams/README.md`

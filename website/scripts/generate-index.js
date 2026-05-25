@@ -11,7 +11,6 @@ const EXCLUDE_PATTERNS = [
   'dist',
   'website',
   'scripts',       // Internal utility scripts — not part of the public playbook content.
-  '.devcontainer', // Local dev environment config — not playbook content.
   '.next',
   '__pycache__',
   '.pytest_cache',

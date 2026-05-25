@@ -3,6 +3,23 @@
 
 Use this guide to quickly find the right template for your scenario.
 
+## What's New (May 2026)
+
+- ADR coverage expanded with:
+	- [`docs/decisions/ADR-004-policy-enforcement-layering.md`](docs/decisions/ADR-004-policy-enforcement-layering.md)
+	- [`docs/decisions/ADR-005-slo-driven-operations-standard.md`](docs/decisions/ADR-005-slo-driven-operations-standard.md)
+- Documentation indexes added:
+	- [`docs/decisions/README.md`](docs/decisions/README.md)
+	- [`docs/runbooks/README.md`](docs/runbooks/README.md)
+	- [`docs/diagrams/README.md`](docs/diagrams/README.md)
+- Guides normalized and updated:
+	- [`docs/guides/branching-strategy.md`](docs/guides/branching-strategy.md)
+	- [`docs/guides/environment-strategy.md`](docs/guides/environment-strategy.md)
+	- [`docs/guides/github-actions-oidc.md`](docs/guides/github-actions-oidc.md)
+	- [`docs/guides/secrets-management.md`](docs/guides/secrets-management.md)
+	- [`docs/guides/versioning-strategy.md`](docs/guides/versioning-strategy.md)
+	- [`docs/guides/concepts.md`](docs/guides/concepts.md)
+
 ---
 
 <!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
@@ -114,11 +131,11 @@ Use this guide to quickly find the right template for your scenario.
 | Need | File |
 |------|------|
 <!-- Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| SAST (SonarQube) | [`security/sast/sonarqube.yml`](security/sast/sonarqube.yml) |
-| Container scanning (Trivy) | [`security/container-scanning/trivy-scan.yml`](security/container-scanning/trivy-scan.yml) |
-| Secret detection (Gitleaks) | [`security/secret-detection/gitleaks.yml`](security/secret-detection/gitleaks.yml) |
+| SAST (SonarQube) | [`ci-security/sast/`](ci-security/sast/) |
+| Container scanning (Trivy) | [`ci-security/container-scanning/`](ci-security/container-scanning/) |
+| Secret detection (Gitleaks) | [`ci-security/secret-detection/`](ci-security/secret-detection/) |
 <!-- Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Dependency audit (npm) | [`security/dependency-audit/npm-audit.yml`](security/dependency-audit/npm-audit.yml) |
+| Dependency audit (npm) | [`ci-security/dependency-audit/`](ci-security/dependency-audit/) |
 | Supply chain security (signing, SBOM, SLSA) | [`docs/golden-paths/supply-chain-security.md`](docs/golden-paths/supply-chain-security.md) |
 
 ---
@@ -171,6 +188,12 @@ Use this guide to quickly find the right template for your scenario.
 <!-- Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 | Helm vs Kustomize? | [`docs/decisions/ADR-002-helm-vs-kustomize.md`](docs/decisions/ADR-002-helm-vs-kustomize.md) |
 | GitOps strategy? | [`docs/decisions/ADR-003-gitops-strategy.md`](docs/decisions/ADR-003-gitops-strategy.md) |
+| Why layered policy checks (CI + admission)? | [`docs/decisions/ADR-004-policy-enforcement-layering.md`](docs/decisions/ADR-004-policy-enforcement-layering.md) |
+| Why SLO-driven operations by default? | [`docs/decisions/ADR-005-slo-driven-operations-standard.md`](docs/decisions/ADR-005-slo-driven-operations-standard.md) |
 | Secrets management | [`docs/guides/secrets-management.md`](docs/guides/secrets-management.md) |
 | How do we demonstrate compliance? | [`docs/golden-paths/compliance-reporting.md`](docs/golden-paths/compliance-reporting.md) |
 | Branching strategy | [`docs/guides/branching-strategy.md`](docs/guides/branching-strategy.md) |
+| ADR index and lifecycle | [`docs/decisions/README.md`](docs/decisions/README.md) |
+| Runbook catalog and standard | [`docs/runbooks/README.md`](docs/runbooks/README.md) |
+| Diagram inventory and update flow | [`docs/diagrams/README.md`](docs/diagrams/README.md) |
+| Repo concept map | [`docs/guides/concepts.md`](docs/guides/concepts.md) |

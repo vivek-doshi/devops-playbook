@@ -8,6 +8,11 @@ Use this as a companion to:
 - [docs/runbooks/](../runbooks/)
 - [docs/decisions/](../decisions/)
 
+## Repository Website
+
+- Deployed playbook viewer: [DevOps Playbook Viewer](https://vivek-doshi.github.io/devops-playbook/)
+- Source for the viewer app: [website/](../../website/)
+
 ## How To Read This Guide
 
 Each section uses this structure:
@@ -1004,3 +1009,4 @@ Follow this order if you are learning the platform end to end:
 3. [docs/golden-paths/slo-driven-development.md](../golden-paths/slo-driven-development.md)
 4. [docs/golden-paths/service-catalog.md](../golden-paths/service-catalog.md)
 5. [docs/golden-paths/finops-optimization.md](../golden-paths/finops-optimization.md)
+

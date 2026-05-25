@@ -19,7 +19,9 @@ You need:
 | Tool | Minimum version | Install |
 |------|----------------|---------|
 | Git | 2.40+ | [git-scm.com](https://git-scm.com) |
-| Docker Desktop | 4.x | [docker.com](https://docs.docker.com/get-docker/) |
+└── ci-security/                      ← CI security scanning templates
+└── secops/                           ← runtime and compliance security assets
+└── policy/                           ← policy-as-code resources
 | kubectl | 1.29+ | `brew install kubectl` or [docs](https://kubernetes.io/docs/tasks/tools/) |
 | kind | 0.24+ | `brew install kind` |
 | Helm | 3.14+ | `brew install helm` |
@@ -224,7 +226,7 @@ sudo usermod -aG docker $USER && newgrp docker
 │   ├── environment-strategy.md       ← dev / staging / prod model
 │   ├── github-actions-oidc.md        ← cloud auth without static secrets
 │   ├── pre-commit-setup.md           ← local hook configuration
-│   └── secrets-management.md        ← secrets patterns
+│   └── secrets-management.md         ← secrets patterns
 ├── .github/
 │   ├── CODEOWNERS                    ← who reviews what
 │   └── PULL_REQUEST_TEMPLATE.md      ← PR description template
@@ -233,5 +235,7 @@ sudo usermod -aG docker $USER && newgrp docker
 ├── cd/                               ← CD manifests and GitOps
 ├── docker/                           ← Dockerfile templates
 ├── terraform/                        ← IaC modules
-└── security/                         ← scanning and policy templates
+├── ci-security/                      ← CI security scanning templates
+├── secops/                           ← runtime and compliance security assets
+└── policy/                           ← policy-as-code resources
 ```

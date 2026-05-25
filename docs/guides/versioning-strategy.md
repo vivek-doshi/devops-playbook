@@ -1,68 +1,60 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 # Versioning Strategy Guide
 
----
+This guide defines versioning and tagging conventions for templates, artifacts, and releases.
 
-<!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Semantic Versioning (SemVer) — Recommended for Libraries and APIs
+## Recommended Model
 
-Format: `MAJOR.MINOR.PATCH` (e.g., `2.1.4`)
+Use Semantic Versioning for reusable deliverables.
 
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Part | Increment when |
-|------|----------------|
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| MAJOR | Breaking API / behavior change |
-| MINOR | New feature, backward compatible |
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| PATCH | Bug fix, backward compatible |
+Format:
+- `MAJOR.MINOR.PATCH`
 
-Pre-release: `2.1.4-beta.1`, `2.1.4-rc.1`
-<!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-Build metadata: `2.1.4+20260228`
+Increment rules:
+- `MAJOR`: breaking behavior or interface changes.
+- `MINOR`: backward-compatible feature additions.
+- `PATCH`: backward-compatible fixes.
 
-### Automated SemVer
+## Artifact Tagging
 
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-Use [Release Please](../ci/github-actions/_strategies/release-please.yml) with Conventional Commits to automate version bumps.
+For container and deployment artifacts:
+1. Always publish immutable SHA tags.
+2. Add semantic tags only for release milestones.
+3. Do not use mutable `latest` for production deployment references.
 
----
-
-<!-- Note 8: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Calendar Versioning (CalVer) — For Applications
-
-Format: `YYYY.MM.DD` or `YYYY.MM.PATCH` (e.g., `2026.02.1`)
-
-<!-- Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-Good for: products with regular release cadence, where "what year is this from" is meaningful to users.
-
----
-
-<!-- Note 10: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Build Numbers — For Internal Artifacts
-
-Use the CI build number as part of the image tag:
-
-<!-- Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-```
-my-app:1.2.3-build.456
-<!-- Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-my-app:sha-a1b2c3d  # Git SHA (recommended for traceability)
-```
-
-<!-- Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-**Never use `latest` in production** — it is not immutable and breaks rollback.
-
----
-
-<!-- Note 14: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Image Tagging Strategy
+Example:
 
 ```bash
-# Tag with Git SHA (always unique, traceable)
 docker build -t my-app:sha-$(git rev-parse --short HEAD) .
-
-# Also tag with semver on release
-docker tag my-app:sha-abc1234 my-app:1.2.3
-docker tag my-app:sha-abc1234 my-app:1.2
+docker tag my-app:sha-abc1234 my-app:1.4.0
+docker tag my-app:sha-abc1234 my-app:1.4
 ```
+
+## Repository Release Flow
+
+Suggested release sequence:
+1. Merge changes using Conventional Commits.
+2. Generate release version and tag.
+3. Promote the same artifact across environments.
+4. Record release notes and rollback references.
+
+Related script:
+- `scripts/tag-release.sh`
+
+## CalVer Guidance
+
+Calendar versioning is acceptable for operational bundles where release date visibility is more useful than API compatibility signaling.
+
+Example:
+- `2026.05.2`
+
+## CI/CD Integration
+
+- Ensure pipeline metadata includes git SHA and build identifier.
+- Use release automation patterns from `ci/github-actions/` where available.
+- Keep release gates aligned with `docs/guides/branching-strategy.md`.
+
+## Related
+
+- `docs/guides/conventional-commits.md`
+- `docs/guides/branching-strategy.md`
+- `ci/github-actions/`

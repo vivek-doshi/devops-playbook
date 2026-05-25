@@ -1,72 +1,67 @@
-> **Note 1:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
-# ADR-003: GitOps Strategy
+# ADR-003: GitOps Strategy and Controller Default
 
-**Date:** 2026-02-28
-> **Note 2:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+**Date:** 2026-05-25
 **Status:** Accepted
 
 ---
 
-> **Note 3:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
 ## Context
 
-GitOps treats the Git repository as the single source of truth for cluster state. Two tools dominate the space: **ArgoCD** and **Flux**.
+This repository defines GitOps patterns for single-cluster and multi-cluster delivery.
 
-> **Note 4:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
+Implemented assets include:
+- Argo CD patterns in `cd/gitops/argocd/`
+- Flux patterns in `cd/gitops/flux/`
+- Fleet-oriented Argo CD overlays and registry-driven ApplicationSet assets in `cd/fleet-overlays/` and `cd/gitops/argocd/fleet/`
+
+The team needed a default controller recommendation while preserving interoperability for organizations that already standardize on Flux.
+
 ## Decision
 
-**Include templates for both ArgoCD and Flux. Recommend ArgoCD as the default.**
+Adopt Argo CD as the default GitOps controller in this repository while maintaining Flux examples as supported alternatives.
 
-> **Note 5:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
+Operational model:
+1. Git is the source of truth for desired state.
+2. Controllers pull and reconcile continuously.
+3. Promotion occurs through Git pull requests across environment overlays.
+4. Manual direct cluster mutations are treated as exceptions.
+
 ## Rationale
 
-**ArgoCD** is recommended because:
-> **Note 6:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- Rich web UI aids adoption and debugging
-- Application CRD is intuitive
-> **Note 7:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- Active community and wide adoption
-- App-of-Apps and ApplicationSet patterns scale well
+Argo CD default rationale:
+- Strong visibility and troubleshooting UX for broad adoption.
+- Mature ApplicationSet and app-of-apps patterns for scale.
+- Repository already contains richer Argo CD examples and fleet artifacts.
 
-> **Note 8:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-**Flux** is included because:
-- Preferred by teams with Helm-heavy stacks (Flux HelmRelease CRD)
-> **Note 9:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- Better multi-tenancy model for large organisations
-- Pure pull-based (no in-cluster API server exposure)
-
-> **Note 10:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
-## GitOps Principles Applied
-
-1. **Declarative**: All desired state defined in YAML
-2. **Versioned**: Git history is the audit log
-3. **Pulled**: Cluster pulls from Git (not pushed to)
-4. **Continuously reconciled**: Drift is automatically corrected
+Flux inclusion rationale:
+- Existing user base and strong Helm-native workflows.
+- Useful for teams preferring a pull-only operator model and different tenancy patterns.
 
 ## Consequences
 
-- Config repo (GitOps repo) should be separate from app code repo to keep concerns clean.
-- Secrets must never be committed in plaintext - use Sealed Secrets, External Secrets Operator, or Vault Agent Injector.
+Positive:
+- Clear default reduces decision latency for new adopters.
+- Flux compatibility preserves portability.
+- GitOps behavior remains aligned with auditability and drift correction goals.
 
----
+Trade-offs:
+- Documentation and testing burden increases with two supported controllers.
+- Teams can fragment if selection is not documented per service.
 
-## Multi-cluster fleet extension (2026)
+Mitigations:
+- Require each service/deployment path to document controller choice.
+- Keep base deployment manifests portable and controller-agnostic where possible.
 
-The repository now includes a fleet extension based on:
+## Fleet Scale Notes
 
-- `cd/gitops/argocd/fleet/fleet-applicationset.yaml`
-- `cd/gitops/argocd/fleet/cluster-registry.yaml`
+For the Argo CD fleet model in this repo:
+- Cluster registry is intentionally human-maintained for explicit control.
+- Recommended practical scale limit is 20 clusters per fleet ApplicationSet before introducing higher-order partitioning.
+- `ApplyOutOfSyncOnly` and backoff controls remain required for large fleet stability.
 
-This extends the existing ArgoCD ApplicationSet strategy by using a list generator driven by a human-maintained cluster registry file in Git.
+## Repository Mapping
 
-### Alternatives considered
-
-- **Cluster API + GitOps**: rejected for starter repository complexity and higher operational overhead.
-- **ArgoCD cluster-config generator**: rejected due to tighter coupling between cluster provisioning internals and ArgoCD generator behavior.
-- **Flux multi-tenancy**: viable technically, but inconsistent with the ArgoCD default established in this ADR.
-
-### Consequences
-
-- Cluster registry remains human-maintained, which introduces operational toil beyond ~20 clusters.
-- The registry is explicit and auditable in Git, which is preferred at the current target scale.
-- Fleet behavior remains consistent with GitOps principles: declarative, versioned, and continuously reconciled.
+- Argo CD: `cd/gitops/argocd/`
+- Flux: `cd/gitops/flux/`
+- Fleet overlays: `cd/fleet-overlays/`
+- Fleet registry assets: `cd/gitops/argocd/fleet/`

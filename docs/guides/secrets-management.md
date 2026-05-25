@@ -1,95 +1,63 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 # Secrets Management Guide
 
-A practical guide to managing secrets across CI/CD pipelines and Kubernetes.
+This guide explains how to manage secrets safely across CI/CD and runtime workloads in this repository.
 
-## Secret implementation patterns
+## Design Principles
 
-| Task | Go to |
-|---|---|
-| Store and sync a secret to Kubernetes | [secrets/README.md](../../secrets/README.md) |
-| Full lifecycle (provision -> rotate -> offboard) | [secrets/guides/secret-lifecycle.md](../../secrets/guides/secret-lifecycle.md) |
-| Emergency rotation | [secrets/guides/emergency-rotation.md](../../secrets/guides/emergency-rotation.md) |
-| Decommission a service's secrets | [secrets/guides/secret-offboarding.md](../../secrets/guides/secret-offboarding.md) |
-| Terraform-managed rotation (alternative) | [ci-security/secret-rotation/](../../ci-security/secret-rotation/) |
-| OIDC federation for CI/CD | [docs/guides/github-actions-oidc.md](github-actions-oidc.md) |
+1. Never store plaintext secrets in Git.
+2. Prefer short-lived identity tokens over static credentials.
+3. Separate secret source of truth from application deployment manifests.
+4. Rotate secrets on a defined schedule and document emergency rotation.
+5. Ensure access is least-privilege and auditable.
 
-<!-- Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
----
+## Recommended Patterns by Context
 
-## The Problem
+### CI/CD authentication
 
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-Secrets (passwords, API keys, certificates) must be:
-- **Never stored in Git** — even in private repos
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- **Scoped** — each service gets only the secrets it needs
-- **Rotatable** — changing secrets should not require code changes
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- **Auditable** — who accessed what, when?
+Preferred approach:
+- Use OIDC federation from GitHub Actions (or equivalent CI identity federation).
 
----
+Fallback approach:
+- Use CI secret stores only when federation is not available.
 
-<!-- Note 6: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Options by Context
+Reference:
+- `docs/guides/github-actions-oidc.md`
 
-### CI/CD Pipelines
+### Kubernetes runtime secrets
 
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Platform | Built-in Secrets | External Integration |
-|----------|-----------------|---------------------|
-<!-- Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| GitHub Actions | `secrets.*` in repository/org settings | OIDC → AWS/Azure/GCP |
-| GitLab CI | CI/CD Variables (masked) | HashiCorp Vault plugin |
-<!-- Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Azure Pipelines | Variable Groups + Key Vault link | Managed Identity |
-| Jenkins | Credentials store | HashiCorp Vault plugin |
+Preferred hierarchy:
+1. Secret manager as source of truth (Key Vault, Secrets Manager, Vault).
+2. External Secrets Operator for cluster sync.
+3. Native Kubernetes Secrets only as synced runtime materialization.
 
-<!-- Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-**Best practice:** Use OIDC / Workload Identity Federation instead of long-lived credentials.
+References:
+- `secrets/external-secrets/`
+- `secrets/guides/secret-lifecycle.md`
 
-### Kubernetes
+## Rotation and Lifecycle
 
-<!-- Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Tool | How it works |
-|------|-------------|
-<!-- Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| **Kubernetes Secrets** | Base64-encoded, stored in etcd — enable envelope encryption |
-| **Sealed Secrets** | Encrypted at rest in Git, decrypted only in-cluster |
-<!-- Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| **External Secrets Operator** | Syncs from Vault, AWS Secrets Manager, Azure Key Vault |
-| **Vault Agent Injector** | Vault injects secrets as files/env at pod startup |
+Minimum lifecycle steps:
+1. Provision secret with ownership metadata.
+2. Distribute via approved sync/injection path.
+3. Rotate on schedule based on risk and dependency.
+4. Validate consumer reload behavior.
+5. Retire and revoke during service offboarding.
 
-<!-- Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
----
+Operational guides:
+- `secrets/guides/secret-lifecycle.md`
+- `secrets/guides/emergency-rotation.md`
+- `secrets/guides/secret-offboarding.md`
 
-## Recommended Setup
+## Anti-Patterns
 
-<!-- Note 15: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-### Small team / simple needs
-1. GitHub Actions encrypted secrets
-<!-- Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-2. Kubernetes Secrets with etcd encryption enabled
-3. Rotate secrets manually on schedule
+Do not:
+- Commit `.env` files containing real secrets.
+- Store secrets directly in container images.
+- Reuse identical credentials across environments.
+- Keep long-lived cloud keys in CI by default.
 
-<!-- Note 17: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-### Medium team
-1. Azure Key Vault / AWS Secrets Manager as source of truth
-2. External Secrets Operator to sync to Kubernetes
-3. OIDC for CI/CD → cloud authentication
+## Implementation Pointers
 
-### Large enterprise
-1. HashiCorp Vault with namespaces
-2. Vault Agent Injector for Kubernetes
-3. Dynamic secrets (Vault generates short-lived credentials on demand)
-4. Full audit logging
-
----
-
-## Anti-patterns to Avoid
-
-- ❌ `.env` files committed to Git
-- ❌ Secrets in `docker-compose.yml`
-- ❌ Long-lived service account keys / personal access tokens
-- ❌ Same secret in dev, staging, and prod
-- ❌ Secrets in container image layers
+- Secret infrastructure and patterns: `secrets/`
+- Terraform-driven rotation (optional): `ci-security/secret-rotation/`
+- Runtime security and compliance context: `secops/`, `policy/`
