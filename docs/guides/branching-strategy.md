@@ -1,88 +1,64 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 # Branching Strategy Guide
 
-Overview of common branching strategies with trade-off analysis.
+This guide defines practical branching rules for repository contributions and downstream adoption in product repos.
 
-<!-- Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
----
+## Recommended Default
 
-## Strategies Compared
+Use trunk-based development with short-lived feature branches.
 
-<!-- Note 3: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-### 1. Trunk-Based Development (Recommended for CI/CD)
+Why this fits this repository:
+- Most changes are template and docs updates that benefit from small, frequent merges.
+- CI templates across providers in `ci/` should stay aligned with minimal divergence.
+- Security and policy guardrails are easier to keep consistent with smaller PRs.
 
-```
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-main ──────────────────────────────────────────►
-      ↑   ↑   ↑   ↑   ↑   ↑   ↑   ↑   ↑
-      <!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-      short-lived feature branches (1-3 days)
-```
+## Branch Model
 
-<!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Developers create short-lived branches, merge frequently to `main`
-- `main` is always deployable
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Feature flags control rollout of incomplete features
-- **Best for**: teams with good test coverage and CI discipline
-
-<!-- Note 8: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-### 2. GitFlow
-
-```
-<!-- Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-main ──────────────────────────────────────────►
-  ↑                                             ↑
-  <!-- Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-  └──── develop ────────────────────────────────┘
-            ↑           ↑              ↑
-        <!-- Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-        feature/*   release/*       hotfix/*
+```text
+main  -------------------------------------------------------------->
+        \  \   \   \   \   \  short-lived branches (1-3 days)
 ```
 
-<!-- Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Separate `develop` integration branch
-- Structured release branches
-<!-- Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- **Best for**: scheduled release cadence, multiple versions in production
+Rules:
+1. Branch from `main`.
+2. Keep branch lifetime short.
+3. Merge via pull request only.
+4. Rebase or update frequently to reduce drift.
 
-### 3. GitHub Flow
+## When to Use Release Branches
 
-<!-- Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
+Use release branches only when your consuming product has a staged release cadence that requires stabilization windows.
+
+For this reference repo, avoid long-lived `develop` branches to reduce template drift.
+
+## Pull Request Standards
+
+1. One logical change per PR.
+2. Link impacted areas (for example `ci/`, `cd/`, `policy/`, `docs/`).
+3. Include validation notes and rollback considerations for operational changes.
+4. Require at least one reviewer and passing checks before merge.
+
+## Branch Protection Baseline
+
+Protect `main` with:
+- Pull request required.
+- Required status checks.
+- Up-to-date branch before merge.
+- No force push.
+- No deletion.
+
+## Commit Convention
+
+Use Conventional Commits to preserve release and changelog automation.
+
+Examples:
+```text
+feat(ci): add reusable workflow for container scanning
+fix(cd): correct kustomize image tag patch in prod overlay
+docs(runbooks): clarify escalation path for SLO critical burn
+chore(policy): update kyverno policy metadata annotations
 ```
-main ──────────────────────────────────────────►
-      <!-- Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-      ↑       ↑       ↑       ↑
-      feature branches merged via PR
-<!-- Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-```
 
-- Simpler than GitFlow; every merge to `main` is a release
-<!-- Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- **Best for**: web apps with continuous deployment
-
----
-
-<!-- Note 18: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Branch Protection Rules (Recommended)
-
-For `main` / `master`:
-- Require pull request (1+ reviewer)
-- Require status checks to pass (CI)
-- Require branches to be up to date
-- No force push
-- No deletion
-
----
-
-## Commit Message Convention
-
-Use [Conventional Commits](https://www.conventionalcommits.org/) to enable automated versioning:
-
-```
-feat: add user authentication
-fix: resolve null pointer in order service
-chore: update dependencies
-docs: update API documentation
-BREAKING CHANGE: rename endpoint /users to /api/users
-```
+Related:
+- `docs/guides/conventional-commits.md`
+- `docs/guides/versioning-strategy.md`
+- `catalog/scripts/generate-codeowners.py`

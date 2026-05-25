@@ -87,9 +87,7 @@ Configure allowed types in `commitlint.config.js` at the repo root:
 
 ```js
 // commitlint.config.js
-// Note 1: Types listed here must match what release-please / semantic-release
-// are configured to parse. Adding a custom type here that's not in your
-// release config will mean it never appears in the changelog.
+// Keep type-enum aligned with release tooling so commit types map to changelog and version behavior.
 module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {

@@ -1,37 +1,63 @@
-> **Note 1:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
-# ADR-002: Helm vs Kustomize
+# ADR-002: Helm and Kustomize Usage Strategy
 
-**Date:** 2026-02-28
-> **Note 2:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+**Date:** 2026-05-25
 **Status:** Accepted
 
 ---
 
-> **Note 3:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
 ## Context
 
-For Kubernetes manifest management, two leading tools were considered: **Helm** and **Kustomize**.
+The repository supports Kubernetes delivery patterns for teams with different maturity levels.
 
-> **Note 4:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
+Current structure includes:
+- Kustomize-first assets in `cd/kubernetes/` with `_base/`, `_overlays/`, and `_patterns/`.
+- Helm assets in `cd/helm/` for chart-oriented packaging and reuse.
+
+A single mandatory tool would simplify guidance but would block valid use cases:
+- Teams consuming ecosystem charts expect Helm workflows.
+- Teams managing in-repo overlays with low templating complexity prefer Kustomize.
+
 ## Decision
 
-**Include both, with guidance on when to use each.**
+Support both tools with explicit default and selection criteria:
+1. Default to Kustomize for in-repo application deployment in this repository.
+2. Use Helm for distributable package scenarios or when chart ecosystem reuse is required.
+3. Do not mix Helm and Kustomize as parallel source-of-truth for the same application release path.
 
-> **Note 5:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-| | Helm | Kustomize |
-|-|------|-----------|
-| **Use case** | Distributable, versioned releases | In-repo environment patches |
-| **Learning curve** | Higher (Go templates + chart concepts) | Lower (YAML overlays) |
-| **Reuse** | Best for shared charts (internal registry) | Best for single-repo overlays |
-| **Secret management** | Via Helm Secrets plugin | Via Sealed Secrets / external-secrets |
+## Selection Criteria
 
-> **Note 8:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
+Use Kustomize when:
+- The service is managed directly in this repository.
+- Environment differences are overlay-driven.
+- Readability and low cognitive overhead are priorities.
+
+Use Helm when:
+- You need versioned, reusable packaging across teams.
+- You depend on upstream/public chart ecosystems.
+- You need robust chart value contracts and release packaging semantics.
+
 ## Rationale
 
-- **Kustomize** (`cd/kubernetes/`) is the recommended starting point. It is kubectl-native, requires no extra tooling, and keeps YAML readable.
-- **Helm** (`cd/helm/`) is recommended when: (1) packaging for multiple teams, (2) using the public chart ecosystem, or (3) complex conditional logic is needed.
+- `cd/kubernetes/` already models base-plus-overlay patterns that map well to GitOps promotion.
+- `cd/helm/` provides practical chart templates for reusable deployment artifacts.
+- Supporting both reflects real-world platform heterogeneity while preserving clear defaults.
 
 ## Consequences
 
-- Teams must choose one approach per application and be consistent - mixing Helm and raw Kustomize for the same app increases complexity.
-- This repository provides both to serve different team maturity levels.
+Positive:
+- Teams can adopt an approach that matches operational needs.
+- Repository remains practical for both platform and product teams.
+
+Trade-offs:
+- Increased guidance surface area and potential inconsistency.
+
+Mitigations:
+- Enforce one primary manifest source per app.
+- Capture app-level choice in service docs and deployment guides.
+- Use CI policy checks to prevent parallel conflicting definitions.
+
+## Repository Mapping
+
+- Kustomize path: `cd/kubernetes/`
+- Helm path: `cd/helm/`
+- Related strategy docs: `docs/guides/environment-strategy.md`, `docs/decisions/ADR-003-gitops-strategy.md`

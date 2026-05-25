@@ -51,6 +51,60 @@ function App() {
     loadFiles();
   }, []);
 
+  useEffect(() => {
+    if (files.length === 0) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const urlFile = params.get('file');
+
+    if (!urlFile) {
+      return;
+    }
+
+    const matched = files.find((item) => item.path === urlFile);
+    if (matched) {
+      setSelectedFile(matched);
+    }
+  }, [files]);
+
+  useEffect(() => {
+    if (files.length === 0) {
+      return;
+    }
+
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlFile = params.get('file');
+
+      if (!urlFile) {
+        setSelectedFile(null);
+        return;
+      }
+
+      const matched = files.find((item) => item.path === urlFile);
+      setSelectedFile(matched ?? null);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [files]);
+
+  const handleFileSelect = (file: FileItem) => {
+    setSelectedFile(file);
+
+    const params = new URLSearchParams(window.location.search);
+    const current = params.get('file');
+    if (current === file.path) {
+      return;
+    }
+
+    params.set('file', file.path);
+    const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+    window.history.pushState({ file: file.path }, '', next);
+  };
+
   if (loading) {
     return (
       <div className="app loading">
@@ -78,13 +132,13 @@ function App() {
       <Sidebar
         files={files}
         selectedFile={selectedFile}
-        onFileSelect={setSelectedFile}
+        onFileSelect={handleFileSelect}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         theme={theme}
         onThemeChange={setTheme}
       />
-      <CodeViewer file={selectedFile} files={files} onFileSelect={setSelectedFile} />
+      <CodeViewer file={selectedFile} files={files} onFileSelect={handleFileSelect} />
     </div>
   );
 }

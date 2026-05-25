@@ -1,63 +1,61 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 # Environment Strategy Guide
 
----
+This guide defines how environments are modeled and promoted in this repository.
 
-<!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Standard Environment Model
+## Standard Environment Flow
 
-```
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-Developer → dev → staging → production
-                     ↑
-            <!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-            (integration / QA)
+```text
+developer -> dev -> staging -> production
 ```
 
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Environment | Purpose | Deploy trigger | Data |
-|-------------|---------|----------------|------|
-<!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| dev | Rapid feedback, feature work | Every push / PR | Synthetic / mocked |
-| staging | Pre-prod verification, QA sign-off | Merge to main | Anonymised production snapshot |
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| production | Live system | Manual / scheduled | Real production data |
+Purpose by stage:
+- `dev`: rapid validation and integration checks.
+- `staging`: production-like verification and release confidence.
+- `production`: controlled rollout with strict access and audit requirements.
 
----
+## Configuration Strategy
 
-<!-- Note 8: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Environment-Specific Configuration
+Do not bake environment values into images.
 
-Never bake environment config into images. Externalize via:
-<!-- Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Kubernetes ConfigMaps + Secrets
-- Helm values files (`values.dev.yaml`, `values.prod.yaml`)
-<!-- Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Kustomize overlays (`_overlays/dev`, `_overlays/prod`)
-- Cloud-native: Azure App Config, AWS Parameter Store
+Use environment-specific overlays and values:
+- Kustomize overlays in `cd/kubernetes/_overlays/`
+- Helm values files in `cd/helm/`
+- Cloud/runtime config stores via `secrets/` and external providers
 
-<!-- Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
----
+## Promotion Model
 
-## Promotion Flow (GitOps)
+Use artifact promotion, not rebuild-per-environment.
 
-<!-- Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-```
-1. CI builds image, tags with SHA
-<!-- Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-2. CI updates dev overlay: image tag → new SHA
-3. ArgoCD syncs dev automatically
-4. After testing, PR: update staging overlay
-5. After staging approval, PR: update prod overlay
-6. ArgoCD syncs prod (with manual sync gate in prod)
-```
+Recommended flow:
+1. CI builds image and tags with immutable SHA.
+2. Dev deployment updates to that SHA.
+3. Promotion PR updates staging to the same SHA.
+4. Production promotion PR updates to the same SHA after approval.
 
----
+## Access and Change Controls
 
-## Production Access Controls
+Production controls:
+- Git-based change only for deployment config.
+- Least-privilege RBAC for deployment identities.
+- Break-glass process documented and audited.
+- Environment separation by namespace/account/subscription/project.
 
-- No direct `kubectl exec` to production pods  
-- All changes via Git PR (GitOps)  
-- Break-glass procedures documented and audited  
-- RBAC: least-privilege service accounts  
-- Separate Kubernetes namespaces per environment  
+## Secrets and Identity Alignment
+
+- Use workload identity federation for CI deploy identities.
+- Keep secret source of truth in secret managers.
+- Sync runtime secrets through patterns in `secrets/`.
+
+## Validation Checklist
+
+Before promoting to production:
+1. CI checks are green.
+2. Security and policy scans pass.
+3. Staging smoke tests pass.
+4. Rollback path is documented.
+5. Runbook links exist for critical alerts.
+
+Related:
+- `docs/guides/github-actions-oidc.md`
+- `docs/guides/secrets-management.md`
+- `docs/decisions/ADR-003-gitops-strategy.md`

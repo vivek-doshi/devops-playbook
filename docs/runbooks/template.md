@@ -1,14 +1,12 @@
-# Runbook: `<AlertName>`
+# Runbook Template: Alert Response
 
-<!-- TEMPLATE: WHEN TO USE
-     Copy this file for each alert defined in observability/prometheus/alerts/.
-     Name the file to match the alert name exactly (lowercase, no spaces):
-       docs/runbooks/<alertname>.md
-     Then update runbook_url in the PrometheusRule annotation to point to
-     your hosted version of this file, e.g.:
-       runbook_url: https://runbooks.example.com/<alertname>
-     Replace every section below — delete any that do not apply.
--->
+Use this template for alerts defined in `observability/prometheus/alerts/`.
+
+Naming convention for new runbooks:
+- `docs/runbooks/<alertname>.md`
+- Use lowercase and no spaces.
+
+After creating the runbook, update the alert annotation with a hosted `runbook_url`.
 
 ---
 
@@ -17,110 +15,101 @@
 | Field | Value |
 |-------|-------|
 | **Alert name** | `<AlertName>` |
-| **Severity** | critical / warning |
-| **Team** | <!-- platform / backend / frontend / data --> |
-| **SLO impact** | <!-- Does this alert indicate SLO burn? Which one? --> |
-| **Typical duration before page** | <!-- e.g. "fires within 5 minutes of incident start" --> |
-| **False positive rate** | <!-- low / medium / high — and known causes --> |
+| **Severity** | critical / warning / info |
+| **Team** | platform / backend / frontend / data |
+| **SLO impact** | Describe whether this contributes to SLO burn |
+| **Typical time to page** | Example: fires within 5 minutes |
+| **False positive rate** | low / medium / high and known causes |
 
 ---
 
 ## What This Alert Means
 
-<!-- One paragraph aimed at a responder who did not write the alert. -->
-<!-- Explain the system behaviour being detected, not just what the PromQL does. -->
+Write one short paragraph for responders who did not author the alert.
+Focus on observed system behavior, not only PromQL syntax.
 
 ---
 
 ## User-Facing Impact
 
-<!-- What is the user experiencing right now? -->
-<!-- Describe in terms of user actions, not system states. -->
+Describe impact in user terms.
 
 Examples:
-- "Users cannot complete checkout — payment requests are returning 500."
-- "API response times have increased but requests are still succeeding."
-- "No user impact yet, but the error budget will be exhausted in 6 hours if the rate holds."
+- Users cannot complete checkout due to 500 responses.
+- API latency increased, but requests still succeed.
+- No user impact yet; current rate will exhaust budget in six hours.
 
 ---
 
-## Immediate Steps (first 5 minutes)
-
-These commands can be run without knowing the root cause. Copy, paste, adapt.
+## Immediate Steps (First 5 Minutes)
 
 ```bash
-# 1. Confirm the alert is still firing and check labels
+# 1. Confirm alert is still firing
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-alertmanager 9093:9093
-# Open http://localhost:9093 → Alerts tab → search for <AlertName>
+# Open http://localhost:9093 and find <AlertName>
 
-# 2. Check pod health in the affected namespace
-kubectl get pods -n <namespace>                          # <-- CHANGE THIS
-kubectl describe pod <pod-name> -n <namespace>           # <-- CHANGE THIS
+# 2. Check pod health
+kubectl get pods -n <namespace>
+kubectl describe pod <pod-name> -n <namespace>
 
-# 3. Tail recent logs for the affected service
-kubectl logs -n <namespace> -l app=<app-name> --tail=100 # <-- CHANGE THIS
-# or via Grafana: Explore → Loki → {app="<app-name>"}    # <-- CHANGE THIS
+# 3. Check recent logs
+kubectl logs -n <namespace> -l app=<app-name> --tail=100
 
-# 4. Check the relevant metric directly in Prometheus
+# 4. Validate metric directly
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
-# Open http://localhost:9090 and run:
-# <paste the alert PromQL expression here>
+# Open http://localhost:9090 and run alert expression
 ```
 
 ---
 
 ## Diagnosis Checklist
 
-Work through this list in order. Stop when you find the cause.
-
-- [ ] **Recent deployment?** Check `kubectl rollout history deployment/<name> -n <namespace>`. If yes, consider rollback: `kubectl rollout undo deployment/<name> -n <namespace>`.
-- [ ] **Upstream dependency down?** Check the dependency's health endpoint or status page.
-- [ ] **Resource exhaustion?** Check CPU/memory: `kubectl top pods -n <namespace>`.
-- [ ] **Node pressure?** Check `kubectl describe nodes` for `MemoryPressure` or `DiskPressure` conditions.
-- [ ] **HPA at maximum replicas?** Check `kubectl get hpa -n <namespace>`.
-- [ ] **Certificate or secret expired?** Check `kubectl get secrets -n <namespace>` and describe any TLS secrets.
-- [ ] **Infrastructure incident?** Check the cloud provider status page (AWS / Azure / GCP).
-- [ ] **Configuration change?** Check recent ConfigMap changes: `kubectl get configmap -n <namespace> -o yaml`.
+- [ ] Recent deployment regression?
+- [ ] Upstream dependency outage?
+- [ ] CPU or memory exhaustion?
+- [ ] Node pressure (`MemoryPressure`, `DiskPressure`)?
+- [ ] HPA at max replicas?
+- [ ] Certificate or secret expiration?
+- [ ] Cloud provider incident?
+- [ ] ConfigMap or runtime configuration drift?
 
 ---
 
 ## Likely Causes
 
-<!-- Order by frequency. Each cause should have a one-line description and a resolution path. -->
+### 1. `<Cause>`
 
-### 1. `<Cause description>`
+Symptoms:
+- Add expected logs/metrics signs.
 
-**Symptoms:** <!-- What else you'd see in logs, metrics, or the alert labels. -->
-
-**Resolution:**
+Resolution:
 ```bash
-# Commands to resolve this cause
+# Add concrete remediation commands
 ```
 
-### 2. `<Cause description>`
+### 2. `<Cause>`
 
-**Symptoms:** <!-- ... -->
+Symptoms:
+- Add expected logs/metrics signs.
 
-**Resolution:**
+Resolution:
 ```bash
-# ...
+# Add concrete remediation commands
 ```
 
 ---
 
 ## Grafana Deep-Dive
 
-Replace `<service>`, `<namespace>`, and time range as appropriate.
+```text
+# Loki
+{namespace="<namespace>", app="<service>"} |= "error"
 
-```
-# Loki — recent errors for this service
-{namespace="<namespace>", app="<service>"} |= "error" | logfmt   # <-- CHANGE THIS
+# Tempo
+{ resource.service.name = "<service>" && status = error }
 
-# Tempo — find recent traces with errors from this service
-{ resource.service.name = "<service>" && status = error }         # <-- CHANGE THIS
-
-# Prometheus — error rate over last 15 minutes
-sum(rate(http_requests_total{job="<service>", code=~"5.."}[5m]))  # <-- CHANGE THIS
+# Prometheus
+sum(rate(http_requests_total{job="<service>", code=~"5.."}[5m]))
 /
 sum(rate(http_requests_total{job="<service>"}[5m]))
 ```
@@ -131,47 +120,35 @@ sum(rate(http_requests_total{job="<service>"}[5m]))
 
 | Condition | Action |
 |-----------|--------|
-| Unable to identify cause within 15 minutes | Escalate to <!-- team / person --> |
-| User-facing impact confirmed | Notify <!-- #incident-channel --> and open incident |
-| Data loss possible | Immediately notify <!-- security/data owner --> |
-| Cannot roll back or resolve in 30 minutes | Engage cloud support |
+| Cause unknown after 15 minutes | Escalate to owning team |
+| User-facing impact confirmed | Open incident and notify on-call channel |
+| Data loss risk | Escalate to security/data owner immediately |
+| No recovery in 30 minutes | Engage cloud/platform support |
 
 ---
 
 ## Resolution
 
-Once the root cause is resolved:
+After mitigation:
+1. Confirm alert clears in Alertmanager.
+2. Confirm metric returns below threshold.
+3. Remove temporary workarounds or track them with follow-up tickets.
 
-```bash
-# Verify the alert has cleared in Alertmanager
-# Verify the metric has returned below the threshold in Prometheus
-
-# If you applied a temporary workaround (e.g. increased replicas, silenced the alert),
-# create a follow-up ticket before closing the incident.
-```
-
-Silence the alert during planned maintenance (prefer short windows with expiry):
-```bash
-# Silence via Alertmanager UI at http://localhost:9093 → New Silence
-# Match on: alertname="<AlertName>", namespace="<namespace>"
-# Set expiry to the end of the maintenance window
-```
+Use short-lived silences only for planned maintenance windows.
 
 ---
 
 ## Post-Incident Actions
 
-- [ ] Update this runbook with any new diagnostic steps discovered during the incident
-- [ ] File a ticket if a temporary workaround is still in place
-- [ ] If this alert fired falsely, consider adjusting the `for:` duration or threshold
-- [ ] Conduct a blameless post-mortem if user impact exceeded 15 minutes: [docs/decisions/](../decisions/)
+- [ ] Update this runbook with lessons learned.
+- [ ] Create follow-up ticket for temporary fixes.
+- [ ] Tune threshold or duration if alert quality is poor.
+- [ ] Run blameless postmortem for significant user impact.
 
 ---
 
 ## Related
 
-<!-- Link to related alerts, runbooks, dashboards, and architecture docs. -->
-
-- Related alert: [`<OtherAlertName>`](./<otheralertname>.md)
-- Architecture: [`docs/guides/environment-strategy.md`](../guides/environment-strategy.md)
-- SLO rules: [`observability/prometheus/alerts/slo-rules.yaml`](../../observability/prometheus/alerts/slo-rules.yaml)
+- Related alerts and runbooks.
+- Architecture references.
+- SLO definitions and policies.

@@ -1,54 +1,62 @@
-> **Note 1:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
-# ADR-001: Repository Folder Structure
+# ADR-001: Repository Folder Structure and Navigation Model
 
-**Date:** 2026-02-28
-> **Note 2:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+**Date:** 2026-05-25
 **Status:** Accepted
 
 ---
 
-> **Note 3:** Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability.
 ## Context
 
-We needed a reference repository structure for CI/CD templates that would be:
-> **Note 4:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- Easy to navigate for engineers from different tech backgrounds
-- Organised by concern (What? -> Where to look)
-> **Note 5:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- Scalable as we add new platforms and technologies
+This repository is not a single application. It is a reference platform for delivery, security, reliability, and operations patterns across multiple clouds and toolchains.
 
-Multiple approaches were considered:
-> **Note 6:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-1. Flat structure (all pipelines in one folder)
-2. Organised by platform (github/, gitlab/, azure/)
-> **Note 7:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-3. Organised by stage (ci/, cd/, security/)
+The structure must support:
+- Fast discovery for engineers entering from different roles (developer, platform, SRE, security, FinOps).
+- Reuse of templates without forcing one CI/CD provider or one cloud.
+- Clear separation between implementation assets and operational guidance.
+- Safe growth as new capabilities are added (for example SLO operations, service catalog, and FinOps loops).
+
+Earlier options considered:
+1. Flat layout: low upfront overhead but poor long-term navigability.
+2. Platform-first layout: groups by provider but mixes lifecycle concerns.
+3. Lifecycle/concern-first layout: groups by workflow intent, then by platform and technology.
 
 ## Decision
 
-> **Note 8:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-**Organise by functional concern first, then by platform and technology.**
+Use a concern-first top-level layout, then organize subfolders by platform, runtime, or strategy.
 
-Top-level folders correspond to stages of the engineering lifecycle:
-> **Note 9:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- `docker/` -> Containerization
-- `compose/` -> Local development
-> **Note 10:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- `ci/` -> Build & test
-- `cd/` -> Deployment
-> **Note 11:** This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-- `security/` -> Scanning
-- `quality/` -> Standards
+Top-level domains represent operational intent:
+- Build and local runtime: `docker/`, `compose/`, `local-dev/`
+- Delivery: `ci/`, `cd/`, `terraform/`, `backup/`
+- Guardrails and security: `ci-security/`, `policy/`, `secops/`, `secrets/`
+- Runtime operations: `observability/`, `notifications/`, `docs/runbooks/`
+- Governance and optimization: `catalog/`, `finops/`
+- Guidance and architecture records: `docs/`
 
-Within each folder, sub-folders reflect platform or tech stack.
+Rules for placing new content:
+1. Place executable templates in the domain folder, not in docs.
+2. Place process guidance in `docs/guides/` or `docs/golden-paths/`.
+3. Place operational response procedures in `docs/runbooks/`.
+4. Capture structural and strategic choices in `docs/decisions/`.
 
 ## Rationale
 
-- Engineers typically ask "I need to deploy to AKS" rather than "I need a GitHub Actions file"
-- The concern-first organisation mirrors how teams think about problems
-- Allows progressive disclosure: start at the top level, drill down as needed
+- Engineers usually start from intent: "I need CI", "I need GitOps", "I need incident response".
+- Concern-first layout reduces search time and onboarding friction.
+- This model aligns with established repository domains already in active use.
+- It supports progressive depth: high-level folder -> platform folder -> concrete template.
 
 ## Consequences
 
-- Some files could logically live in multiple places (e.g., a security scan could be in `ci/` or `security/`). Convention: generic/reusable templates in `security/`, integrated pipeline steps in `ci/`.
-- Platform folders within `ci/` may grow large over time - addressed with `_shared/` and `_strategies/` sub-folders.
+Positive:
+- Better discoverability and onboarding.
+- Easier mapping between docs and implementation folders.
+- Scales to multi-cloud and multi-tool workflows without major reorganization.
+
+Trade-offs:
+- Some patterns can fit multiple domains (for example security checks in CI and runtime).
+- Requires discipline to avoid duplicate content.
+
+Mitigations:
+- Keep a single canonical implementation location.
+- Cross-reference from docs instead of duplicating templates.
+- Record exceptions in ADRs and golden paths.

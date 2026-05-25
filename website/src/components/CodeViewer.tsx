@@ -32,6 +32,8 @@ interface CodeViewerProps {
   onFileSelect: (file: FileItem) => void;
 }
 
+const REPO_URL = 'https://github.com/vivek-doshi/devops-playbook';
+
 function resolveRelativePath(currentFilePath: string, href: string): string {
   // Strip leading ./
   const cleaned = href.replace(/^\.\//,'');
@@ -42,6 +44,44 @@ function resolveRelativePath(currentFilePath: string, href: string): string {
     else if (part !== '.') parts.push(part);
   }
   return parts.join('/');
+}
+
+function normalizeLocalPath(currentFilePath: string, href: string): string {
+  const withoutHash = href.split('#')[0];
+  const withoutQuery = withoutHash.split('?')[0];
+
+  if (withoutQuery.startsWith('/')) {
+    return withoutQuery.replace(/^\/+/, '');
+  }
+
+  return resolveRelativePath(currentFilePath, withoutQuery);
+}
+
+function findFileTarget(files: FileItem[], resolvedPath: string): FileItem | null {
+  const normalized = resolvedPath.replace(/\/+/g, '/').replace(/^\//, '');
+  const trimmed = normalized.replace(/\/$/, '');
+  const candidates = [
+    normalized,
+    trimmed,
+    `${trimmed}.md`,
+    `${trimmed}/README.md`
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    const found = files.find((item) => item.path === candidate);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
+function toGitHubPathUrl(resolvedPath: string): string {
+  const normalized = resolvedPath.replace(/^\//, '').replace(/\/$/, '');
+  const hasExtension = /\.[a-z0-9]+$/i.test(normalized);
+  const mode = hasExtension ? 'blob' : 'tree';
+  return `${REPO_URL}/${mode}/main/${normalized}`;
 }
 
 interface TemplateMetadata {
@@ -116,7 +156,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file, files, onFileSelec
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const gitHubUrl = `https://github.com/vivek-doshi/devops-playbook/blob/main/${file.path}`;
+  const gitHubUrl = `${REPO_URL}/blob/main/${file.path}`;
   const meta = parseMetadata(file.content);
   const hasMeta = Object.values(meta).some(Boolean);
   const lineCount = file.content.split('\n').length;
@@ -187,33 +227,58 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file, files, onFileSelec
                 remarkPlugins={[remarkGfm]}
                 components={{
                   a: ({ href, children, ...props }) => {
-                    if (
-                      href &&
-                      !href.startsWith('http://') &&
-                      !href.startsWith('https://') &&
-                      !href.startsWith('#') &&
-                      !href.startsWith('mailto:')
-                    ) {
-                      const resolved = resolveRelativePath(file.path, href);
-                      const target = files.find(f => f.path === resolved);
-                      if (target) {
-                        return (
-                          <a
-                            {...props}
-                            href="#"
-                            title={resolved}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              onFileSelect(target);
-                            }}
-                          >
-                            {children}
-                          </a>
-                        );
-                      }
+                    if (!href) {
+                      return <a {...props}>{children}</a>;
                     }
+
+                    const isExternal =
+                      href.startsWith('http://') ||
+                      href.startsWith('https://') ||
+                      href.startsWith('mailto:');
+
+                    if (isExternal || href.startsWith('#')) {
+                      return (
+                        <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                          {children}
+                        </a>
+                      );
+                    }
+
+                    const resolved = normalizeLocalPath(file.path, href);
+
+                    if (resolved === 'website') {
+                      return (
+                        <a href={import.meta.env.BASE_URL} {...props}>
+                          {children}
+                        </a>
+                      );
+                    }
+
+                    const target = findFileTarget(files, resolved);
+                    if (target) {
+                      return (
+                        <a
+                          {...props}
+                          href="#"
+                          title={target.path}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onFileSelect(target);
+                          }}
+                        >
+                          {children}
+                        </a>
+                      );
+                    }
+
                     return (
-                      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                      <a
+                        href={toGitHubPathUrl(resolved)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={resolved}
+                        {...props}
+                      >
                         {children}
                       </a>
                     );
