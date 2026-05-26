@@ -20,6 +20,19 @@ COMPOSE_FILE ?= compose/python-postgres-redis/docker-compose.yml  # <-- CHANGE T
 K8S_OVERLAY  ?= cd/kubernetes/_overlays/dev      # <-- CHANGE THIS: overlay for local deploy
 CLUSTER_NAME ?= devops-playbook                  # must match local-dev/kind/kind-config.yaml
 
+# Script runner selection for cross-platform support.
+ifeq ($(OS),Windows_NT)
+ENV_CHECKER_CMD    := powershell -ExecutionPolicy Bypass -File scripts/env-checker.ps1
+K8S_ROLLOUT_CMD    := powershell -ExecutionPolicy Bypass -File scripts/k8s-rollout-check.ps1
+TAG_RELEASE_CMD    := powershell -ExecutionPolicy Bypass -File scripts/tag-release.ps1
+DOCKER_CLEANUP_CMD := powershell -ExecutionPolicy Bypass -File scripts/docker-cleanup.ps1
+else
+ENV_CHECKER_CMD    := bash scripts/env-checker.sh
+K8S_ROLLOUT_CMD    := bash scripts/k8s-rollout-check.sh
+TAG_RELEASE_CMD    := bash scripts/tag-release.sh
+DOCKER_CLEANUP_CMD := bash scripts/docker-cleanup.sh
+endif
+
 # ── Formatting helpers ────────────────────────────────────────────────────────
 BOLD   := \033[1m
 RESET  := \033[0m
@@ -49,7 +62,7 @@ help:
 ## check-prereqs: Verify all required tools are installed
 check-prereqs:
 	@echo "$(BOLD)Checking prerequisites...$(RESET)"
-	bash scripts/env-checker.sh
+	$(ENV_CHECKER_CMD)
 
 .PHONY: dev
 ## dev: Start local dev environment (kind cluster + registry + ingress)
@@ -143,7 +156,7 @@ deploy-dev: build-push
 	@echo "$(BOLD)Deploying to local cluster (overlay: $(K8S_OVERLAY))$(RESET)"
 	kubectl apply -k $(K8S_OVERLAY)
 	@echo "$(BOLD)Waiting for rollout...$(RESET)"
-	bash scripts/k8s-rollout-check.sh
+	$(K8S_ROLLOUT_CMD)
 
 .PHONY: deploy-staging
 ## deploy-staging: Apply kustomize staging overlay (requires kubeconfig for staging cluster)
@@ -166,7 +179,7 @@ k8s-status:
 .PHONY: rollout-status
 ## rollout-status: Check rollout health for all deployments
 rollout-status:
-	bash scripts/k8s-rollout-check.sh
+	$(K8S_ROLLOUT_CMD)
 
 # =============================================================================
 # SERVICE CATALOG
@@ -255,7 +268,7 @@ slo-validate:
 .PHONY: tag-release
 ## tag-release: Create and push a signed semver git tag (prompts for version)
 tag-release:
-	bash scripts/tag-release.sh
+	$(TAG_RELEASE_CMD)
 
 # =============================================================================
 # CLEANUP
@@ -265,7 +278,7 @@ tag-release:
 ## clean: Remove local build artefacts and prune Docker resources
 clean:
 	@echo "$(BOLD)Cleaning Docker resources...$(RESET)"
-	bash scripts/docker-cleanup.sh
+	$(DOCKER_CLEANUP_CMD)
 	@echo "$(GREEN)Clean complete.$(RESET)"
 
 .PHONY: clean-all
