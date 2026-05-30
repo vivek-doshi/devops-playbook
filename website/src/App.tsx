@@ -1,6 +1,8 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { CodeViewer } from './components/CodeViewer';
+import { TopBar } from './components/TopBar';
+import { Preloader } from './components/Preloader';
 import './App.css';
 
 type ThemeName = 'runbook-dawn' | 'terminal-dusk';
@@ -28,6 +30,7 @@ function App() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPreloader, setShowPreloader] = useState(true);
 
   useEffect(() => {
     window.localStorage.setItem('devops-playbook-theme', theme);
@@ -105,12 +108,23 @@ function App() {
     window.history.pushState({ file: file.path }, '', next);
   };
 
-  if (loading) {
+  const handleRandomFile = useCallback(() => {
+    if (files.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * files.length);
+    handleFileSelect(files[randomIndex]);
+  }, [files]);
+
+  if (showPreloader) {
     return (
-      <div className="app loading">
-        <div className="loading-spinner">Loading files...</div>
-      </div>
+      <Preloader
+        theme={theme}
+        onDone={() => setShowPreloader(false)}
+      />
     );
+  }
+
+  if (loading) {
+    return <Preloader theme={theme} />;
   }
 
   if (error) {
@@ -129,16 +143,22 @@ function App() {
 
   return (
     <div className="app" data-theme={theme}>
-      <Sidebar
+      <TopBar
         files={files}
-        selectedFile={selectedFile}
-        onFileSelect={handleFileSelect}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
         theme={theme}
         onThemeChange={setTheme}
+        onRandomFile={handleRandomFile}
       />
-      <CodeViewer file={selectedFile} files={files} onFileSelect={handleFileSelect} />
+      <div className="main-content">
+        <Sidebar
+          files={files}
+          selectedFile={selectedFile}
+          onFileSelect={handleFileSelect}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        <CodeViewer file={selectedFile} files={files} onFileSelect={handleFileSelect} />
+      </div>
     </div>
   );
 }
