@@ -298,6 +298,20 @@
   transform: rotate(20deg) scale(1.2);
 }
 
+.topbar-btn--menu {
+  background: rgba(155, 205, 219, 0.14);
+  border-color: rgba(155, 205, 219, 0.3);
+  color: #bfe2ed;
+}
+
+.topbar-btn--menu:hover {
+  background: rgba(155, 205, 219, 0.25);
+  border-color: rgba(155, 205, 219, 0.52);
+  color: #eef8fc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(84, 162, 194, 0.2);
+}
+
 /* ============================================
    TERMINAL DUSK OVERRIDES
    ============================================ */
@@ -362,6 +376,19 @@
   box-shadow: 0 4px 12px rgba(193, 113, 91, 0.22);
 }
 
+.app[data-theme='terminal-dusk'] .topbar-btn--menu {
+  background: rgba(84, 162, 194, 0.12);
+  border-color: rgba(84, 162, 194, 0.32);
+  color: #9bcddb;
+}
+
+.app[data-theme='terminal-dusk'] .topbar-btn--menu:hover {
+  background: rgba(84, 162, 194, 0.22);
+  border-color: rgba(84, 162, 194, 0.52);
+  color: #eaf6fb;
+  box-shadow: 0 4px 12px rgba(84, 162, 194, 0.24);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .topbar {
@@ -387,8 +414,17 @@
     display: none;
   }
 
+  .topbar-btn--menu span {
+    display: inline;
+  }
+
   .topbar-btn {
     padding: 7px 9px;
+  }
+
+  .topbar-btn--random,
+  .topbar-btn--mlops {
+    display: none;
   }
 }
 

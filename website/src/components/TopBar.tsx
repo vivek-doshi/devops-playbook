@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { Shuffle, Sun, Moon, ExternalLink } from 'lucide-react';
+import { Shuffle, Sun, Moon, ExternalLink, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import './TopBar.css';
 
 interface FileItem {
@@ -16,6 +16,9 @@ interface TopBarProps {
   theme: 'runbook-dawn' | 'terminal-dusk';
   onThemeChange: (theme: 'runbook-dawn' | 'terminal-dusk') => void;
   onRandomFile: () => void;
+  showSidebarToggle: boolean;
+  isSidebarOpen: boolean;
+  onSidebarToggle: () => void;
 }
 
 function useCountUp(target: number, duration = 900) {
@@ -36,7 +39,15 @@ function useCountUp(target: number, duration = 900) {
   return count;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ files, theme, onThemeChange, onRandomFile }) => {
+export const TopBar: React.FC<TopBarProps> = ({
+  files,
+  theme,
+  onThemeChange,
+  onRandomFile,
+  showSidebarToggle,
+  isSidebarOpen,
+  onSidebarToggle,
+}) => {
   const stats = useMemo(() => {
     const categories = new Set(files.map((f) => f.path.split('/')[0])).size;
     const languages = new Set(files.map((f) => f.language)).size;
@@ -85,6 +96,18 @@ export const TopBar: React.FC<TopBarProps> = ({ files, theme, onThemeChange, onR
 
       {/* Actions */}
       <div className="topbar-actions">
+        {showSidebarToggle && (
+          <button
+            className="topbar-btn topbar-btn--menu"
+            onClick={onSidebarToggle}
+            title={isSidebarOpen ? 'Hide file list' : 'Show file list'}
+            type="button"
+          >
+            {isSidebarOpen ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
+            <span>{isSidebarOpen ? 'Hide Files' : 'Show Files'}</span>
+          </button>
+        )}
+
         <button
           className="topbar-btn topbar-btn--random"
           onClick={onRandomFile}

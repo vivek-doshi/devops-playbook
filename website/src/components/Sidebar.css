@@ -368,15 +368,14 @@
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
-    height: auto;
-    max-height: 220px;
+    height: 100%;
     border-right: none;
-    border-bottom: 1px solid rgba(123, 75, 67, 0.18);
+    border-bottom: none;
   }
 
   .file-tree {
     display: block;
-    max-height: 140px;
+    max-height: none;
   }
 }
 

@@ -17,6 +17,7 @@ interface FileItem {
 }
 
 function App() {
+  const mobileMediaQuery = '(max-width: 768px)';
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +32,26 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPreloader, setShowPreloader] = useState(true);
+  const [isMobileView, setIsMobileView] = useState(() => window.matchMedia(mobileMediaQuery).matches);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const media = window.matchMedia(mobileMediaQuery);
+
+    const onMediaChange = (event: MediaQueryListEvent) => {
+      setIsMobileView(event.matches);
+      if (!event.matches) {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    setIsMobileView(media.matches);
+    media.addEventListener('change', onMediaChange);
+
+    return () => {
+      media.removeEventListener('change', onMediaChange);
+    };
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem('devops-playbook-theme', theme);
@@ -97,6 +118,10 @@ function App() {
   const handleFileSelect = (file: FileItem) => {
     setSelectedFile(file);
 
+    if (isMobileView) {
+      setIsSidebarOpen(false);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const current = params.get('file');
     if (current === file.path) {
@@ -148,15 +173,28 @@ function App() {
         theme={theme}
         onThemeChange={setTheme}
         onRandomFile={handleRandomFile}
+        showSidebarToggle={isMobileView}
+        isSidebarOpen={isSidebarOpen}
+        onSidebarToggle={() => setIsSidebarOpen((prev) => !prev)}
       />
-      <div className="main-content">
-        <Sidebar
-          files={files}
-          selectedFile={selectedFile}
-          onFileSelect={handleFileSelect}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+      <div className={`main-content ${isMobileView ? 'mobile-layout' : ''}`}>
+        {isMobileView && (
+          <button
+            type="button"
+            className={`sidebar-backdrop ${isSidebarOpen ? 'open' : ''}`}
+            aria-label="Close file sidebar"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        <div className={`sidebar-shell ${isMobileView ? 'mobile' : ''} ${isSidebarOpen ? 'open' : ''}`}>
+          <Sidebar
+            files={files}
+            selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+        </div>
         <CodeViewer file={selectedFile} files={files} onFileSelect={handleFileSelect} />
       </div>
     </div>
