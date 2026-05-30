@@ -19,6 +19,7 @@
   width: 100vw;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   background: radial-gradient(circle at 18% 10%, #fffdf8 0%, var(--bg) 38%, var(--bg-soft) 100%);
   color: var(--ink);
@@ -26,6 +27,13 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.35s ease;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .app::before,
@@ -144,7 +152,7 @@ body {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  .app {
+  .main-content {
     flex-direction: column;
   }
 }

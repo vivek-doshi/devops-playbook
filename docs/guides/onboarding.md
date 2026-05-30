@@ -14,6 +14,11 @@ make check-prereqs
 bash scripts/env-checker.sh
 ```
 
+```powershell
+# Windows PowerShell alternative for scripts in /scripts:
+powershell -ExecutionPolicy Bypass -File scripts/env-checker.ps1 VAR1 VAR2
+```
+
 You need:
 
 | Tool | Minimum version | Install |
@@ -27,7 +32,7 @@ You need:
 | Helm | 3.14+ | `brew install helm` |
 | pre-commit | 3.x | `pip install pre-commit` |
 
-> **Windows users:** All shell scripts in this repo target bash. Use WSL2 (Ubuntu 22.04+) or Git Bash. Docker Desktop must have the WSL2 backend enabled.
+> **Windows users:** Most local-dev automation still targets bash (`make`, `local-dev/kind/*.sh`). Use WSL2 (Ubuntu 22.04+) or Git Bash for the full workflow. For scripts under `scripts/`, native PowerShell equivalents are available: `env-checker.ps1`, `k8s-rollout-check.ps1`, `docker-cleanup.ps1`, and `tag-release.ps1`.
 
 ---
 

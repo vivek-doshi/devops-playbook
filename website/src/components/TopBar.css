@@ -1,0 +1,403 @@
+/* ============================================
+   TOP BAR — DevOps Playbook
+   ============================================ */
+
+.topbar {
+  height: 56px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  position: relative;
+  z-index: 200;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Animated gradient background */
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(44, 37, 43, 0.98) 0%,
+    rgba(72, 45, 36, 0.97) 40%,
+    rgba(58, 40, 50, 0.97) 100%
+  );
+  z-index: 0;
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(193, 113, 91, 0.08) 0%,
+    rgba(240, 201, 131, 0.06) 50%,
+    rgba(155, 205, 219, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerBar 6s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+@keyframes shimmerBar {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.topbar > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Bottom border */
+.topbar {
+  border-bottom: 1px solid rgba(193, 113, 91, 0.22);
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.36), 0 1px 0 rgba(193, 113, 91, 0.14);
+}
+
+/* ---- Brand ---- */
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.topbar-icon-wrap {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.topbar-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.topbar-icon-wrap:hover .topbar-icon {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.topbar-icon-glow {
+  position: absolute;
+  inset: -4px;
+  background: radial-gradient(circle, rgba(193, 113, 91, 0.5) 0%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.topbar-icon-wrap:hover .topbar-icon-glow {
+  opacity: 1;
+  animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.topbar-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  background: linear-gradient(90deg, #f0c983 0%, #e8a87c 40%, #c1715b 80%, #9bcddb 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 5s ease-in-out infinite alternate;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.topbar-badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: rgba(193, 113, 91, 0.7);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* ---- Stats ---- */
+.topbar-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 5px 14px;
+}
+
+.stat-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  cursor: default;
+}
+
+.stat-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stat-num {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #f0c983 0%, #c1715b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+  text-align: right;
+}
+
+.stat-lbl {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(220, 210, 230, 0.52);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.stat-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ---- Actions ---- */
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.25px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.topbar-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.topbar-btn:hover::before {
+  opacity: 1;
+}
+
+/* Random button */
+.topbar-btn--random {
+  background: rgba(193, 113, 91, 0.14);
+  border-color: rgba(193, 113, 91, 0.3);
+  color: #e8a87c;
+}
+
+.topbar-btn--random:hover {
+  background: rgba(193, 113, 91, 0.24);
+  border-color: rgba(193, 113, 91, 0.5);
+  color: #f0c983;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(193, 113, 91, 0.25);
+}
+
+.topbar-btn--random svg {
+  transition: transform 0.4s ease;
+}
+
+.topbar-btn--random:hover svg {
+  transform: rotate(180deg);
+}
+
+/* MLOps link */
+.topbar-btn--mlops {
+  background: linear-gradient(135deg, rgba(155, 205, 219, 0.12) 0%, rgba(84, 162, 194, 0.12) 100%);
+  border-color: rgba(155, 205, 219, 0.28);
+  color: #9bcddb;
+}
+
+.topbar-btn--mlops:hover {
+  background: linear-gradient(135deg, rgba(155, 205, 219, 0.22) 0%, rgba(84, 162, 194, 0.22) 100%);
+  border-color: rgba(155, 205, 219, 0.5);
+  color: #c8e8f2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(84, 162, 194, 0.22);
+}
+
+/* Theme button */
+.topbar-btn--theme {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(220, 210, 230, 0.8);
+}
+
+.topbar-btn--theme:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.theme-icon-wrap {
+  display: flex;
+  align-items: center;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.topbar-btn--theme:hover .theme-icon-wrap {
+  transform: rotate(20deg) scale(1.2);
+}
+
+/* ============================================
+   TERMINAL DUSK OVERRIDES
+   ============================================ */
+.app[data-theme='terminal-dusk'] .topbar::before {
+  background: linear-gradient(
+    90deg,
+    rgba(10, 15, 22, 0.99) 0%,
+    rgba(16, 24, 36, 0.98) 50%,
+    rgba(12, 18, 28, 0.99) 100%
+  );
+}
+
+.app[data-theme='terminal-dusk'] .topbar::after {
+  background: linear-gradient(
+    90deg,
+    rgba(84, 162, 194, 0.08) 0%,
+    rgba(193, 113, 91, 0.05) 50%,
+    rgba(84, 162, 194, 0.08) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.app[data-theme='terminal-dusk'] .topbar {
+  border-bottom-color: rgba(84, 162, 194, 0.22);
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.56), 0 1px 0 rgba(84, 162, 194, 0.12);
+}
+
+.app[data-theme='terminal-dusk'] .topbar-badge {
+  color: rgba(84, 162, 194, 0.65);
+}
+
+.app[data-theme='terminal-dusk'] .stat-num {
+  background: linear-gradient(135deg, #54a2c2 0%, #9bcddb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.app[data-theme='terminal-dusk'] .topbar-btn--random {
+  background: rgba(84, 162, 194, 0.12);
+  border-color: rgba(84, 162, 194, 0.28);
+  color: #9bcddb;
+}
+
+.app[data-theme='terminal-dusk'] .topbar-btn--random:hover {
+  background: rgba(84, 162, 194, 0.22);
+  border-color: rgba(84, 162, 194, 0.5);
+  color: #c8e8f2;
+  box-shadow: 0 4px 12px rgba(84, 162, 194, 0.25);
+}
+
+.app[data-theme='terminal-dusk'] .topbar-btn--mlops {
+  background: rgba(193, 113, 91, 0.1);
+  border-color: rgba(193, 113, 91, 0.25);
+  color: #d4926a;
+}
+
+.app[data-theme='terminal-dusk'] .topbar-btn--mlops:hover {
+  background: rgba(193, 113, 91, 0.2);
+  border-color: rgba(193, 113, 91, 0.45);
+  color: #e8a87c;
+  box-shadow: 0 4px 12px rgba(193, 113, 91, 0.22);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+    height: 50px;
+    min-height: 50px;
+  }
+
+  .topbar-badge {
+    display: none;
+  }
+
+  .topbar-title {
+    font-size: 13px;
+  }
+
+  .topbar-stats {
+    display: none;
+  }
+
+  .topbar-btn span {
+    display: none;
+  }
+
+  .topbar-btn {
+    padding: 7px 9px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .stat-lbl {
+    display: none;
+  }
+
+  .topbar-stats {
+    padding: 5px 8px;
+  }
+}
