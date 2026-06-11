@@ -28,7 +28,7 @@ Recommended first files to open by intent.
   - cd/kubernetes/_base/
   - cd/kubernetes/_patterns/
 - Security baseline:
-  - security/README.md
+  - ci-security/README.md
   - policy/README.md
   - secops/README.md
 - FinOps baseline:
