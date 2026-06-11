@@ -99,10 +99,10 @@ Source: [`ci/github-actions/_shared/reusable-security-scan.yml`](../../ci/github
 
 | Scan | File | Priority |
 |------|------|---------|
-| Secrets | [`security/secret-detection/gitleaks.yml`](../../security/secret-detection/gitleaks.yml) | Blocks merge |
-| Container scan | [`security/container-scanning/trivy-scan.yml`](../../security/container-scanning/trivy-scan.yml) | Blocks merge |
-| SAST | [`security/sast/semgrep.yml`](../../security/sast/semgrep.yml) | Blocks merge |
-| Dependency audit | [`security/dependency-audit/`](../../security/dependency-audit/) | Advisory |
+| Secrets | [`ci-security/secret-detection/gitleaks.yml`](../../ci-security/secret-detection/gitleaks.yml) | Blocks merge |
+| Container scan | [`ci-security/container-scanning/trivy-scan.yml`](../../ci-security/container-scanning/trivy-scan.yml) | Blocks merge |
+| SAST | [`ci-security/sast/semgrep.yml`](../../ci-security/sast/semgrep.yml) | Blocks merge |
+| Dependency audit | [`ci-security/dependency-audit/`](../../ci-security/dependency-audit/) | Advisory |
 
 ---
 

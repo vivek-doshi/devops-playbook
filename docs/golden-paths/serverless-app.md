@@ -97,9 +97,9 @@ Source: [`ci/github-actions/_shared/reusable-security-scan.yml`](../../ci/github
 
 | Scan | File | Blocks merge? |
 |------|------|---------------|
-| Secret detection | [`security/secret-detection/gitleaks.yml`](../../security/secret-detection/gitleaks.yml) | Yes |
-| SAST | [`security/sast/semgrep.yml`](../../security/sast/semgrep.yml) | Yes |
-| Dependency audit | [`security/dependency-audit/`](../../security/dependency-audit/) | Advisory |
+| Secret detection | [`ci-security/secret-detection/gitleaks.yml`](../../ci-security/secret-detection/gitleaks.yml) | Yes |
+| SAST | [`ci-security/sast/semgrep.yml`](../../ci-security/sast/semgrep.yml) | Yes |
+| Dependency audit | [`ci-security/dependency-audit/`](../../ci-security/dependency-audit/) | Advisory |
 
 > Container scanning only applies if you are deploying Cloud Run (where you build an image). Skip it for Lambda zip deployments.
 
