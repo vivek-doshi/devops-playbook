@@ -139,10 +139,10 @@ Wire these three scans into CI. They run in parallel after the build step.
 
 | What | File | Blocks merge? |
 |------|------|---------------|
-| Secrets in image | [`security/secret-detection/gitleaks.yml`](../../security/secret-detection/gitleaks.yml) | Yes |
-| Container vulnerabilities | [`security/container-scanning/trivy-scan.yml`](../../security/container-scanning/trivy-scan.yml) | Yes (HIGH/CRITICAL) |
-| Source code (SAST) | [`security/sast/semgrep.yml`](../../security/sast/semgrep.yml) | Yes |
-| Dependency audit | [`security/dependency-audit/`](../../security/dependency-audit/) | Advisory |
+| Secrets in image | [`ci-security/secret-detection/gitleaks.yml`](../../ci-security/secret-detection/gitleaks.yml) | Yes |
+| Container vulnerabilities | [`ci-security/container-scanning/trivy-scan.yml`](../../ci-security/container-scanning/trivy-scan.yml) | Yes (HIGH/CRITICAL) |
+| Source code (SAST) | [`ci-security/sast/semgrep.yml`](../../ci-security/sast/semgrep.yml) | Yes |
+| Dependency audit | [`ci-security/dependency-audit/`](../../ci-security/dependency-audit/) | Advisory |
 
 ---
 
