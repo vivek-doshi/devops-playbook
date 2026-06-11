@@ -104,9 +104,9 @@ Source: [`ci/github-actions/_shared/reusable-security-scan.yml`](../../ci/github
 
 | Scan | File |
 |------|------|
-| Secrets | [`security/secret-detection/gitleaks.yml`](../../security/secret-detection/gitleaks.yml) |
-| SAST | [`security/sast/semgrep.yml`](../../security/sast/semgrep.yml) |
-| Dependency audit | [`security/dependency-audit/`](../../security/dependency-audit/) |
+| Secrets | [`ci-security/secret-detection/gitleaks.yml`](../../ci-security/secret-detection/gitleaks.yml) |
+| SAST | [`ci-security/sast/semgrep.yml`](../../ci-security/sast/semgrep.yml) |
+| Dependency audit | [`ci-security/dependency-audit/`](../../ci-security/dependency-audit/) |
 
 ---
 
