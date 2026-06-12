@@ -152,37 +152,6 @@ Each path:
 
 ---
 
-
-## 📁 Repository Structure
-
-See [docs/repo_structure.md](docs/repo_structure.md) for a full, n-level tree with explanations for every file and folder.
-
-```
-├── docker/               # Dockerfiles for every major stack
-├── compose/              # Docker Compose for local dev environments
-├── ci/                   # CI pipeline templates (GitHub, GitLab, Azure, Jenkins)
-├── cd/                   # CD pipeline templates + K8s manifests + Helm charts
-├── terraform/            # Infrastructure provisioning (AKS, EKS, GKE, ECS, Lambda)
-├── ci-security/          # Security scanning integrations for CI
-├── secops/               # Runtime security, supply chain, and compliance operations
-├── quality/              # Code quality configs (SonarQube, linters, formatters)
-├── notifications/        # Slack, Teams, PagerDuty alert templates
-├── scripts/              # Utility shell scripts
-├── catalog/              # Git-native service and team ownership catalog
-├── finops/               # FinOps: cost monitoring, governance, alerting, reporting
-│   ├── dashboards/       #   Grafana dashboards (9 JSON files)
-│   ├── policies/         #   Kyverno cost governance policies
-│   ├── prometheus/       #   Budget & anomaly alerting rules + Alertmanager configs
-│   ├── scripts/          #   Rightsizing, cost reports, tag validation, optimization
-│   ├── cicd/             #   Infracost templates (GitHub Actions, Azure Pipelines, GitLab)
-│   ├── helm/             #   Kubecost / OpenCost / VPA Helm values
-│   ├── kubernetes/       #   CronJob for monthly cost reports
-│   ├── config/           #   Budget thresholds per cost center
-│   └── docs/             #   Installation, runbooks, workflow guides
-├── docs/                 # Guides, ADRs, diagrams
-└── ...
-```
-
 ---
 
 ## Quick Start
