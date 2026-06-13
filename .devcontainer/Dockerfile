@@ -99,14 +99,8 @@ RUN set -eux; \
     curl -fsSLo kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${BIN_ARCH}/kubectl"; \
     install -m 0755 kubectl /usr/local/bin/kubectl; \
     # Helm renders and upgrades the chart examples in cd/helm and observability installs.
-    cat <<'HELM_SCRIPT' > install-helm.sh
-#!/usr/bin/env bash
-set -euo pipefail
-curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-${BIN_ARCH}.tar.gz" | tar -xz
-install -m 0755 "linux-${BIN_ARCH}/helm" /usr/local/bin/helm
-HELM_SCRIPT
-    chmod 0755 install-helm.sh; \
-    HELM_VERSION="${HELM_VERSION}" BIN_ARCH="${BIN_ARCH}" ./install-helm.sh; \
+    curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-${BIN_ARCH}.tar.gz" | tar -xz; \
+    install -m 0755 "linux-${BIN_ARCH}/helm" /usr/local/bin/helm; \
     # k9s gives fast cluster inspection while iterating on Kubernetes manifests and Helm charts.
     curl -fsSL "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_${BIN_ARCH}.tar.gz" | tar -xz k9s; \
     install -m 0755 k9s /usr/local/bin/k9s; \
@@ -153,79 +147,79 @@ RUN curl -fsSLo /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py \
  && ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python3 \
  && ln -sf /usr/local/bin/pip${PYTHON_VERSION} /usr/local/bin/pip \
  && ln -sf /usr/local/bin/pip${PYTHON_VERSION} /usr/local/bin/pip3 \
- && \
-    # pre-commit installs the repository's local guardrails before code reaches CI.
-    # Checkov mirrors the repository's IaC policy checks without the CI-only SARIF upload path.
  && python${PYTHON_VERSION} -m pip install --no-cache-dir \
       pre-commit==${PRE_COMMIT_VERSION} \
       checkov==${CHECKOV_VERSION} \
  && rm -f /tmp/get-pip.py
 
 RUN mkdir -p /usr/local/share/devops-playbook \
- && cat <<'BASH_PROMPT' > /usr/local/share/devops-playbook/bash-prompt.sh
-__devops_git_branch() {
-  git branch --show-current 2>/dev/null
-}
-
-__devops_kube_context() {
-  kubectl config current-context 2>/dev/null || echo "no-k8s"
-}
-
-__devops_kube_namespace() {
-  local namespace
-  namespace="$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null)"
-  if [ -z "${namespace}" ]; then
-    echo "default"
-  else
-    echo "${namespace}"
-  fi
-}
-
-export PS1='\[\e[36m\]\u@\h\[\e[0m\] \[\e[34m\]\w\[\e[0m\] \[\e[33m\]$(__devops_git_branch)\[\e[0m\] \[\e[35m\][$(__devops_kube_context):$(__devops_kube_namespace)]\[\e[0m\]\\$ '
-BASH_PROMPT
- && cat <<'ZSH_PROMPT' > /usr/local/share/devops-playbook/zsh-prompt.zsh
-setopt PROMPT_SUBST
-
-devops_git_branch() {
-  git branch --show-current 2>/dev/null
-}
-
-devops_kube_context() {
-  kubectl config current-context 2>/dev/null || echo "no-k8s"
-}
-
-devops_kube_namespace() {
-  local namespace
-  namespace="$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null)"
-  if [[ -z "${namespace}" ]]; then
-    echo "default"
-  else
-    echo "${namespace}"
-  fi
-}
-
-PROMPT='%F{cyan}%n@%m%f %F{blue}%~%f %F{yellow}$(devops_git_branch)%f %F{magenta}[$(devops_kube_context):$(devops_kube_namespace)]%f %# '
-ZSH_PROMPT
+ && printf '%s\n' \
+    '__devops_git_branch() {' \
+    '  git branch --show-current 2>/dev/null' \
+    '}' \
+    '' \
+    '__devops_kube_context() {' \
+    '  kubectl config current-context 2>/dev/null || echo "no-k8s"' \
+    '}' \
+    '' \
+    '__devops_kube_namespace() {' \
+    '  local namespace' \
+    '  namespace="$(kubectl config view --minify --output "jsonpath={..namespace}" 2>/dev/null)"' \
+    '  if [ -z "${namespace}" ]; then' \
+    '    echo "default"' \
+    '  else' \
+    '    echo "${namespace}"' \
+    '  fi' \
+    '}' \
+    '' \
+    'export PS1="\\[\\e[36m\\]\\u@\\h\\[\\e[0m\\] \\[\\e[34m\\]\\w\\[\\e[0m\\] \\[\\e[33m\\]$(__devops_git_branch)\\[\\e[0m\\] \\[\\e[35m\\][$(__devops_kube_context):$(__devops_kube_namespace)]\\[\\e[0m\\]\\\\$ "' \
+    > /usr/local/share/devops-playbook/bash-prompt.sh \
+ && printf '%s\n' \
+    'setopt PROMPT_SUBST' \
+    '' \
+    'devops_git_branch() {' \
+    '  git branch --show-current 2>/dev/null' \
+    '}' \
+    '' \
+    'devops_kube_context() {' \
+    '  kubectl config current-context 2>/dev/null || echo "no-k8s"' \
+    '}' \
+    '' \
+    'devops_kube_namespace() {' \
+    '  local namespace' \
+    '  namespace="$(kubectl config view --minify --output "jsonpath={..namespace}" 2>/dev/null)"' \
+    '  if [[ -z "${namespace}" ]]; then' \
+    '    echo "default"' \
+    '  else' \
+    '    echo "${namespace}"' \
+    '  fi' \
+    '}' \
+    '' \
+    'PROMPT="%F{cyan}%n@%m%f %F{blue}%~%f %F{yellow}$(devops_git_branch)%f %F{magenta}[$(devops_kube_context):$(devops_kube_namespace)]%f %# "' \
+    > /usr/local/share/devops-playbook/zsh-prompt.zsh
 
 USER vscode
 
-RUN git clone https://github.com/ohmyzsh/ohmyzsh.git /home/vscode/.oh-my-zsh \
+RUN if [ ! -d /home/vscode/.oh-my-zsh/.git ]; then \
+    rm -rf /home/vscode/.oh-my-zsh; \
+    git clone https://github.com/ohmyzsh/ohmyzsh.git /home/vscode/.oh-my-zsh; \
+   fi \
  && cd /home/vscode/.oh-my-zsh \
+ && git fetch --depth 1 origin ${OH_MY_ZSH_REF} \
  && git checkout ${OH_MY_ZSH_REF} \
- && cat <<'BASHRC' >> /home/vscode/.bashrc
-
-if [ -f /usr/local/share/devops-playbook/bash-prompt.sh ]; then
-  source /usr/local/share/devops-playbook/bash-prompt.sh
-fi
-BASHRC
- && cat <<'ZSHRC' > /home/vscode/.zshrc
-export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME=""
-plugins=(git kubectl terraform helm docker)
-
-source "$ZSH/oh-my-zsh.sh"
-
-if [ -f /usr/local/share/devops-playbook/zsh-prompt.zsh ]; then
-  source /usr/local/share/devops-playbook/zsh-prompt.zsh
-fi
-ZSHRC
+ && printf '\n%s\n%s\n%s\n' \
+    'if [ -f /usr/local/share/devops-playbook/bash-prompt.sh ]; then' \
+    '  source /usr/local/share/devops-playbook/bash-prompt.sh' \
+    'fi' \
+    >> /home/vscode/.bashrc \
+ && printf '%s\n' \
+    'export ZSH="$HOME/.oh-my-zsh"' \
+    'ZSH_THEME=""' \
+    'plugins=(git kubectl terraform helm docker)' \
+    '' \
+    'source "$ZSH/oh-my-zsh.sh"' \
+    '' \
+    'if [ -f /usr/local/share/devops-playbook/zsh-prompt.zsh ]; then' \
+    '  source /usr/local/share/devops-playbook/zsh-prompt.zsh' \
+    'fi' \
+    > /home/vscode/.zshrc
