@@ -109,7 +109,9 @@ RUN set -eux; \
     install -m 0755 kind /usr/local/bin/kind; \
     # Pulumi is needed for the Node.js infrastructure projects under cd/pulumi.
     curl -fsSL https://get.pulumi.com | sh -s -- --version "${PULUMI_VERSION#v}"; \
-    ln -sf "${PULUMI_HOME}/bin/pulumi" /usr/local/bin/pulumi; \
+    mv /root/.pulumi /usr/local/pulumi; \
+    chmod -R 0755 /usr/local/pulumi; \
+    ln -sf /usr/local/pulumi/bin/pulumi /usr/local/bin/pulumi; \
     # jq is the default JSON inspection tool for workflow debugging and script automation in this repo.
     curl -fsSLo jq "https://github.com/jqlang/jq/releases/download/${JQ_VERSION}/jq-linux-${BIN_ARCH}"; \
     install -m 0755 jq /usr/local/bin/jq; \
