@@ -5,6 +5,12 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${repo_root}"
 
+# Git cannot consume .editorconfig directly, so align the repository checkout behaviour with its LF policy.
+# This must happen BEFORE pre-commit install to avoid "dubious ownership" errors in some environments.
+git config --global --add safe.directory "${repo_root}"
+git config --global core.autocrlf input
+git config --global core.eol lf
+
 required_tools=(
   terraform
   kubectl
@@ -40,7 +46,7 @@ for tool in "${required_tools[@]}"; do
 done
 
 if command -v npm >/dev/null 2>&1; then
-  npm install --global @pulumi/pulumi >/dev/null 2>&1
+  sudo npm install --global @pulumi/pulumi >/dev/null 2>&1
 fi
 
 echo "==> Installing helm plugins..."
@@ -60,11 +66,6 @@ if [ -f .pre-commit-config.yaml ] && command -v pre-commit >/dev/null 2>&1; then
   pre-commit install
   pre-commit install --hook-type pre-push
 fi
-
-# Git cannot consume .editorconfig directly, so align the repository checkout behaviour with its LF policy.
-git config --global --add safe.directory "${repo_root}"
-git config --global core.autocrlf input
-git config --global core.eol lf
 
 print_version() {
   case "$1" in
