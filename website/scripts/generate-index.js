@@ -19,7 +19,9 @@ const EXCLUDE_PATTERNS = [
   '__pycache__',
   '.pytest_cache',
   '*.lock',
-  '.DS_Store'
+  '.DS_Store',
+  '.vscode',
+  'gemini.md'
 ];
 
 const EXCLUDE_EXTENSIONS = ['.txt', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.drawio'];
