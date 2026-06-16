@@ -204,7 +204,7 @@ def fetch_current_resources(vpa: dict[str, Any]) -> dict[str, dict[str, str]]:
         for rec in vpa.get("status", {}).get("recommendation", {}).get("containerRecommendations", []):
             target = rec.get("target", {})
             result[rec["containerName"]] = {
-                "cpu": str(parse_cpu(target.get("cpu", "0")) * 2) + "cores",
+                "cpu": str(parse_cpu(target.get("cpu", "0")) * 2),
                 "memory": str(parse_memory(target.get("memory", "0")) * 2) + "Gi",
             }
         return result

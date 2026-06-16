@@ -23,6 +23,8 @@ desktop.ini
 *.env
 .env
 .env.*
+.venv
+.venv*
 !.env.example
 !.env.template
 *.pem

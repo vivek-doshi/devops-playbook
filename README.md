@@ -160,7 +160,13 @@ Each path:
    ```bash
    bash scripts/env-checker.sh
    ```
-2. **Pick your golden path:**
+2. **Run the enterprise confidence gate:**
+   ```bash
+   make validate
+   # or
+   task validate
+   ```
+3. **Pick your golden path:**
    - [Kubernetes microservice](docs/golden-paths/kubernetes-microservice.md)
    - [Serverless app](docs/golden-paths/serverless-app.md)
    - [Frontend SPA](docs/golden-paths/frontend-spa.md)
@@ -169,7 +175,7 @@ Each path:
    - [FinOps optimization](docs/golden-paths/finops-optimization.md)
    - [SLO-driven development](docs/golden-paths/slo-driven-development.md)
    - [Service catalog registration](docs/golden-paths/service-catalog.md)
-3. **Follow the steps:**
+4. **Follow the steps:**
    - Each path tells you which files to copy/edit, and links to runbooks and guides.
 
 
@@ -286,6 +292,7 @@ metadata:
 
 - **[docs/golden-paths/](docs/golden-paths/)** — Start here for all workflows, including the new MLOps path
 - **[docs/guides/](docs/guides/)** — Deep dives: onboarding, branching, commits, environments, OIDC, secrets, migrations, DR, and core concepts
+- **[docs/guides/enterprise-adoption.md](docs/guides/enterprise-adoption.md)** - Executive adoption model, governance, KPIs, ownership, and rollout phases
 - **[docs/runbooks/](docs/runbooks/)** — Incident response, troubleshooting, and operational templates
 - **[docs/runbooks/README.md](docs/runbooks/README.md)** — Runbook catalog and authoring standard
 - **[docs/decisions/](docs/decisions/)** — Architecture Decision Records (ADRs)
