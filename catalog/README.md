@@ -1,62 +1,35 @@
 # Service Catalog
 
-This directory is a Git-native service catalog.
+The service catalog is a Git-native ownership and governance registry.
 
-One YAML file per service is registered in `catalog/services/`.
-The catalog is the authoritative source for:
+## Purpose
 
-- service ownership
-- on-call routing
-- runbook location
-- SLO target metadata
-- FinOps cost center mapping
+Use `catalog/` to record service ownership, on-call routing, operational metadata, and governance attributes in version control.
 
----
+## What's Inside
 
-## Why Git, Not A Portal
+- `services/`: One service definition per file.
+- `teams/`: Team metadata and ownership references.
+- `schema/`: Validation schema for catalog entries.
+- `scripts/`: Validation, CODEOWNERS generation, and migration utilities.
 
-This catalog lives in the same repository as deployment manifests, alert rules, and runbooks.
-That means ownership and runtime changes happen in the same pull request as service changes.
-A separate portal usually drifts from reality because teams must update two systems. In this model,
-service metadata is updated where engineers already work, so inventory and ownership stay current.
+## Use This Component Alone
 
----
+- Register one service and assign clear ownership.
+- Validate metadata correctness in pull requests.
 
-## How To Find Information
+## Use This Component With Others
 
-Find a service:
+- With `ci/`: Enforce catalog validation in CI gates.
+- With `policy/`: Require catalog registration for deployed workloads.
+- With `docs/golden-paths/service-catalog.md`: Follow the full governance workflow.
+- With `secops/compliance/`: Provide evidence for ownership and accountability controls.
 
-```bash
-grep -r "name: <service-name>" catalog/services/
-```
-
-Find all services owned by a team:
+## Quick Start
 
 ```bash
-grep -r "owner: <team-name>" catalog/services/
+python catalog/scripts/validate-catalog.py --strict
+python catalog/scripts/generate-codeowners.py
 ```
 
-Find who is on call for a namespace:
-
-```bash
-cat catalog/services/<service>.yaml | grep oncall
-```
-
----
-
-## Backstage Migration Path
-
-When the organization reaches around 50 services, migrate to Backstage Software Catalog using the same catalog YAML data. The schema in `catalog/services/` is intentionally close to Backstage component metadata so migration is a one-time conversion step using `catalog/scripts/migrate-to-backstage.py`, not a redesign.
-
----
-
-## Compliance
-
-This catalog provides evidence for:
-
-- SOC 2 CC1.2: ownership and responsibility definition
-- SOC 2 CC2.1: asset inventory
-
-Reference:
-
-- `secops/compliance/control-library/soc2-controls.yaml`
+If ownership changes, regenerate CODEOWNERS in the same pull request.

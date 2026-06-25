@@ -1,199 +1,116 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-# Getting Started — "I need X, go to Y"
+# Getting Started - DevOps Playbook
 
-Use this guide to quickly find the right template for your scenario.
+Use this guide when you need to move quickly from "I need X" to the right folder, template, and workflow.
 
-## What's New (May 2026)
+## Start Local In 10 Minutes
 
-- ADR coverage expanded with:
-	- [`docs/decisions/ADR-004-policy-enforcement-layering.md`](docs/decisions/ADR-004-policy-enforcement-layering.md)
-	- [`docs/decisions/ADR-005-slo-driven-operations-standard.md`](docs/decisions/ADR-005-slo-driven-operations-standard.md)
-- Documentation indexes added:
-	- [`docs/decisions/README.md`](docs/decisions/README.md)
-	- [`docs/runbooks/README.md`](docs/runbooks/README.md)
-	- [`docs/diagrams/README.md`](docs/diagrams/README.md)
-- Guides normalized and updated:
-	- [`docs/guides/branching-strategy.md`](docs/guides/branching-strategy.md)
-	- [`docs/guides/environment-strategy.md`](docs/guides/environment-strategy.md)
-	- [`docs/guides/github-actions-oidc.md`](docs/guides/github-actions-oidc.md)
-	- [`docs/guides/secrets-management.md`](docs/guides/secrets-management.md)
-	- [`docs/guides/versioning-strategy.md`](docs/guides/versioning-strategy.md)
-	- [`docs/guides/concepts.md`](docs/guides/concepts.md)
+### Option A: VS Code Dev Container (recommended)
 
----
+1. Install Docker Desktop and VS Code.
+2. Install the Dev Containers extension in VS Code.
+3. Open this repository and run "Dev Containers: Reopen in Container".
+4. Wait for the first container build to complete.
+5. Run environment checks:
 
-<!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
+```bash
+bash scripts/env-checker.sh
+```
+
+Use this when you want a reproducible toolchain for Terraform, Kubernetes, Helm, and security tooling without installing everything on your host machine.
+
+Reference: [.devcontainer/README.md](.devcontainer/README.md)
+
+### Option B: Local Host + Kind
+
+1. Install required tools (Docker, kubectl, Helm, Kind).
+2. Validate your setup with `scripts/env-checker.sh` or `scripts/env-checker.ps1`.
+3. Create a local cluster:
+
+```bash
+bash local-dev/kind/setup.sh
+```
+
+Reference: [local-dev/README.md](local-dev/README.md)
+
+## How To Use Golden Paths
+
+Golden paths are opinionated, end-to-end workflows that connect multiple folders in this repo.
+
+1. Choose the path that matches your use case in [docs/golden-paths/](docs/golden-paths/).
+2. Follow steps in order instead of copying random files.
+3. Use linked templates from `docker/`, `ci/`, `cd/`, and `terraform/`.
+4. Apply guardrails from `ci-security/`, `policy/`, `secops/`, `secrets/`, `catalog/`, and `finops/`.
+5. Use `observability/` and `notifications/` for operations after deployment.
+
+Suggested first paths:
+- [docs/golden-paths/platform-onboarding.md](docs/golden-paths/platform-onboarding.md)
+- [docs/golden-paths/kubernetes-microservice.md](docs/golden-paths/kubernetes-microservice.md)
+- [docs/golden-paths/serverless-app.md](docs/golden-paths/serverless-app.md)
+
+## Major Components (What + How)
+
+The table below covers major sections from `backup` through `terraform` (website intentionally excluded).
+
+| Component | What it is | Use it alone | Use it with others |
+|---|---|---|---|
+| [backup/](backup/) | Backup and restore patterns for Kubernetes and managed databases | Configure Velero schedules or DB backup snippets | Pair with `cd/`, `terraform/`, and runbooks in `docs/` for full DR workflows |
+| [catalog/](catalog/) | Git-native service and team ownership registry | Register service metadata and owners | Pair with `policy/`, `ci/`, and `secops/` for governance and compliance evidence |
+| [cd/](cd/) | Deployment templates (Kubernetes, Helm, GitOps, cloud targets) | Deploy workloads to one target | Pair with `ci/`, `terraform/`, and `secrets/` for complete release pipelines |
+| [ci/](ci/) | CI pipeline templates across platforms | Build and test code in one CI system | Pair with `ci-security/`, `cd/`, and `quality/` to enforce pre-deploy gates |
+| [ci-security/](ci-security/) | Shift-left security scanning templates | Add SAST, container, secret, dependency, IaC scans to PR flow | Pair with `secops/` and `policy/` for full lifecycle security |
+| [compose/](compose/) | Local multi-service Docker Compose stacks | Run app + dependencies locally | Pair with `docker/` and `local-dev/` to mirror production-like behavior |
+| [docker/](docker/) | Production-focused Dockerfile templates | Containerize a single service | Pair with `ci/` for build and `cd/` for deployment |
+| [docs/](docs/) | Guides, golden paths, ADRs, and runbooks | Learn one topic in isolation | Use as the control plane for how all technical folders connect |
+| [finops/](finops/) | Cost governance and optimization tooling | Analyze spend and rightsizing opportunities | Pair with `policy/`, `observability/`, and `ci/` for continuous cost control |
+| [local-dev/](local-dev/) | Local Kubernetes setup and helper scripts | Stand up a disposable cluster with Kind | Pair with `cd/`, `docker/`, and `observability/` for local pre-merge validation |
+| [notifications/](notifications/) | Alert routing templates for Slack, Teams, PagerDuty, Datadog, Grafana | Configure one notification channel | Pair with `observability/`, `secops/`, and `finops/` alerts |
+| [observability/](observability/) | Metrics, logs, traces, SLO assets | Deploy a single telemetry component | Pair with `notifications/`, `secops/`, and `docs/runbooks/` for incident operations |
+| [policy/](policy/) | Policy-as-code (Kyverno and Conftest) | Enforce one policy check | Pair with `cd/`, `catalog/`, `finops/`, and `secops/` for consistent governance |
+| [quality/](quality/) | Language quality baselines (lint/test/static analysis config) | Apply quality checks per language | Pair with `ci/` and `ci-security/` for shift-left quality + security |
+| [scripts/](scripts/) | Utility scripts for checks, cleanup, rollout validation, release tagging | Run individual helper commands | Pair with local workflows and CI jobs for repeatable operations |
+| [secops/](secops/) | Runtime security, supply-chain verification, compliance workflows | Run one control set (Falco, kube-bench, policy package) | Pair with `ci-security/`, `policy/`, `observability/`, and `notifications/` |
+| [secrets/](secrets/) | Secret distribution and rotation patterns | Configure one secret backend integration | Pair with `cd/`, `ci/`, and `docs/guides/secrets-management.md` |
+| [terraform/](terraform/) | IaC blueprints for cloud infrastructure | Provision one cloud target | Pair with `cd/` deploy templates and `ci/` plan/apply automation |
+
 ## Scenario Index
 
-### 🔒 Before you commit
+### I need to containerize an app
+- [.NET API](docker/dotnet/Dockerfile.api)
+- [React production build](docker/react/Dockerfile)
+- [Python FastAPI](docker/python/Dockerfile.fastapi)
+- [Node Express](docker/node/Dockerfile.express)
 
-| Need | File |
-|------|------|
-| Set up local pre-commit hooks and troubleshooting | [`docs/guides/pre-commit-setup.md`](docs/guides/pre-commit-setup.md) |
+### I need local environments
+- [Compose stacks](compose/README.md)
+- [Kind cluster](local-dev/README.md)
+- [Dev containers](.devcontainer/README.md)
 
-### 🐳 "I need to containerize my app"
+### I need CI and security checks
+- [CI templates](ci/README.md)
+- [Security scan templates](ci-security/README.md)
+- [Policy checks](policy/README.md)
 
-| Tech | File |
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-|------|------|
-| ASP.NET Core Web API | [`docker/dotnet/Dockerfile.api`](docker/dotnet/Dockerfile.api) |
-| .NET Background Worker | [`docker/dotnet/Dockerfile.worker`](docker/dotnet/Dockerfile.worker) |
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Angular (prod + nginx) | [`docker/angular/Dockerfile`](docker/angular/Dockerfile) |
-| React (prod) | [`docker/react/Dockerfile`](docker/react/Dockerfile) |
-| React (dev hot-reload) | [`docker/react/Dockerfile.dev`](docker/react/Dockerfile.dev) |
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Flask | [`docker/python/Dockerfile.flask`](docker/python/Dockerfile.flask) |
-| FastAPI | [`docker/python/Dockerfile.fastapi`](docker/python/Dockerfile.fastapi) |
-| Django | [`docker/python/Dockerfile.django`](docker/python/Dockerfile.django) |
-<!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Express.js | [`docker/node/Dockerfile.express`](docker/node/Dockerfile.express) |
-| Next.js | [`docker/node/Dockerfile.nextjs`](docker/node/Dockerfile.nextjs) |
-| Spring Boot | [`docker/java/Dockerfile.springboot`](docker/java/Dockerfile.springboot) |
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Learning multi-stage builds | [`docker/_base/Dockerfile.multistage`](docker/_base/Dockerfile.multistage) |
-| Security-hardened container | [`docker/_base/security-hardened.Dockerfile`](docker/_base/security-hardened.Dockerfile) |
+### I need deployment templates
+- [CD templates](cd/README.md)
+- [Terraform IaC](terraform/README.md)
+- [Secrets integration](secrets/README.md)
 
----
+### I need runtime operations and governance
+- [Observability stack](observability/README.md)
+- [SecOps controls](secops/README.md)
+- [Service catalog](catalog/README.md)
+- [FinOps controls](finops/README.md)
+- [Backup and DR](backup/README.md)
 
-<!-- Note 8: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-### 🖥️ "I need a local dev environment"
+## Suggested Onboarding Order
 
-| Stack | File |
-|-------|------|
-<!-- Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| .NET + SQL Server | [`compose/dotnet-sqlserver/docker-compose.yml`](compose/dotnet-sqlserver/docker-compose.yml) |
-| Python + PostgreSQL + Redis | [`compose/python-postgres-redis/docker-compose.yml`](compose/python-postgres-redis/docker-compose.yml) |
-| Microservices example | [`compose/microservices-example/docker-compose.yml`](compose/microservices-example/docker-compose.yml) |
-<!-- Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Annotated base template | [`compose/_templates/docker-compose.base.yml`](compose/_templates/docker-compose.base.yml) |
-| Test K8s manifests locally before committing | [`local-dev/kind/setup.sh`](local-dev/kind/setup.sh) |
+1. Read [docs/guides/onboarding.md](docs/guides/onboarding.md).
+2. Set up local using `.devcontainer` or `local-dev/kind`.
+3. Pick one golden path and complete it end-to-end.
+4. Add CI and security checks before first deployment.
+5. Add observability, notifications, and runbook links before production rollout.
+6. Add catalog and FinOps guardrails for day-2 governance.
 
----
+## Beginner-to-Intermediate Learning Path
 
-### ⚙️ "I need a CI pipeline"
-
-<!-- Note 11: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-#### GitHub Actions
-| Tech | Pipeline |
-|------|---------|
-<!-- Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| .NET build + test | [`ci/github-actions/dotnet/build-test.yml`](ci/github-actions/dotnet/build-test.yml) |
-| .NET + SonarQube | [`ci/github-actions/dotnet/sonar-scan.yml`](ci/github-actions/dotnet/sonar-scan.yml) |
-| .NET Docker publish | [`ci/github-actions/dotnet/docker-publish.yml`](ci/github-actions/dotnet/docker-publish.yml) |
-<!-- Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Angular build + test | [`ci/github-actions/angular/build-test.yml`](ci/github-actions/angular/build-test.yml) |
-| React build + test | [`ci/github-actions/react/build-test.yml`](ci/github-actions/react/build-test.yml) |
-| Python (pytest/ruff) | [`ci/github-actions/python/build-test.yml`](ci/github-actions/python/build-test.yml) |
-<!-- Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Java (Maven/Gradle) | [`ci/github-actions/java/build-test.yml`](ci/github-actions/java/build-test.yml) |
-
-#### GitLab CI
-| Tech | Pipeline |
-<!-- Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-|------|---------|
-| .NET | [`ci/gitlab-ci/dotnet/.gitlab-ci.yml`](ci/gitlab-ci/dotnet/.gitlab-ci.yml) |
-| Python | [`ci/gitlab-ci/python/.gitlab-ci.yml`](ci/gitlab-ci/python/.gitlab-ci.yml) |
-
-<!-- Note 16: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-#### Azure Pipelines
-| Tech | Pipeline |
-|------|---------|
-<!-- Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| .NET | [`ci/azure-pipelines/dotnet/azure-pipelines.yml`](ci/azure-pipelines/dotnet/azure-pipelines.yml) |
-| Angular | [`ci/azure-pipelines/angular/azure-pipelines.yml`](ci/azure-pipelines/angular/azure-pipelines.yml) |
-| Python | [`ci/azure-pipelines/python/azure-pipelines.yml`](ci/azure-pipelines/python/azure-pipelines.yml) |
-
-<!-- Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
----
-
-### 🚀 "I need to deploy to production"
-
-| Target | File |
-<!-- Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-|--------|------|
-| Azure AKS (GitHub Actions) | [`cd/targets/azure-aks/github-actions-deploy.yml`](cd/targets/azure-aks/github-actions-deploy.yml) |
-| AWS EKS (GitHub Actions) | [`cd/targets/aws-eks/github-actions-deploy.yml`](cd/targets/aws-eks/github-actions-deploy.yml) |
-<!-- Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| GCP GKE (GitHub Actions) | [`cd/targets/gcp-gke/github-actions-deploy.yml`](cd/targets/gcp-gke/github-actions-deploy.yml) |
-| Azure App Service | [`cd/targets/azure-app-service/github-actions-deploy.yml`](cd/targets/azure-app-service/github-actions-deploy.yml) |
-| AWS ECS | [`cd/targets/aws-ecs/github-actions-deploy.yml`](cd/targets/aws-ecs/github-actions-deploy.yml) |
-<!-- Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| AWS Lambda | [`cd/targets/aws-lambda/serverless-deploy.yml`](cd/targets/aws-lambda/serverless-deploy.yml) |
-| ArgoCD GitOps | [`cd/gitops/argocd/application.yaml`](cd/gitops/argocd/application.yaml) |
-| Deploy to multiple clusters (fleet management) | [`docs/golden-paths/multi-cluster-fleet.md`](docs/golden-paths/multi-cluster-fleet.md) |
-
----
-
-<!-- Note 22: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-### 🔒 "I need security scanning"
-
-| Need | File |
-|------|------|
-<!-- Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| SAST (SonarQube) | [`ci-security/sast/`](ci-security/sast/) |
-| Container scanning (Trivy) | [`ci-security/container-scanning/`](ci-security/container-scanning/) |
-| Secret detection (Gitleaks) | [`ci-security/secret-detection/`](ci-security/secret-detection/) |
-<!-- Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Dependency audit (npm) | [`ci-security/dependency-audit/`](ci-security/dependency-audit/) |
-| Supply chain security (signing, SBOM, SLSA) | [`docs/golden-paths/supply-chain-security.md`](docs/golden-paths/supply-chain-security.md) |
-
----
-
-### 📊 "I need observability"
-
-| Need | File |
-|---|---|
-| Define reliability targets and get alerted when at risk | [`docs/golden-paths/slo-driven-development.md`](docs/golden-paths/slo-driven-development.md) |
-
----
-
-### 🔑 "I need to manage secrets"
-
-| Need | File |
-|---|---|
-| Store a secret for my app (AWS/Azure/GCP) | [`secrets/external-secrets/`](secrets/external-secrets/) |
-| Rotate a secret on a schedule | [`secrets/rotation/`](secrets/rotation/) |
-| Understand the full secret lifecycle | [`secrets/guides/secret-lifecycle.md`](secrets/guides/secret-lifecycle.md) |
-| Emergency: secret was exposed | [`secrets/guides/emergency-rotation.md`](secrets/guides/emergency-rotation.md) |
-
----
-
-### 💰 FinOps - Cloud Cost Governance
-
-| Need | File |
-|---|---|
-| I got a cost alert - what do I do? | [`finops/docs/optimization-runbook.md`](finops/docs/optimization-runbook.md) |
-| Optimize resource requests based on VPA recommendations | [`docs/golden-paths/finops-optimization.md`](docs/golden-paths/finops-optimization.md) |
-| Compare costs across AWS, Azure, and GCP | [`finops/scripts/normalize-cloud-costs.py`](finops/scripts/normalize-cloud-costs.py) |
-
----
-
-### 📚 Service Registration and Ownership
-
-| Need | File |
-|---|---|
-| Register a service owner, on-call route, and operational metadata | [`docs/golden-paths/service-catalog.md`](docs/golden-paths/service-catalog.md) |
-| Validate catalog schema, references, and governance rules | [`catalog/scripts/validate-catalog.py`](catalog/scripts/validate-catalog.py) |
-| Generate ownership mappings for repository paths | [`catalog/scripts/generate-codeowners.py`](catalog/scripts/generate-codeowners.py) |
-
----
-
-### 📖 "I want to understand the decisions"
-
-<!-- Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Topic | ADR |
-|-------|-----|
-| Why this folder structure? | [`docs/decisions/ADR-001-folder-structure.md`](docs/decisions/ADR-001-folder-structure.md) |
-<!-- Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Helm vs Kustomize? | [`docs/decisions/ADR-002-helm-vs-kustomize.md`](docs/decisions/ADR-002-helm-vs-kustomize.md) |
-| GitOps strategy? | [`docs/decisions/ADR-003-gitops-strategy.md`](docs/decisions/ADR-003-gitops-strategy.md) |
-| Why layered policy checks (CI + admission)? | [`docs/decisions/ADR-004-policy-enforcement-layering.md`](docs/decisions/ADR-004-policy-enforcement-layering.md) |
-| Why SLO-driven operations by default? | [`docs/decisions/ADR-005-slo-driven-operations-standard.md`](docs/decisions/ADR-005-slo-driven-operations-standard.md) |
-| Secrets management | [`docs/guides/secrets-management.md`](docs/guides/secrets-management.md) |
-| How do we demonstrate compliance? | [`docs/golden-paths/compliance-reporting.md`](docs/golden-paths/compliance-reporting.md) |
-| Branching strategy | [`docs/guides/branching-strategy.md`](docs/guides/branching-strategy.md) |
-| ADR index and lifecycle | [`docs/decisions/README.md`](docs/decisions/README.md) |
-| Runbook catalog and standard | [`docs/runbooks/README.md`](docs/runbooks/README.md) |
-| Diagram inventory and update flow | [`docs/diagrams/README.md`](docs/diagrams/README.md) |
-| Repo concept map | [`docs/guides/concepts.md`](docs/guides/concepts.md) |
+Use [docs/guides/devops-learning-path-intermediate.md](docs/guides/devops-learning-path-intermediate.md) for a structured skill roadmap.

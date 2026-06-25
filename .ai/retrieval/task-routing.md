@@ -4,6 +4,10 @@ Routes user intent to the minimum correct repository domain.
 
 ## Primary Routing
 
+- "Where do I start" or "new to this repo" -> `GETTING_STARTED.md`, then `docs/guides/onboarding.md`, then `docs/golden-paths/`.
+- "DevOps learning path" or "what should I learn" -> `docs/guides/devops-learning-path-intermediate.md`.
+- "What does component X do" -> top-level `<component>/README.md` first, then component subfolders.
+
 - "Containerize app" -> docker/ and compose/.
 - "Set up CI" -> ci/<platform>/ and ci/.../_shared.
 - "Deploy to cloud" -> cd/targets/<cloud>/ and terraform/<cloud-target>/.
@@ -18,6 +22,7 @@ Routes user intent to the minimum correct repository domain.
 
 - If request is architecture/choice oriented -> docs/ARCHITECTURE_DECISION_GUIDE.md first.
 - If request asks "where do I start" -> docs/golden-paths/ first.
+- If request is repo orientation + implementation -> `GETTING_STARTED.md` first, then relevant golden path, then enforcement domains.
 - If request mixes domains (for example CI + Terraform + security), route to:
   1. golden path
   2. target domain files

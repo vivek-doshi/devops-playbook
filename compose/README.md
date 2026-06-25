@@ -1,33 +1,35 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-# Docker Compose — Local Dev Environments
+# Docker Compose Local Stacks
 
-Ready-to-use compose stacks for local development.
+This folder contains ready-to-run Docker Compose environments for local development.
 
-<!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Stacks
+## Purpose
 
-| Folder | Services |
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-|--------|---------|
-| `dotnet-sqlserver/` | ASP.NET Core API + SQL Server |
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `python-postgres-redis/` | Python API + PostgreSQL + Redis |
-| `java-postgres/` | Spring Boot API + PostgreSQL (+ optional pgAdmin) |
-| `microservices-example/` | Multiple services with shared network |
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `_templates/` | Annotated base template with all common patterns |
+Use `compose/` when you need fast local feedback with realistic service dependencies.
 
-## Usage
+## What's Inside
 
-<!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
+- `dotnet-sqlserver/`: .NET API with SQL Server.
+- `python-postgres-redis/`: Python service with PostgreSQL and Redis.
+- `java-postgres/`: Java service with PostgreSQL.
+- `microservices-example/`: Multi-service composition pattern.
+- `_templates/`: Base annotated compose template.
+
+## Use This Component Alone
+
+- Run local app dependencies without provisioning cloud infrastructure.
+- Validate containerized behavior before CI/CD integration.
+
+## Use This Component With Others
+
+- With `docker/`: Build images used by compose services.
+- With `local-dev/`: Transition from local containers to local Kubernetes.
+- With `ci/`: Mirror startup checks in integration tests.
+
+## Quick Start
+
 ```bash
-# Start a stack
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
+cd compose/python-postgres-redis
 docker compose up -d
-
-# Watch logs
 docker compose logs -f
-
-# Stop and remove volumes
 docker compose down -v
 ```

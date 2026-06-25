@@ -1,27 +1,34 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-# Security Scanning Templates
+# CI Security Scanning Templates
 
-Pipeline templates for security scanning across different tool categories.
+This folder provides shift-left security controls for pull requests and merge pipelines.
 
-<!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Categories
+## Purpose
 
-| Folder | Tools | Purpose |
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-|--------|-------|---------|
-| `sast/` | SonarQube, Snyk, Semgrep | Static Application Security Testing |
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `container-scanning/` | Trivy, Grype | Container image vulnerability scanning |
-| `secret-detection/` | Gitleaks, TruffleHog | Detect secrets committed to Git and verified secrets in PR diffs |
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `dependency-audit/` | npm audit, pip-audit, NuGet | Dependency vulnerability audit |
-| `iac-scanning/` | Checkov, tfsec | Infrastructure-as-code misconfiguration scanning |
-| `secret-rotation/` | AWS Secrets Manager Lambda, Azure Key Vault EventGrid, External Secrets Operator | Automated secret rotation workflows — the complement to detection |
+Use `ci-security/` to detect security issues before deployment.
 
-Gitleaks is the fast, pattern-based baseline for every commit; TruffleHog is the deeper, verified pass that fits pull requests rather than every push.
+## What's Inside
 
-## Recommended Scanning Strategy
+- `sast/`: Static analysis templates.
+- `container-scanning/`: Image vulnerability scanning.
+- `secret-detection/`: Secret leak detection.
+- `dependency-audit/`: Dependency vulnerability checks.
+- `iac-scanning/`: Terraform and IaC misconfiguration scanning.
+- `secret-rotation/`: Rotation workflow templates.
 
-1. **Every PR**: SAST (fast), secret detection
-2. **Every merge to main**: Full SAST + container scan + dependency audit
-3. **Weekly scheduled**: Full scan of all images in registry
+## Use This Component Alone
+
+- Add one scanner to an existing CI workflow.
+- Run periodic deep scans on schedules.
+
+## Use This Component With Others
+
+- With `ci/`: Add security gates to every pull request.
+- With `secops/`: Escalate findings into runtime controls and incident workflows.
+- With `policy/`: Enforce preventive guardrails after shift-left checks.
+- With `secrets/`: Move from detection to lifecycle-safe remediation.
+
+## Recommended Scan Cadence
+
+1. Every PR: SAST and secret detection.
+2. Every main merge: full image and dependency scans.
+3. Weekly: deep scan across all critical workloads.

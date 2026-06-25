@@ -2,8 +2,8 @@
 
 Generated from current workspace structure.
 
-- Root: d:/projects/cicd-reference
-- Generated: 2026-05-25 21:39:39
+- Root: d:/personal/projects/devops-playbook
+- Generated: 2026-06-25 23:04:54
 - Exclusions: .ai/, .git/, .github/prompts/, .github/skills/, .kiro/, catalog/scripts/__pycache__/, finops/scripts/__pycache__/, secops/compliance/scripts/__pycache__/, website/
 
 ```text
@@ -16,6 +16,7 @@ Generated from current workspace structure.
 │   ├── scripts
 │   │   └── post-create.sh
 │   ├── devcontainer.json
+│   ├── devcontainer-lock.json
 │   ├── Dockerfile
 │   └── README.md
 ├── .github
@@ -30,6 +31,8 @@ Generated from current workspace structure.
 │   ├── copilot-instructions.md
 │   ├── dependabot.yml
 │   └── PULL_REQUEST_TEMPLATE.md
+├── .vscode
+│   └── settings.json
 ├── backup
 │   ├── terraform
 │   │   ├── aws-rds-backup.tf
@@ -287,7 +290,6 @@ Generated from current workspace structure.
 │   │   ├── aws-rotation-lambda.py
 │   │   ├── aws-rotation-lambda.tf
 │   │   ├── azure-keyvault-rotation.tf
-│   │   ├── external-secrets-operator.yaml
 │   │   └── README.md
 │   └── README.md
 ├── compose
@@ -570,11 +572,15 @@ Generated from current workspace structure.
 ├── scripts
 │   ├── add-educational-comments.ps1
 │   ├── clean-website-comments.ps1
+│   ├── docker-cleanup.ps1
 │   ├── docker-cleanup.sh
+│   ├── env-checker.ps1
 │   ├── env-checker.sh
 │   ├── fix-continuation-comments.ps1
 │   ├── generate-repo-map.ps1
+│   ├── k8s-rollout-check.ps1
 │   ├── k8s-rollout-check.sh
+│   ├── tag-release.ps1
 │   └── tag-release.sh
 ├── secops
 │   ├── compliance
@@ -625,15 +631,10 @@ Generated from current workspace structure.
 │   │   ├── example-external-secret.yaml
 │   │   ├── gcp-secret-store.yaml
 │   │   └── README.md
-│   ├── guides
-│   │   ├── emergency-rotation.md
-│   │   ├── secret-lifecycle.md
-│   │   └── secret-offboarding.md
-│   ├── rotation
-│   │   ├── aws-rotation.yml
-│   │   ├── azure-rotation.yml
-│   │   └── gcp-rotation.yml
-│   └── README.md
+│   └── rotation
+│       ├── aws-rotation.yml
+│       ├── azure-rotation.yml
+│       └── gcp-rotation.yml
 ├── terraform
 │   ├── _bootstrap
 │   │   ├── aws
@@ -682,6 +683,7 @@ Generated from current workspace structure.
 │   └── README.md
 ├── .gitignore
 ├── .pre-commit-config.yaml
+├── GEMINI.md
 ├── GETTING_STARTED.md
 ├── Makefile
 ├── README.md

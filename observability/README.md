@@ -1,23 +1,33 @@
 # Observability Stack
 
-This directory groups the three observability pillars used by most production Kubernetes platforms:
+This folder contains metrics, logs, traces, and SLO assets for runtime operations.
 
-- Metrics: Prometheus and Alertmanager collect cluster and application health data, evaluate alerts, and drive Slack/PagerDuty notifications.
-- Logs: Loki stores application and cluster logs for correlation during incidents and post-incident review.
-- Traces: OpenTelemetry captures distributed request flow so teams can see where latency and failures are introduced.
+## Purpose
 
-Recommended installation order:
+Use `observability/` to establish production telemetry and actionable alerting.
 
-1. Prometheus first, because alerting and baseline cluster visibility should exist before layering on more telemetry.
-2. Loki second, so incident responders can pivot from alerts into logs without changing tools.
-3. Tempo third, to provide the trace storage backend that the OTel collector targets (the collector config exports to `otlp/tempo` by default).
-4. OpenTelemetry last, after metrics, logs, and trace storage are all stable.
+## What's Inside
 
-Sub-directories:
+- `prometheus/`: metrics collection, recording rules, and alerts.
+- `loki/`: centralized log aggregation patterns.
+- `tempo/`: trace storage and query patterns.
+- `otel/` and `opentelemetry/`: collector and instrumentation guidance.
 
-- [Prometheus](prometheus/README.md) for metrics, alerts, and Grafana dashboards.
-- [Loki](loki/README.md) for log aggregation guidance.
-- [Tempo](tempo/README.md) for distributed trace storage, Helm values, and Grafana datasource configuration.
-- [OpenTelemetry](otel/README.md) for traces and collector patterns.
+## Use This Component Alone
 
-In this repo's environment model, keep environment-specific differences in separate values or overlays instead of hardcoding them into shared manifests. Follow the same dev, staging, and production separation described in `docs/guides/environment-strategy.md`.
+- Deploy one observability pillar (metrics, logs, or traces).
+- Define SLO burn-rate alerts for one critical service.
+
+## Use This Component With Others
+
+- With `notifications/`: route alerts to incident channels.
+- With `docs/runbooks/`: connect alert responses to operational playbooks.
+- With `secops/`: correlate security events with telemetry.
+- With `finops/`: monitor cost and utilization anomalies.
+
+## Recommended Install Order
+
+1. Prometheus
+2. Loki
+3. Tempo
+4. OpenTelemetry collector and instrumentation
