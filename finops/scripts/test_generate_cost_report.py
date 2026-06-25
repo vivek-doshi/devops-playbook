@@ -65,7 +65,7 @@ class TestMonthToRange:
 class TestBuildReport:
     def _build(self, ns_costs=None):
         return build_report(
-            ns_costs or SAMPLE_NS_COSTS,
+            SAMPLE_NS_COSTS if ns_costs is None else ns_costs,
             SHARED_COSTS_DEFAULT,
             "prod-cluster",
             "aws",

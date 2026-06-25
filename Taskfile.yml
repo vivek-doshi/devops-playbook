@@ -11,11 +11,27 @@ vars:
   HELM_WEBAPP_CHART: cd/helm/webapp
   K8S_OVERLAYS: cd/kubernetes/_overlays
   TERRAFORM_DIR: terraform
+  PYTHON: '{{.PYTHON | default "python3"}}'
 
 requires:
   vars: []
 
 tasks:
+  validate:
+    desc: "Run the enterprise confidence gate for catalog, FinOps, and website"
+    cmds:
+      - task: python:deps
+      - task: catalog:validate
+      - task: finops:test
+      - task: website:build
+
+  python:deps:
+    desc: "Install Python dependencies needed by catalog and FinOps validation"
+    deps:
+      - _require:python
+    cmds:
+      - '{{.PYTHON}} -m pip install -r requirements-dev.txt'
+
   # ---------------------------------------------------------------------------
   # DOCKER
   # ---------------------------------------------------------------------------
@@ -257,16 +273,16 @@ tasks:
   catalog:validate:
     desc: "Validate the service catalog against the schema (strict mode, skip URL checks)"
     deps:
-      - _require:python
+      - python:deps
     cmds:
-      - python3 catalog/scripts/validate-catalog.py --strict --skip-url-check
+      - '{{.PYTHON}} catalog/scripts/validate-catalog.py --strict --skip-url-check'
 
   catalog:codeowners:
     desc: "Regenerate .github/CODEOWNERS from team ownership specs"
     deps:
       - _require:python
     cmds:
-      - python3 catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS
+      - '{{.PYTHON}} catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS'
 
   # ---------------------------------------------------------------------------
   # FINOPS
@@ -278,7 +294,7 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - python3 finops/scripts/analyze-rightsizing.py --all-namespaces
+      - '{{.PYTHON}} finops/scripts/analyze-rightsizing.py --all-namespaces'
 
   finops:optimize-pr:
     desc: "Generate a pull-request with rightsizing patches (memory reduction cap: 50%)"
@@ -286,14 +302,14 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - python3 finops/scripts/generate-optimization-pr.py --all-namespaces
+      - '{{.PYTHON}} finops/scripts/generate-optimization-pr.py --all-namespaces'
 
   finops:normalize-costs:
     desc: "Normalize cloud costs across AWS/Azure/GCP to a common unit"
     deps:
       - _require:python
     cmds:
-      - python3 finops/scripts/normalize-cloud-costs.py
+      - '{{.PYTHON}} finops/scripts/normalize-cloud-costs.py'
 
   finops:reserved-capacity:
     desc: "Produce reserved-capacity recommendations with risk scoring"
@@ -301,7 +317,19 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - python3 finops/scripts/reserved-capacity-advisor.py
+      - '{{.PYTHON}} finops/scripts/reserved-capacity-advisor.py'
+
+  finops:test:
+    desc: "Run FinOps unit tests"
+    deps:
+      - python:deps
+    cmds:
+      - '{{.PYTHON}} -m pytest finops/scripts -q'
+
+  website:build:
+    desc: "Build the interactive playbook website and generated index"
+    cmds:
+      - npm --prefix website run build
 
   # ---------------------------------------------------------------------------
   # SECURITY AND POLICY
@@ -320,7 +348,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - python3 secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json
+      - '{{.PYTHON}} secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json'
 
   security:slo-validate:
     desc: "Validate SLO YAML files are parseable and follow the slo:<service>:<metric>:<window> naming convention"
@@ -357,8 +385,8 @@ tasks:
   _require:python:
     internal: true
     preconditions:
-      - sh: command -v python3
-        msg: "'python3' is not on PATH — install Python 3: https://www.python.org/downloads/"
+      - sh: command -v {{.PYTHON}}
+        msg: "'{{.PYTHON}}' is not on PATH — install Python 3 or run with PYTHON=/path/to/python."
 
   _require:yq:
     internal: true

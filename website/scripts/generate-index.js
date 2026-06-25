@@ -12,6 +12,8 @@ const EXCLUDE_PATTERNS = [
   '.github',
   '.kiro',
   '.ai',
+  '.venv',
+  'venv',
   'dist',
   'website',
   'scripts',       // Internal utility scripts — not part of the public playbook content.
