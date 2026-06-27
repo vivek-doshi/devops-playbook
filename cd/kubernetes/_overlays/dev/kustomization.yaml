@@ -31,4 +31,4 @@ patches:
 
 images:
   - name: my-registry/my-app
-    newTag: dev-latest
+    newTag: v1.0.0-dev

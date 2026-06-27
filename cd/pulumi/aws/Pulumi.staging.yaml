@@ -1,0 +1,11 @@
+# TEMPLATE: Pulumi Stack Config — AWS Staging
+# WHEN TO USE: Staging configuration for AWS app-layer Pulumi deployment.
+# PREREQUISITES: Pulumi stack initialized and staging secrets configured with pulumi config set --secret.
+# MATURITY: Stable
+config:
+  aws:region: us-east-1
+  aws-ecs-fargate:containerPort: "3000"
+  aws-ecs-fargate:cpu: "256"
+  aws-ecs-fargate:memory: "512"
+  aws-ecs-fargate:desiredCount: "2"
+  aws-ecs-fargate:imageName: "my-org/my-app:1.0.0-rc1"

@@ -94,7 +94,7 @@ spec:
 
       containers:
         - name: migrate
-          image: my-registry/my-app:latest  # <-- CHANGE THIS: same image as deployment
+          image: my-registry/my-app:v1.0.0  # <-- CHANGE THIS: same image as deployment
           imagePullPolicy: Always
 
           # ── Pick ONE of the command examples below ──────────────────────

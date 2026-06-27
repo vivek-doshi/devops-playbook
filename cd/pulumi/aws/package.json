@@ -1,0 +1,19 @@
+{
+  "name": "pulumi-aws-ecs-fargate",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "preview": "pulumi preview",
+    "deploy": "pulumi up"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@types/node": "^22.10.2"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.140.0",
+    "@pulumi/aws": "^6.70.0",
+    "@pulumi/awsx": "^2.17.0"
+  }
+}

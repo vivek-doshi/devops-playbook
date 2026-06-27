@@ -2,7 +2,7 @@
 # TEMPLATE: GitHub Actions — Deploy to Azure AKS
 # WHEN TO USE: Deploying to Azure Kubernetes Service via OIDC
 # PREREQUISITES: AKS cluster, Azure AD credentials
-# SECRETS NEEDED: AZURE_CREDENTIALS
+# SECRETS NEEDED: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
 # WHAT TO CHANGE: Cluster name, resource group, namespace, image
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
 # MATURITY: Stable
@@ -25,6 +25,11 @@ env:
   # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   RESOURCE_GROUP: my-resource-group
   NAMESPACE: production
+  HEALTHCHECK_URL: https://app.example.com/health/ready
+
+concurrency:
+  group: deploy-azure-aks-production
+  cancel-in-progress: false
 
 # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
@@ -32,6 +37,10 @@ jobs:
     # Note 7: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    environment: production
 
     # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
@@ -42,7 +51,9 @@ jobs:
         uses: azure/login@v2
         # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Set AKS context
@@ -53,11 +64,81 @@ jobs:
           # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           cluster-name: ${{ env.CLUSTER_NAME }}
 
-      - name: Deploy with Helm
-        uses: azure/k8s-deploy@v4
+      - name: Deploy with Kustomize
+        run: |
+          kubectl apply -k cd/kubernetes/_overlays/prod
+          kubectl rollout status deployment/app -n ${{ env.NAMESPACE }} --timeout=5m
+
+      - name: Smoke test
+        run: |
+          for i in {1..12}; do
+            if curl -fsS "$HEALTHCHECK_URL" >/dev/null; then
+              echo "Smoke test passed"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Smoke test failed"
+          exit 1
+
+  rollback:
+    if: ${{ failure() }}
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          namespace: ${{ env.NAMESPACE }}
-          manifests: |
-            cd/kubernetes/_overlays/prod/kustomization.yaml
-          images: |
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+
+      - name: Roll back failed deployment
+        run: |
+          kubectl rollout undo deployment/app -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/app -n ${{ env.NAMESPACE }} --timeout=5m
+
+  notify-failure:
+    if: ${{ failure() }}
+    needs: [deploy, rollback]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on deployment failure
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: *${{ github.repository }}* deployment *failed*\n*Target:* `azure-aks`\n*Environment:* `production`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Run" },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

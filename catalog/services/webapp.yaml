@@ -1,0 +1,41 @@
+apiVersion: catalog/v1
+kind: Service
+metadata:
+  name: webapp
+  owner: platform-team
+  display_name: "Web Application"
+  description: "Helm-based web application service template for environment overlays and GitOps delivery."
+  lifecycle: stable
+
+spec:
+  contact: platform-team@example.com
+  oncall:
+    pagerduty_service: PPLAT01
+    slack_channel: "#platform-alerts"
+
+  namespaces:
+    - production/webapp
+    - staging/webapp
+    - dev/webapp
+
+  image: ghcr.io/example-org/webapp
+
+  dependencies:
+    - type: service
+      name: api-gateway
+
+  slo:
+    availability_target: 99.9
+    latency_target_ms: 500
+    definition_file: observability/prometheus/slos/my-service-availability-slo.yaml
+
+  runbook_url: https://kubernetes.io/docs/concepts/overview/
+  docs_url: https://confluence.example.com/platform/webapp
+
+  cost_center: engineering
+  environment: production
+
+  data_classification: confidential
+  compliance_frameworks:
+    - SOC2
+    - ISO27001

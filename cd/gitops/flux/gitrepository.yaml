@@ -1,0 +1,16 @@
+# ============================================================
+# TEMPLATE: Flux GitRepository — Source of Truth
+# WHEN TO USE: Define the Git source consumed by Flux Kustomizations and HelmReleases
+# PREREQUISITES: Flux installed and repository credentials configured if private
+# MATURITY: Stable
+# ============================================================
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: my-app-repo
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/my-org/gitops-repo.git           # <-- CHANGE THIS
+  ref:
+    branch: main

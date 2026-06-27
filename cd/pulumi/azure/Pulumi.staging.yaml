@@ -1,0 +1,9 @@
+# TEMPLATE: Pulumi Stack Config — Azure Staging
+# WHEN TO USE: Staging configuration for Azure app-layer Pulumi deployment.
+# PREREQUISITES: Pulumi stack initialized and staging secrets configured with pulumi config set --secret.
+# MATURITY: Stable
+config:
+  azure-native:location: eastus
+  azure-aks:nodeCount: "2"
+  azure-aks:nodeVmSize: Standard_D2s_v3
+  azure-aks:kubernetesVersion: "1.29"

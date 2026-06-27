@@ -1,6 +1,8 @@
 ﻿# ============================================================
 # TEMPLATE: Helm Values — Generic Web Application
 # WHEN TO USE: Default values for the webapp Helm chart
+# PREREQUISITES: Helm 3, Kubernetes 1.24+, and environment-specific overrides in values.<env>.yaml
+# MATURITY: Stable
 # WHAT TO CHANGE: Override with values.dev.yaml or values.prod.yaml
 # RELATED FILES: cd/helm/webapp/values.dev.yaml, cd/helm/webapp/values.prod.yaml
 # ============================================================
@@ -63,6 +65,20 @@ autoscaling:
   # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: ingress-nginx
+  ingressControllerPodLabel: ingress-nginx
+
+finops:
+  labels:
+    costCenter: engineering        # <-- CHANGE THIS: must match finops/config/budgets.yaml
+    environment: dev               # <-- CHANGE THIS: dev | staging | production
 
 env: {}
   # MY_VAR: my-value

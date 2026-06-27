@@ -44,7 +44,7 @@ spec:
       name: "{{path.basename}}"
     spec:
       # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      project: default
+      project: platform-apps
       source:
         # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         repoURL: https://github.com/my-org/gitops-repo.git

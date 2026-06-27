@@ -1,0 +1,107 @@
+# ============================================================
+# TEMPLATE: Helm Values — Generic Microservice
+# WHEN TO USE: Default values for the microservice Helm chart
+# PREREQUISITES: Helm 3, Kubernetes 1.24+, and environment-specific overrides in values.<env>.yaml
+# MATURITY: Stable
+# WHAT TO CHANGE: Override with values.dev.yaml or values.prod.yaml
+# RELATED FILES: cd/helm/microservice/values.dev.yaml, cd/helm/microservice/values.prod.yaml
+# ============================================================
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+
+image:
+  repository: my-registry/my-service                           # <-- CHANGE THIS
+  pullPolicy: IfNotPresent
+  tag: ""  # Overridden by CI with immutable tag
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: service.example.com
+  tls: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: ingress-nginx
+  ingressControllerPodLabel: ingress-nginx
+
+finops:
+  labels:
+    costCenter: engineering                                    # <-- CHANGE THIS
+    environment: dev                                           # <-- CHANGE THIS: dev | staging | production
+
+# Optional sidecars (for example OTel collector or service mesh proxies)
+sidecars:
+  enabled: true
+  containers:
+    - name: otel-collector
+      image: otel/opentelemetry-collector-contrib:0.106.1
+      imagePullPolicy: IfNotPresent
+      args:
+        - --config=/etc/otel/config.yaml
+      ports:
+        - name: otlp-grpc
+          containerPort: 4317
+          protocol: TCP
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
+
+messaging:
+  enabled: false
+  provider: kafka                                              # kafka | servicebus | rabbitmq
+  broker: ""                                                  # <-- CHANGE THIS
+  topic: ""                                                   # <-- CHANGE THIS
+
+serviceMesh:
+  enabled: false
+  mode: istio                                                  # istio | linkerd
+  podAnnotations: {}
+  traffic:
+    retries: 2
+    timeout: 5s
+
+env: {}
+secrets: {}
+
+probes:
+  liveness:
+    path: /health/live
+  readiness:
+    path: /health/ready

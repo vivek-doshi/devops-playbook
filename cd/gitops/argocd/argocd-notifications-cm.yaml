@@ -1,0 +1,30 @@
+# ============================================================
+# TEMPLATE: ArgoCD Notifications ConfigMap — Sync Failure Alerts
+# WHEN TO USE: Send Slack and PagerDuty notifications for failed sync/deploy events
+# PREREQUISITES: ArgoCD notifications controller installed and secrets configured
+# MATURITY: Stable
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.slack: |
+    token: $slack-token
+  service.pagerduty: |
+    apiKey: $pagerduty-api-key
+  template.app-sync-failed: |
+    message: |
+      Application {{.app.metadata.name}} sync failed in {{.app.spec.destination.namespace}}.
+      Project: {{.app.spec.project}}
+      Details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}
+  trigger.on-sync-failed: |
+    - when: app.status.operationState.phase in ['Error', 'Failed']
+      send: [app-sync-failed]
+  subscriptions: |
+    - recipients:
+      - slack:#platform-alerts
+      - pagerduty:platform-oncall
+      triggers:
+      - on-sync-failed
