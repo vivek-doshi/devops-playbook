@@ -5,6 +5,8 @@ metadata:
   # Note 2: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: {{ include "webapp.fullname" . }}
   labels:
+    app: {{ include "webapp.name" . }}
+    version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
     {{- include "webapp.labels" . | nindent 4 }}
 # Note 3: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 spec:
@@ -20,6 +22,8 @@ spec:
     metadata:
       # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
+        app: {{ include "webapp.name" . }}
+        version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
         {{- include "webapp.selectorLabels" . | nindent 8 }}
     spec:
       # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.

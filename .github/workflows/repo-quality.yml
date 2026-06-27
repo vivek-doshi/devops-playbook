@@ -19,8 +19,6 @@ env:
   KUBECONFORM_VERSION: 0.6.7
   CONFTEST_VERSION: 0.57.0
   HELM_VERSION: v3.15.2
-  LYCHEE_ACTION_SHA: 0f89f5f8c6f4f5c5d8c9f86f90a14e2d08fdf89d
-  SETUP_TERRAFORM_SHA: 5f89f5a5ac4090f4a6e6e7bce6fd3f2b6fbea8f2
 
 jobs:
   markdown-links:
@@ -31,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check markdown links
-        uses: lycheeverse/lychee-action@0f89f5f8c6f4f5c5d8c9f86f90a14e2d08fdf89d
+        uses: lycheeverse/lychee-action@v2.4.0
         with:
           fail: true
           args: >-
@@ -130,7 +128,12 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          charts=(cd/helm/*/)
+          charts=()
+          for dir in cd/helm/*/; do
+            if [ -f "${dir}Chart.yaml" ]; then
+              charts+=("${dir}")
+            fi
+          done
           if [ "${#charts[@]}" -eq 0 ]; then
             echo "No charts found under cd/helm/."
             exit 0
@@ -172,7 +175,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@5f89f5a5ac4090f4a6e6e7bce6fd3f2b6fbea8f2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.8
 

@@ -17,3 +17,4 @@ ignore: |
   .devcontainer/
   node_modules/
   .git/
+  cd/helm/*/templates/

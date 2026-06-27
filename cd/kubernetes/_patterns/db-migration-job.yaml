@@ -50,10 +50,6 @@ spec:
   # Hard cap: if migrations take > 10 minutes something is wrong.
   activeDeadlineSeconds: 600              # <-- CHANGE THIS
 
-  # Keep the last 3 succeeded and 1 failed Job for post-mortem.
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 1
-
   template:
     metadata:
       labels:
