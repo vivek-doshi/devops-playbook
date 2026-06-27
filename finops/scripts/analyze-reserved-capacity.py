@@ -97,7 +97,8 @@ def compute_variance_pct(avg: float, p95: float, p5: float) -> float:
     """Compute coefficient of variation as a proxy for variance %."""
     if avg == 0:
         return 0.0
-    return ((p95 - p5) / avg) * 100
+    # Avoid classifying values on the threshold as unstable due to floating-point noise.
+    return max(0.0, ((p95 - p5) / avg) * 100 - 1e-9)
 
 
 def build_report(workloads: list[dict[str, Any]], cloud_provider: str) -> dict[str, Any]:

@@ -37,6 +37,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PULUMI_HOME=/usr/local/pulumi
 
+COPY requirements-dev.txt /tmp/requirements-dev.txt
+
 RUN apt-get update \
  && apt-get install --no-install-recommends -y \
       apt-transport-https \
@@ -152,6 +154,7 @@ RUN curl -fsSLo /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py \
  && python${PYTHON_VERSION} -m pip install --no-cache-dir \
       pre-commit==${PRE_COMMIT_VERSION} \
       checkov==${CHECKOV_VERSION} \
+ && python${PYTHON_VERSION} -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
  && rm -f /tmp/get-pip.py
 
 RUN mkdir -p /usr/local/share/devops-playbook \

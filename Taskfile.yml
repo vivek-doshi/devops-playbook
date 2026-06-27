@@ -11,15 +11,37 @@ vars:
   HELM_WEBAPP_CHART: cd/helm/webapp
   K8S_OVERLAYS: cd/kubernetes/_overlays
   TERRAFORM_DIR: terraform
+  PYTHON: '{{.PYTHON | default "python3"}}'
 
 requires:
   vars: []
 
 tasks:
+  # What: Runs the main repository validation gate (Python deps, catalog validation, FinOps tests, website build).
+  # Run: task validate
+  validate:
+    desc: "Run the enterprise confidence gate for catalog, FinOps, and website"
+    cmds:
+      - task: python:deps
+      - task: catalog:validate
+      - task: finops:test
+      - task: website:build
+
+  # What: Installs Python development dependencies used by catalog and FinOps scripts.
+  # Run: task python:deps
+  python:deps:
+    desc: "Install Python dependencies needed by catalog and FinOps validation"
+    deps:
+      - _require:python
+    cmds:
+      - '{{.PYTHON}} -m pip install -r requirements-dev.txt'
+
   # ---------------------------------------------------------------------------
   # DOCKER
   # ---------------------------------------------------------------------------
 
+  # What: Builds a Docker image from a chosen Dockerfile and tags it.
+  # Run: task docker:build IMAGE=myapp:dev DOCKERFILE=docker/node/Dockerfile
   docker:build:
     desc: "Build a Docker image. Args: IMAGE=<name:tag> DOCKERFILE=<path>"
     requires:
@@ -29,6 +51,8 @@ tasks:
     cmds:
       - docker build -f "{{.DOCKERFILE}}" -t "{{.IMAGE}}" .
 
+  # What: Scans a local Docker image with Trivy and fails on HIGH/CRITICAL findings.
+  # Run: task docker:scan IMAGE=myapp:dev
   docker:scan:
     desc: "Scan a built image with Trivy. Args: IMAGE=<name:tag>"
     requires:
@@ -38,6 +62,8 @@ tasks:
     cmds:
       - trivy image --exit-code 1 --severity HIGH,CRITICAL "{{.IMAGE}}"
 
+  # What: Lints every Dockerfile in the repo using hadolint.
+  # Run: task docker:lint-dockerfiles
   docker:lint-dockerfiles:
     desc: "Run hadolint against every Dockerfile in the repository"
     deps:
@@ -53,6 +79,8 @@ tasks:
   # KUBERNETES
   # ---------------------------------------------------------------------------
 
+  # What: Applies Kubernetes manifests for the dev overlay using kustomize.
+  # Run: task k8s:apply-dev
   k8s:apply-dev:
     desc: "kubectl apply -k for the dev overlay"
     deps:
@@ -60,6 +88,8 @@ tasks:
     cmds:
       - kubectl apply -k {{.K8S_OVERLAYS}}/dev
 
+  # What: Applies Kubernetes manifests for the staging overlay using kustomize.
+  # Run: task k8s:apply-staging
   k8s:apply-staging:
     desc: "kubectl apply -k for the staging overlay"
     deps:
@@ -67,6 +97,8 @@ tasks:
     cmds:
       - kubectl apply -k {{.K8S_OVERLAYS}}/staging
 
+  # What: Applies Kubernetes manifests for the prod overlay (with confirmation prompt).
+  # Run: task k8s:apply-prod
   k8s:apply-prod:
     desc: "kubectl apply -k for the prod overlay (requires confirmation)"
     deps:
@@ -75,6 +107,8 @@ tasks:
     cmds:
       - kubectl apply -k {{.K8S_OVERLAYS}}/prod
 
+  # What: Shows Kubernetes diff for a selected overlay before apply.
+  # Run: task k8s:diff OVERLAY=dev
   k8s:diff:
     desc: "kubectl diff -k for an overlay. Args: OVERLAY=<dev|staging|prod>"
     requires:
@@ -84,6 +118,8 @@ tasks:
     cmds:
       - kubectl diff -k {{.K8S_OVERLAYS}}/{{.OVERLAY}}
 
+  # What: Waits for deployment/app rollout completion in a namespace.
+  # Run: task k8s:rollout-status NAMESPACE=dev
   k8s:rollout-status:
     desc: "Check rollout status for deployment/app. Args: NAMESPACE=<ns>"
     requires:
@@ -97,6 +133,8 @@ tasks:
   # TERRAFORM
   # ---------------------------------------------------------------------------
 
+  # What: Initializes Terraform in a selected module directory.
+  # Run: task tf:init MODULE=azure-aks
   tf:init:
     desc: "terraform init for a module. Args: MODULE=<path under terraform/>"
     requires:
@@ -107,6 +145,8 @@ tasks:
     cmds:
       - terraform init
 
+  # What: Creates a Terraform plan for a module/environment pair.
+  # Run: task tf:plan MODULE=azure-aks ENV=dev
   tf:plan:
     desc: "terraform plan for a module + env. Args: MODULE=<path> ENV=<dev|staging|prod>"
     requires:
@@ -117,6 +157,8 @@ tasks:
     cmds:
       - terraform plan -var-file="vars/{{.ENV}}.tfvars" -out="{{.ENV}}.tfplan"
 
+  # What: Applies an existing Terraform plan file for a module/environment pair.
+  # Run: task tf:apply MODULE=azure-aks ENV=dev
   tf:apply:
     desc: "terraform apply for a module + env (requires confirmation). Args: MODULE=<path> ENV=<dev|staging|prod>"
     requires:
@@ -128,6 +170,8 @@ tasks:
     cmds:
       - terraform apply "{{.ENV}}.tfplan"
 
+  # What: Runs terraform test in a selected module directory.
+  # Run: task tf:test MODULE=azure-aks
   tf:test:
     desc: "Run terraform test for a module. Args: MODULE=<path>"
     requires:
@@ -138,6 +182,8 @@ tasks:
     cmds:
       - terraform test
 
+  # What: Checks Terraform formatting recursively in terraform/.
+  # Run: task tf:fmt-check
   tf:fmt-check:
     desc: "Check Terraform formatting recursively across terraform/"
     deps:
@@ -149,6 +195,8 @@ tasks:
   # HELM
   # ---------------------------------------------------------------------------
 
+  # What: Runs helm lint against the webapp chart.
+  # Run: task helm:lint
   helm:lint:
     desc: "helm lint the webapp chart"
     deps:
@@ -156,6 +204,8 @@ tasks:
     cmds:
       - helm lint {{.HELM_WEBAPP_CHART}}
 
+  # What: Renders chart templates with dev values without installing.
+  # Run: task helm:template-dev
   helm:template-dev:
     desc: "Render the webapp chart with dev values"
     deps:
@@ -163,6 +213,8 @@ tasks:
     cmds:
       - helm template webapp {{.HELM_WEBAPP_CHART}} -f {{.HELM_WEBAPP_CHART}}/values.dev.yaml
 
+  # What: Shows Helm upgrade diff for a release/namespace using dev values.
+  # Run: task helm:diff RELEASE=webapp NAMESPACE=dev
   helm:diff:
     desc: "Show diff for a Helm release upgrade. Args: RELEASE=<name> NAMESPACE=<ns>"
     requires:
@@ -172,6 +224,8 @@ tasks:
     cmds:
       - helm diff upgrade --allow-unreleased {{.RELEASE}} {{.HELM_WEBAPP_CHART}} -n {{.NAMESPACE}} -f {{.HELM_WEBAPP_CHART}}/values.dev.yaml
 
+  # What: Installs the webapp chart into a namespace (default: dev).
+  # Run: task helm:install-dev NAMESPACE=dev
   helm:install-dev:
     desc: "Install the webapp chart into the dev namespace. Args: NAMESPACE=<ns>"
     vars:
@@ -181,6 +235,8 @@ tasks:
     cmds:
       - helm install webapp {{.HELM_WEBAPP_CHART}} -n {{.NAMESPACE}} --create-namespace -f {{.HELM_WEBAPP_CHART}}/values.dev.yaml
 
+  # What: Upgrades or installs the webapp chart in prod values (with confirmation).
+  # Run: task helm:upgrade-prod NAMESPACE=prod
   helm:upgrade-prod:
     desc: "Upgrade the webapp chart in prod (requires confirmation). Args: NAMESPACE=<ns>"
     vars:
@@ -195,6 +251,8 @@ tasks:
   # LOCAL
   # ---------------------------------------------------------------------------
 
+  # What: Creates a local kind Kubernetes cluster.
+  # Run: task local:kind-up
   local:kind-up:
     desc: "Create a local kind cluster"
     deps:
@@ -202,6 +260,8 @@ tasks:
     cmds:
       - bash local-dev/kind/setup.sh
 
+  # What: Deletes the local kind Kubernetes cluster.
+  # Run: task local:kind-down
   local:kind-down:
     desc: "Tear down the local kind cluster"
     deps:
@@ -209,6 +269,8 @@ tasks:
     cmds:
       - bash local-dev/kind/teardown.sh
 
+  # What: Loads a local Docker image into the kind cluster nodes.
+  # Run: task local:load-image IMAGE=myapp:dev
   local:load-image:
     desc: "Load a Docker image into the kind cluster. Args: IMAGE=<name:tag>"
     requires:
@@ -223,11 +285,15 @@ tasks:
   # QUALITY
   # ---------------------------------------------------------------------------
 
+  # What: Runs all configured pre-commit hooks on every file.
+  # Run: task quality:pre-commit-run
   quality:pre-commit-run:
     desc: "Run all pre-commit hooks against all files"
     cmds:
       - pre-commit run --all-files
 
+  # What: Executes Python, JavaScript, and Go linters in parallel via deps.
+  # Run: task quality:lint-all
   quality:lint-all:
     desc: "Run ruff, eslint, and golangci-lint in parallel"
     deps:
@@ -235,16 +301,22 @@ tasks:
       - quality:_lint-js
       - quality:_lint-go
 
+  # What: Runs ruff checks across the repository (internal helper).
+  # Run: task quality:_lint-python
   quality:_lint-python:
     internal: true
     cmds:
       - ruff check .
 
+  # What: Runs eslint for JS/TS files across the repository (internal helper).
+  # Run: task quality:_lint-js
   quality:_lint-js:
     internal: true
     cmds:
       - npx eslint . --ext .js,.ts,.jsx,.tsx
 
+  # What: Runs golangci-lint across Go packages (internal helper).
+  # Run: task quality:_lint-go
   quality:_lint-go:
     internal: true
     cmds:
@@ -254,59 +326,89 @@ tasks:
   # SERVICE CATALOG
   # ---------------------------------------------------------------------------
 
+  # What: Validates catalog data against schema in strict mode.
+  # Run: task catalog:validate
   catalog:validate:
     desc: "Validate the service catalog against the schema (strict mode, skip URL checks)"
     deps:
-      - _require:python
+      - python:deps
     cmds:
-      - python3 catalog/scripts/validate-catalog.py --strict --skip-url-check
+      - '{{.PYTHON}} catalog/scripts/validate-catalog.py --strict --skip-url-check'
 
+  # What: Regenerates .github/CODEOWNERS from catalog team ownership metadata.
+  # Run: task catalog:codeowners
   catalog:codeowners:
     desc: "Regenerate .github/CODEOWNERS from team ownership specs"
     deps:
       - _require:python
     cmds:
-      - python3 catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS
+      - '{{.PYTHON}} catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS'
 
   # ---------------------------------------------------------------------------
   # FINOPS
   # ---------------------------------------------------------------------------
 
+  # What: Analyzes Kubernetes pod request vs usage for rightsizing opportunities.
+  # Run: task finops:rightsizing
   finops:rightsizing:
     desc: "Analyse pod resource requests vs actual usage across all namespaces"
     deps:
       - _require:kubectl
       - _require:python
     cmds:
-      - python3 finops/scripts/analyze-rightsizing.py --all-namespaces
+      - '{{.PYTHON}} finops/scripts/analyze-rightsizing.py --all-namespaces'
 
+  # What: Generates optimization patches/PR artifacts with safety checks.
+  # Run: task finops:optimize-pr
   finops:optimize-pr:
     desc: "Generate a pull-request with rightsizing patches (memory reduction cap: 50%)"
     deps:
       - _require:kubectl
       - _require:python
     cmds:
-      - python3 finops/scripts/generate-optimization-pr.py --all-namespaces
+      - '{{.PYTHON}} finops/scripts/generate-optimization-pr.py --all-namespaces'
 
+  # What: Normalizes multi-cloud costs to a common unit for comparison.
+  # Run: task finops:normalize-costs
   finops:normalize-costs:
     desc: "Normalize cloud costs across AWS/Azure/GCP to a common unit"
     deps:
       - _require:python
     cmds:
-      - python3 finops/scripts/normalize-cloud-costs.py
+      - '{{.PYTHON}} finops/scripts/normalize-cloud-costs.py'
 
+  # What: Produces reserved-capacity recommendations with risk scoring.
+  # Run: task finops:reserved-capacity
   finops:reserved-capacity:
     desc: "Produce reserved-capacity recommendations with risk scoring"
     deps:
       - _require:kubectl
       - _require:python
     cmds:
-      - python3 finops/scripts/reserved-capacity-advisor.py
+      - '{{.PYTHON}} finops/scripts/reserved-capacity-advisor.py'
+
+  # What: Runs FinOps unit tests.
+  # Run: task finops:test
+  finops:test:
+    desc: "Run FinOps unit tests"
+    deps:
+      - python:deps
+    cmds:
+      - '{{.PYTHON}} -m pytest finops/scripts -q'
+
+  # What: Builds the website frontend and generated content index.
+  # Run: task website:build
+  website:build:
+    desc: "Build the interactive playbook website and generated index"
+    cmds:
+      - npm --prefix website run build
 
   # ---------------------------------------------------------------------------
   # SECURITY AND POLICY
   # ---------------------------------------------------------------------------
 
+  # What: Prints current Kyverno policy report summaries from the cluster.
+  # Run: task security:policy-report
   security:policy-report:
     desc: "Print Kyverno policy-report and cluster-policy-report summaries"
     deps:
@@ -315,13 +417,17 @@ tasks:
       - kubectl get policyreport --all-namespaces -o wide 2>/dev/null || true
       - kubectl get clusterpolicyreport --all-namespaces -o wide 2>/dev/null || true
 
+  # What: Generates compliance report JSON and fails below threshold.
+  # Run: task security:compliance-report
   security:compliance-report:
     desc: "Generate compliance report and fail if score is below 80%"
     deps:
       - _require:python
     cmds:
-      - python3 secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json
+      - '{{.PYTHON}} secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json'
 
+  # What: Validates SLO YAML parseability and recording-rule naming convention.
+  # Run: task security:slo-validate
   security:slo-validate:
     desc: "Validate SLO YAML files are parseable and follow the slo:<service>:<metric>:<window> naming convention"
     deps:
@@ -342,6 +448,8 @@ tasks:
   # RELEASE
   # ---------------------------------------------------------------------------
 
+  # What: Creates and pushes a signed annotated Git tag.
+  # Run: task release:tag VERSION=v1.2.3
   release:tag:
     desc: "Create and push a signed annotated Git tag. Args: VERSION=vX.Y.Z"
     requires:
@@ -354,42 +462,56 @@ tasks:
   # INTERNAL GUARDS
   # ---------------------------------------------------------------------------
 
+  # What: Checks that the configured Python executable exists (internal guard).
+  # Run: task _require:python
   _require:python:
     internal: true
     preconditions:
-      - sh: command -v python3
-        msg: "'python3' is not on PATH — install Python 3: https://www.python.org/downloads/"
+      - sh: command -v {{.PYTHON}}
+        msg: "'{{.PYTHON}}' is not on PATH — install Python 3 or run with PYTHON=/path/to/python."
 
+  # What: Checks that yq is installed and available on PATH (internal guard).
+  # Run: task _require:yq
   _require:yq:
     internal: true
     preconditions:
       - sh: command -v yq
         msg: "'yq' is not on PATH — install yq: https://github.com/mikefarah/yq#install"
 
+  # What: Checks that docker CLI is installed and available on PATH (internal guard).
+  # Run: task _require:docker
   _require:docker:
     internal: true
     preconditions:
       - sh: command -v docker
         msg: "'docker' is not on PATH — install Docker Desktop or the Docker CLI."
 
+  # What: Checks that kubectl is installed and available on PATH (internal guard).
+  # Run: task _require:kubectl
   _require:kubectl:
     internal: true
     preconditions:
       - sh: command -v kubectl
         msg: "'kubectl' is not on PATH — install kubectl: https://kubernetes.io/docs/tasks/tools/"
 
+  # What: Checks that helm is installed and available on PATH (internal guard).
+  # Run: task _require:helm
   _require:helm:
     internal: true
     preconditions:
       - sh: command -v helm
         msg: "'helm' is not on PATH — install Helm: https://helm.sh/docs/intro/install/"
 
+  # What: Checks that terraform is installed and available on PATH (internal guard).
+  # Run: task _require:terraform
   _require:terraform:
     internal: true
     preconditions:
       - sh: command -v terraform
         msg: "'terraform' is not on PATH — install Terraform: https://developer.hashicorp.com/terraform/install"
 
+  # What: Checks that kind is installed and available on PATH (internal guard).
+  # Run: task _require:kind
   _require:kind:
     internal: true
     preconditions:

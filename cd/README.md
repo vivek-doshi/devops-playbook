@@ -1,31 +1,36 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 # Continuous Deployment Templates
 
-Templates for deploying applications to various targets.
+This folder contains deployment patterns for Kubernetes, cloud targets, Helm, and GitOps workflows.
 
-<!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Structure
+## Purpose
 
-| Folder | Purpose |
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-|--------|---------|
-| `kubernetes/` | Raw Kubernetes manifests with Kustomize |
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `helm/` | Helm chart templates |
-| `targets/` | Cloud-specific deployment pipelines (AKS, EKS, GKE, App Service, ECS, Lambda, OpenShift) |
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `gitops/` | ArgoCD and Flux GitOps patterns |
+Use `cd/` to convert build artifacts into deployed runtime workloads with environment-specific controls.
 
-## Choosing a Deployment Strategy
+## What's Inside
 
-<!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Scenario | Recommendation |
-|----------|---------------|
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Full K8s control | `kubernetes/_base/` with Kustomize overlays |
-| Helm-managed releases | `helm/webapp/` |
-| Azure-native team | `targets/azure-aks/` |
-| AWS team | `targets/aws-eks/` or `targets/aws-ecs/` |
-| Serverless | `targets/aws-lambda/` |
-| GitOps | `gitops/argocd/` or `gitops/flux/` |
-| Red Hat OpenShift | `targets/openshift/` |
+- `kubernetes/`: Raw manifests and Kustomize base/overlay structure.
+- `helm/`: Chart-based deployment patterns.
+- `gitops/`: ArgoCD and Flux GitOps examples.
+- `targets/`: Cloud-specific deployment pipelines.
+- `fleet-overlays/`: Multi-cluster deployment overlays.
+- `pulumi/`: Pulumi-based deployment/provisioning examples.
+
+## Use This Component Alone
+
+- Deploy one workload to one target.
+- Evaluate one deployment strategy (Kustomize, Helm, or GitOps).
+
+## Use This Component With Others
+
+- With `ci/`: Trigger deployment after successful quality and security checks.
+- With `secrets/`: Inject runtime secrets safely.
+- With `policy/`: Enforce admission and static policy controls.
+- With `observability/` and `notifications/`: Route post-deploy alerts and runbooks.
+- With `terraform/`: Provision target infrastructure before deployment.
+
+## Quick Selection Guide
+
+- Kustomize-first: start in `kubernetes/`
+- Chart-first: start in `helm/`
+- Pull-based delivery: start in `gitops/`
+- Cloud pipeline deploy jobs: start in `targets/`

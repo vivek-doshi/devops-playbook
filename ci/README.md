@@ -1,33 +1,35 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 # CI Pipeline Templates
 
-Templates for each CI platform and technology combination.
+This folder contains CI templates across supported platforms and tech stacks.
 
-<!-- Note 2: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Platform Matrix
+## Purpose
 
-| Tech | GitHub Actions | GitLab CI | Azure Pipelines | Jenkins |
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-|------|---------------|-----------|-----------------|---------|
-| .NET | ✅ | ✅ | ✅ | ✅ |
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Angular | ✅ | — | ✅ | — |
-| React | ✅ | — | — | — |
-<!-- Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Python | ✅ | ✅ | ✅ | ✅ |
-| Java | ✅ | — | — | — |
+Use `ci/` to standardize build, test, lint, and artifact workflows before deployment.
 
-<!-- Note 6: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Choosing a Platform
+## What's Inside
 
-- **GitHub Actions**: Best for repos hosted on GitHub; generous free tier
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- **GitLab CI**: Best native option for GitLab repos; powerful include system
-- **Azure Pipelines**: Best for teams in the Microsoft ecosystem; tight AKS/ACR integration
-- **Jenkins**: When you need full control or have on-premise requirements
+- `github-actions/`: GitHub Actions workflows and shared components.
+- `gitlab-ci/`: GitLab CI pipelines and include templates.
+- `azure-pipelines/`: Azure Pipeline templates.
+- `jenkins/`: Jenkins declarative pipeline examples.
 
-## Shared Patterns
+## Use This Component Alone
 
-- [`github-actions/_shared/`](github-actions/_shared/) — Reusable GitHub Actions workflows
-- [`gitlab-ci/_includes/`](gitlab-ci/_includes/) — GitLab CI include templates
-- [`azure-pipelines/_templates/`](azure-pipelines/_templates/) — Azure YAML extends templates
+- Run build and test for one repository using one CI platform.
+- Establish baseline CI quality gates quickly.
+
+## Use This Component With Others
+
+- With `quality/`: Apply language quality baselines.
+- With `ci-security/`: Add shift-left security scanning.
+- With `cd/`: Promote artifacts to deployment workflows.
+- With `terraform/`: Add plan/apply automation.
+- With `catalog/`: Validate ownership metadata at PR time.
+
+## Typical Pipeline Order
+
+1. Checkout and dependency restore.
+2. Lint and test.
+3. Security scanning.
+4. Build and publish artifact.
+5. Trigger deployment stage or handoff.

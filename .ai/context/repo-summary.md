@@ -60,6 +60,12 @@ It provides reusable templates, guardrails, and runbooks for building, securing,
 	- `docs/guides/concepts.md`
 	- `docs/guides/conventional-commits.md`
 	- `docs/guides/onboarding.md`
+	- `docs/guides/devops-learning-path-intermediate.md`
 - Runbook and diagram indexes:
 	- `docs/runbooks/README.md`
 	- `docs/diagrams/README.md`
+
+## Onboarding And Component Documentation Baseline
+
+- `GETTING_STARTED.md` now serves as the primary scenario-to-template router and includes local setup, dev container guidance, major component intent, and golden path usage.
+- Top-level README coverage is maintained for all major platform components from `backup/` through `terraform/` (excluding `website/`), with purpose, standalone usage, and cross-component integration guidance.

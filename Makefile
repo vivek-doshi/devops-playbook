@@ -19,6 +19,8 @@ IMAGE_TAG    ?= dev-latest                        # <-- CHANGE THIS: local build
 COMPOSE_FILE ?= compose/python-postgres-redis/docker-compose.yml  # <-- CHANGE THIS
 K8S_OVERLAY  ?= cd/kubernetes/_overlays/dev      # <-- CHANGE THIS: overlay for local deploy
 CLUSTER_NAME ?= devops-playbook                  # must match local-dev/kind/kind-config.yaml
+PYTHON       ?= python3
+PIP          ?= $(PYTHON) -m pip
 
 # Script runner selection for cross-platform support.
 ifeq ($(OS),Windows_NT)
@@ -146,6 +148,29 @@ test:
 	@echo "  pytest -v"
 	@echo "  go test ./..."
 
+.PHONY: python-deps
+## python-deps: Install Python dependencies needed by catalog and FinOps validation
+python-deps:
+	@echo "$(BOLD)Installing Python validation dependencies...$(RESET)"
+	$(PIP) install -r requirements-dev.txt
+
+.PHONY: finops-test
+## finops-test: Run FinOps unit tests
+finops-test: python-deps
+	@echo "$(BOLD)Running FinOps unit tests...$(RESET)"
+	$(PYTHON) -m pytest finops/scripts -q
+
+.PHONY: website-build
+## website-build: Build the interactive playbook website and generated index
+website-build:
+	@echo "$(BOLD)Building website and generated file index...$(RESET)"
+	npm --prefix website run build
+
+.PHONY: validate
+## validate: Run the enterprise confidence gate for catalog, FinOps, and website
+validate: python-deps catalog-validate finops-test website-build
+	@echo "$(GREEN)Enterprise confidence validation passed.$(RESET)"
+
 # =============================================================================
 # KUBERNETES — local deploy via kustomize
 # =============================================================================
@@ -189,14 +214,14 @@ rollout-status:
 ## catalog-validate: Validate all service and team catalog entries (CI gate equivalent)
 catalog-validate:
 	@echo "$(BOLD)Validating service catalog...$(RESET)"
-	python3 catalog/scripts/validate-catalog.py --strict --skip-url-check
+	$(PYTHON) catalog/scripts/validate-catalog.py --strict --skip-url-check
 	@echo "$(GREEN)Catalog validation passed.$(RESET)"
 
 .PHONY: catalog-codeowners
 ## catalog-codeowners: Regenerate .github/CODEOWNERS from catalog team definitions
 catalog-codeowners:
 	@echo "$(BOLD)Regenerating .github/CODEOWNERS from catalog/teams/...$(RESET)"
-	python3 catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS
+	$(PYTHON) catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS
 	@echo "$(GREEN)CODEOWNERS updated.$(RESET)"
 
 # =============================================================================
@@ -207,25 +232,25 @@ catalog-codeowners:
 ## finops-rightsizing: Analyze CPU/memory rightsizing across all namespaces
 finops-rightsizing:
 	@echo "$(BOLD)Running rightsizing analysis (requires Kubecost access)...$(RESET)"
-	python3 finops/scripts/analyze-rightsizing.py --all-namespaces
+	$(PYTHON) finops/scripts/analyze-rightsizing.py --all-namespaces
 
 .PHONY: finops-optimize-pr
 ## finops-optimize-pr: Generate a draft optimization PR with rightsizing changes
 finops-optimize-pr:
 	@echo "$(BOLD)Generating optimization PR draft...$(RESET)"
-	python3 finops/scripts/generate-optimization-pr.py --all-namespaces
+	$(PYTHON) finops/scripts/generate-optimization-pr.py --all-namespaces
 
 .PHONY: finops-normalize-costs
 ## finops-normalize-costs: Normalize cross-cloud costs to a standard unit for comparison
 finops-normalize-costs:
 	@echo "$(BOLD)Normalizing cloud costs...$(RESET)"
-	python3 finops/scripts/normalize-cloud-costs.py
+	$(PYTHON) finops/scripts/normalize-cloud-costs.py
 
 .PHONY: finops-reserved-capacity
 ## finops-reserved-capacity: Evaluate reserved instance / savings plan recommendations
 finops-reserved-capacity:
 	@echo "$(BOLD)Running reserved capacity advisor...$(RESET)"
-	python3 finops/scripts/reserved-capacity-advisor.py
+	$(PYTHON) finops/scripts/reserved-capacity-advisor.py
 
 # =============================================================================
 # SECURITY AND POLICY
@@ -243,7 +268,7 @@ policy-report:
 ## compliance-report: Generate SOC 2 / CIS / ISO 27001 compliance evidence report
 compliance-report:
 	@echo "$(BOLD)Generating compliance report...$(RESET)"
-	python3 secops/compliance/scripts/generate-compliance-report.py \
+	$(PYTHON) secops/compliance/scripts/generate-compliance-report.py \
 		--fail-below 80 \
 		--output compliance-report.json
 	@echo "$(GREEN)Report written to compliance-report.json.$(RESET)"

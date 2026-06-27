@@ -1,49 +1,36 @@
-﻿<!-- Note 1: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 # Docker Templates
 
-Dockerfile templates for each supported technology stack.
+This folder contains production-oriented Dockerfile templates by technology stack.
 
-## Structure
+## Purpose
 
-<!-- Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| Folder | Content |
-|--------|---------|
-| `dotnet/` | ASP.NET Core API and worker Dockerfiles |
-<!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `angular/` | Angular multi-stage build with nginx |
-| `react/` | React multi-stage (prod) and dev hot-reload |
-| `python/` | Flask, FastAPI, Django Dockerfiles |
-<!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-| `node/` | Express and Next.js Dockerfiles |
-| `java/` | Spring Boot and Gradle Dockerfiles |
-| `_base/` | Teaching examples and security-hardened patterns |
+Use `docker/` to standardize image build patterns with secure defaults and predictable runtime behavior.
 
-<!-- Note 5: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Usage
+## What's Inside
 
-1. Copy the relevant Dockerfile to your project root
-2. Copy the `.dockerignore` to your project root
-<!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-3. Replace `<app-name>`, `<port>`, and other placeholders
-4. Build: `docker build -t my-app .`
+- `dotnet/`, `angular/`, `react/`, `python/`, `node/`, `java/`, `go/`, `ruby/`
+- `_base/`: shared and educational base patterns, including hardened examples
 
-## Best Practices Applied
+## Use This Component Alone
 
-<!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Multi-stage builds to minimize final image size
-- Non-root user in production images
-- `.dockerignore` to exclude dev artifacts
-<!-- Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Health checks defined
-- Layer caching optimized (dependencies before source code)
-- Pinned base image versions
+- Containerize one service quickly with stack-specific best practices.
+- Reuse multi-stage and non-root defaults without redesigning build logic.
 
-<!-- Note 9: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
-## Security Notes
+## Use This Component With Others
 
-See [`_base/security-hardened.Dockerfile`](_base/security-hardened.Dockerfile) for an example using:
-- Distroless base images
-<!-- Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- Non-root execution
-- Read-only filesystem
-- Dropped capabilities
+- With `ci/`: Build and publish artifacts in pipelines.
+- With `cd/`: Deploy images to Kubernetes, serverless, or platform targets.
+- With `ci-security/`: Scan images before promotion.
+- With `local-dev/` and `compose/`: Run and validate locally.
+
+## Quick Start
+
+1. Copy the relevant Dockerfile.
+2. Copy matching `.dockerignore`.
+3. Replace placeholders.
+4. Build and run locally.
+
+```bash
+docker build -t my-app:dev .
+docker run --rm -p 8080:8080 my-app:dev
+```

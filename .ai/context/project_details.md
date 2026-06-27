@@ -31,6 +31,13 @@ It provides copy-ready templates, policy guardrails, golden paths, and operation
 	- `docs/guides/secrets-management.md`
 	- `docs/guides/versioning-strategy.md`
 	- `docs/guides/concepts.md`
+	- `docs/guides/devops-learning-path-intermediate.md`
+
+## Onboarding And Navigation Surfaces
+
+- `GETTING_STARTED.md` is the scenario-first index that maps needs to templates, major components, and integration flow.
+- Top-level component README coverage is standardized for `backup/`, `catalog/`, `cd/`, `ci/`, `ci-security/`, `compose/`, `docker/`, `docs/`, `finops/`, `local-dev/`, `notifications/`, `observability/`, `policy/`, `quality/`, `scripts/`, `secops/`, `secrets/`, and `terraform/`.
+- `docs/guides/devops-learning-path-intermediate.md` provides a staged beginner-to-intermediate DevOps learning plan for engineers with programming and basic CI/CD experience.
 
 ## Target Audience
 
