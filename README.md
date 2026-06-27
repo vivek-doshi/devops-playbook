@@ -1,6 +1,8 @@
 
 # 🚀 CICD Reference — DevOps Playbook & Starter Repo
 
+[![Repo Quality Gate](https://github.com/YOUR-ORG/devops-playbook/actions/workflows/repo-quality.yml/badge.svg)](https://github.com/YOUR-ORG/devops-playbook/actions/workflows/repo-quality.yml)
+
 > **A battle-tested, production-grade DevOps playbook and starter repository for modern cloud-native teams.**
 >
 > Built for organizations and teams who want a solid, opinionated starting point — not another hour of Googling. Copy-paste, adapt, and scale with confidence.

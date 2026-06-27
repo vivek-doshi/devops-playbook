@@ -1,0 +1,7 @@
+# Exception registry for policy and quality-gate waivers.
+# Entries are reviewed in PR and consumed by compliance evidence collection.
+
+version: 1
+lastReviewed: 2026-06-27
+owner: Platform team
+exceptions: []
