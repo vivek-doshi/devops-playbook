@@ -1,0 +1,39 @@
+# ============================================================
+# TEMPLATE: Docker Compose — .NET API + Angular Frontend
+# WHEN TO USE: Local development for a .NET backend with Angular UI
+# PREREQUISITES: Docker and Docker Compose v2+
+# SECRETS NEEDED: None (add env vars if your app needs them)
+# RELATED FILES: docker/dotnet/Dockerfile.api, docker/angular/Dockerfile
+# MATURITY: Stable
+# ============================================================
+
+services:
+  dotnet-api:
+    build:
+      context: ../../
+      dockerfile: docker/dotnet/Dockerfile.api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    ports:
+      - "5000:8080"
+    networks:
+      - app-net
+
+  angular-frontend:
+    build:
+      context: ../../
+      dockerfile: docker/angular/Dockerfile
+    environment:
+      # Use this in Angular runtime config to call backend from container network.
+      - DOTNET_API_URL=http://dotnet-api:8080
+    depends_on:
+      - dotnet-api
+    ports:
+      - "4200:80"
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge

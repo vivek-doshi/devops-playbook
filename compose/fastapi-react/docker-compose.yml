@@ -1,0 +1,36 @@
+# ============================================================
+# TEMPLATE: Docker Compose — FastAPI + React Frontend
+# WHEN TO USE: Local development for a FastAPI backend with React UI
+# PREREQUISITES: Docker and Docker Compose v2+
+# SECRETS NEEDED: None (add env vars if your app needs them)
+# RELATED FILES: docker/python/Dockerfile.fastapi, docker/react/Dockerfile
+# MATURITY: Stable
+# ============================================================
+
+services:
+  fastapi-api:
+    build:
+      context: ../../
+      dockerfile: docker/python/Dockerfile.fastapi
+    ports:
+      - "8000:8000"
+    networks:
+      - app-net
+
+  react-frontend:
+    build:
+      context: ../../
+      dockerfile: docker/react/Dockerfile
+    environment:
+      # Use this in React runtime config to call backend from container network.
+      - FASTAPI_BASE_URL=http://fastapi-api:8000
+    depends_on:
+      - fastapi-api
+    ports:
+      - "3000:80"
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
