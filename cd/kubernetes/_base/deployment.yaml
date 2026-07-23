@@ -6,6 +6,7 @@ metadata:
   name: app
   labels:
     app: app
+    version: "1.0.0"
 # Note 3: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 spec:
   replicas: 2
@@ -25,6 +26,7 @@ spec:
       # Note 7: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
         app: app
+        version: "1.0.0"
     spec:
       # Security: run as non-root
       # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.

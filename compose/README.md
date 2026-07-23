@@ -9,7 +9,9 @@ Use `compose/` when you need fast local feedback with realistic service dependen
 ## What's Inside
 
 - `dotnet-sqlserver/`: .NET API with SQL Server.
+- `dotnet-angular/`: .NET API with Angular frontend.
 - `python-postgres-redis/`: Python service with PostgreSQL and Redis.
+- `fastapi-react/`: FastAPI backend with React frontend.
 - `java-postgres/`: Java service with PostgreSQL.
 - `microservices-example/`: Multi-service composition pattern.
 - `_templates/`: Base annotated compose template.

@@ -23,7 +23,7 @@ jobs:
     # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Node.js
