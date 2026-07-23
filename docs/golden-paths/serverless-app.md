@@ -70,7 +70,7 @@ docker compose -f compose/python-postgres-redis/docker-compose.yml up
 make hooks
 ```
 
-Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)  
+Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)
 Details: [docs/guides/pre-commit-setup.md](../guides/pre-commit-setup.md)
 
 ---
@@ -115,7 +115,7 @@ terraform init
 terraform apply
 ```
 
-Provisions: Lambda function, IAM role with least-privilege policy, API Gateway or event source, CloudWatch log group.  
+Provisions: Lambda function, IAM role with least-privilege policy, API Gateway or event source, CloudWatch log group.
 Files: [`terraform/aws-lambda/main.tf`](../../terraform/aws-lambda/main.tf) · [`variables.tf`](../../terraform/aws-lambda/variables.tf)
 
 ### GCP Cloud Run
@@ -143,7 +143,7 @@ Do not hardcode credentials. Use environment variables sourced from your cloud's
 | GCP | Cloud Run reads from Secret Manager via Workload Identity |
 | CI/CD | OIDC federation — no long-lived keys stored as CI secrets |
 
-OIDC setup guide: [docs/guides/github-actions-oidc.md](../guides/github-actions-oidc.md)  
+OIDC setup guide: [docs/guides/github-actions-oidc.md](../guides/github-actions-oidc.md)
 Secrets strategy: [docs/guides/secrets-management.md](../guides/secrets-management.md)
 
 ---
@@ -247,7 +247,7 @@ Infracost setup: [`finops/docs/infracost-integration.md`](../../finops/docs/infr
 
 ### FinOps PR Checklist
 
-Include the FinOps checklist in your PR:  
+Include the FinOps checklist in your PR:
 [`finops/templates/pr-checklist.md`](../../finops/templates/pr-checklist.md)
 
 ---

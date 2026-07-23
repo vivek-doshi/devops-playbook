@@ -107,8 +107,12 @@ class TestSavingsCalculation:
     def test_higher_discount_provider_higher_savings(self):
         workloads = [make_workload(cpu_avg=2.0, cpu_p95=2.1, cpu_p5=1.9)]
         # GCP 1yr = 25%, AWS 1yr no-upfront = 30%
-        savings_gcp = build_report(workloads, "gcp")["summary"]["total_potential_annual_savings_usd"]
-        savings_aws = build_report(workloads, "aws")["summary"]["total_potential_annual_savings_usd"]
+        savings_gcp = build_report(workloads, "gcp")["summary"][
+            "total_potential_annual_savings_usd"
+        ]
+        savings_aws = build_report(workloads, "aws")["summary"][
+            "total_potential_annual_savings_usd"
+        ]
         assert savings_aws >= savings_gcp
 
     def test_annual_savings_equals_monthly_times_12(self):

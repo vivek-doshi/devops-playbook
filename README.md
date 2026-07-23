@@ -51,7 +51,7 @@ It provides:
 
 
 > **Start here:** Pick your [golden path](docs/golden-paths/) and follow it step-by-step. Each path links directly to the files you need to copy or edit.
-> 
+>
 > For local GPU experimentation and fine-tuning, use the dedicated CUDA devcontainer at [.devcontainer/gpu/devcontainer.json](.devcontainer/gpu/devcontainer.json).
 
 ---
@@ -281,9 +281,9 @@ metadata:
     finops.org/environment: "production"    # dev | staging | production
 ```
 
-> 📖 **Full FinOps documentation:** [finops/README.md](finops/README.md)  
-> 🏷️ **Cost tagging schema:** [finops/docs/cost-tagging-schema.md](finops/docs/cost-tagging-schema.md)  
-> 🚀 **Installation guide:** [finops/docs/installation.md](finops/docs/installation.md)  
+> 📖 **Full FinOps documentation:** [finops/README.md](finops/README.md)
+> 🏷️ **Cost tagging schema:** [finops/docs/cost-tagging-schema.md](finops/docs/cost-tagging-schema.md)
+> 🚀 **Installation guide:** [finops/docs/installation.md](finops/docs/installation.md)
 > 🔍 **Investigate a cost spike:** [finops/docs/runbooks/investigate-cost-spike.md](finops/docs/runbooks/investigate-cost-spike.md)
 
 ---

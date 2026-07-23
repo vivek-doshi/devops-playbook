@@ -27,7 +27,7 @@ rules:
   # ============================================================================
   # EXCLUDE RULES - Reduce log volume by excluding noisy operations
   # ============================================================================
-  
+
   # Exclude system component requests to reduce noise (Requirement 18.8)
   # System components like kube-proxy, kube-scheduler generate high-volume routine requests
   - level: None

@@ -59,7 +59,10 @@ def ensure_base_deployment_has_app_label() -> tuple[bool, str]:
     text = BASE_DEPLOYMENT_FILE.read_text(encoding="utf-8")
     if "labels:" in text and "app:" in text:
         return True, ""
-    return False, "ERROR: cd/kubernetes/_base/deployment.yaml does not define required app label pattern"
+    return (
+        False,
+        "ERROR: cd/kubernetes/_base/deployment.yaml does not define required app label pattern",
+    )
 
 
 def _require_string(obj: dict[str, Any], key_path: list[str], errors: list[str]) -> str:
@@ -112,9 +115,15 @@ def validate_service(
     _require_string(data, ["spec", "data_classification"], errors)
 
     oncall = spec.get("oncall", {}) if isinstance(spec.get("oncall"), dict) else {}
-    if not isinstance(oncall.get("pagerduty_service"), str) or not oncall.get("pagerduty_service", "").strip():
+    if (
+        not isinstance(oncall.get("pagerduty_service"), str)
+        or not oncall.get("pagerduty_service", "").strip()
+    ):
         errors.append("ERROR: spec.oncall.pagerduty_service is required")
-    if not isinstance(oncall.get("slack_channel"), str) or not oncall.get("slack_channel", "").strip():
+    if (
+        not isinstance(oncall.get("slack_channel"), str)
+        or not oncall.get("slack_channel", "").strip()
+    ):
         errors.append("ERROR: spec.oncall.slack_channel is required")
 
     namespaces = spec.get("namespaces", [])
@@ -123,7 +132,9 @@ def validate_service(
     else:
         for item in namespaces:
             if not isinstance(item, str) or "/" not in item:
-                errors.append(f"ERROR: namespace entry '{item}' must match <namespace>/<deployment-name>")
+                errors.append(
+                    f"ERROR: namespace entry '{item}' must match <namespace>/<deployment-name>"
+                )
                 continue
             _, deployment_name = item.split("/", 1)
             if metadata_name and deployment_name != metadata_name:
@@ -133,9 +144,7 @@ def validate_service(
 
     cost_center = spec.get("cost_center")
     if isinstance(cost_center, str) and cost_center not in cost_centers:
-        errors.append(
-            f"ERROR: cost_center '{cost_center}' not found in finops/config/budgets.yaml"
-        )
+        errors.append(f"ERROR: cost_center '{cost_center}' not found in finops/config/budgets.yaml")
 
     compliance_frameworks = spec.get("compliance_frameworks", [])
     if not isinstance(compliance_frameworks, list):
@@ -143,7 +152,11 @@ def validate_service(
         compliance_frameworks = []
 
     classification = spec.get("data_classification")
-    if lifecycle == "stable" and classification == "confidential" and "SOC2" not in compliance_frameworks:
+    if (
+        lifecycle == "stable"
+        and classification == "confidential"
+        and "SOC2" not in compliance_frameworks
+    ):
         errors.append(
             "ERROR: stable confidential services must include SOC2 in spec.compliance_frameworks"
         )

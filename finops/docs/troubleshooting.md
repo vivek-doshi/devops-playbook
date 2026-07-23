@@ -1,6 +1,6 @@
 # FinOps Troubleshooting Guide
 
-> **Audience**: Platform team  
+> **Audience**: Platform team
 > **Purpose**: Diagnose and resolve common FinOps component failures
 
 ---

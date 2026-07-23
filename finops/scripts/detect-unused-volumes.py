@@ -27,6 +27,7 @@ def fetch_persistent_volumes() -> list[dict[str, Any]]:
     """Fetch PVs from Kubernetes API."""
     try:
         from kubernetes import client, config  # noqa: PLC0415
+
         config.load_kube_config()
         v1 = client.CoreV1Api()
         pvs = v1.list_persistent_volume()
@@ -71,7 +72,11 @@ def _mock_pvs() -> list[dict[str, Any]]:
         },
         {
             "metadata": {"name": "pv-orphan-004", "creation_timestamp": "2024-01-01T00:00:00Z"},
-            "spec": {"capacity": {"storage": "200Gi"}, "storage_class_name": "gp3", "claim_ref": None},
+            "spec": {
+                "capacity": {"storage": "200Gi"},
+                "storage_class_name": "gp3",
+                "claim_ref": None,
+            },
             "status": {"phase": "Available"},
             "_last_access_estimate": None,
         },
@@ -91,7 +96,7 @@ def parse_storage_gib(storage_str: str) -> float:
         return float(s[:-2]) / 1024
     elif s.endswith("G"):
         return float(s[:-1]) * (1000 / 1024) ** 3
-    return float(s) / (1024 ** 3)
+    return float(s) / (1024**3)
 
 
 def is_likely_unused(pv: dict[str, Any], unused_days: int) -> tuple[bool, str | None]:
@@ -131,21 +136,23 @@ def build_report(pvs: list[dict[str, Any]], unused_days: int) -> dict[str, Any]:
 
         claim_ref = spec.get("claim_ref") or {}
 
-        unused.append({
-            "volume_name": meta.get("name", "unknown"),
-            "namespace": claim_ref.get("namespace", "unbound"),
-            "pvc_name": claim_ref.get("name", "unbound"),
-            "storage_class": spec.get("storage_class_name", "unknown"),
-            "size_gib": size_gib,
-            "phase": pv.get("status", {}).get("phase", "Unknown"),
-            "last_access": last_access,
-            "monthly_cost_usd": round(monthly_cost, 2),
-            "recommended_action": (
-                "Delete PVC and PV (ensure data backed up first)"
-                if claim_ref.get("name")
-                else "Delete orphaned PV"
-            ),
-        })
+        unused.append(
+            {
+                "volume_name": meta.get("name", "unknown"),
+                "namespace": claim_ref.get("namespace", "unbound"),
+                "pvc_name": claim_ref.get("name", "unbound"),
+                "storage_class": spec.get("storage_class_name", "unknown"),
+                "size_gib": size_gib,
+                "phase": pv.get("status", {}).get("phase", "Unknown"),
+                "last_access": last_access,
+                "monthly_cost_usd": round(monthly_cost, 2),
+                "recommended_action": (
+                    "Delete PVC and PV (ensure data backed up first)"
+                    if claim_ref.get("name")
+                    else "Delete orphaned PV"
+                ),
+            }
+        )
 
     unused.sort(key=lambda x: x["monthly_cost_usd"], reverse=True)
     total_waste = sum(v["monthly_cost_usd"] for v in unused)
@@ -168,8 +175,12 @@ def build_report(pvs: list[dict[str, Any]], unused_days: int) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Detect unused PersistentVolumes")
-    parser.add_argument("--days", type=int, default=DEFAULT_UNUSED_DAYS,
-                        help="Days without access to consider a volume unused")
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=DEFAULT_UNUSED_DAYS,
+        help="Days without access to consider a volume unused",
+    )
     parser.add_argument("--format", choices=["text", "json"], default="text")
     parser.add_argument("--output", "-o")
     args = parser.parse_args()

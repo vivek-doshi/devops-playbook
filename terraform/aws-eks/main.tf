@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform — Amazon Elastic Kubernetes Service (EKS)
 # WHEN TO USE: Provisioning a production-ready EKS cluster on AWS
 # PREREQUISITES: AWS account, AWS CLI authenticated
@@ -18,7 +18,7 @@ terraform {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/aws"
       version = "~> 5.31.0" # <-- CHANGE THIS: pin to latest stable
-    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
 
@@ -30,7 +30,7 @@ terraform {
   #   dynamodb_table = "terraform-locks"
   #   encrypt        = true
   # }
-# Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "aws" {
@@ -41,7 +41,7 @@ provider "aws" {
     # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     tags = local.common_tags
   }
-# Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
@@ -52,52 +52,52 @@ resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  enable_dns_support   = true
+  enable_dns_support = true
 
   tags = {
     # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     Name = "vpc-${var.project}-${var.environment}"
   }
-# Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # Public subnets (for load balancers)
 resource "aws_subnet" "public" {
   # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  count                   = length(var.availability_zones)
-  vpc_id                  = aws_vpc.main.id
+  count  = length(var.availability_zones)
+  vpc_id = aws_vpc.main.id
   # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
-  availability_zone       = var.availability_zones[count.index]
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index)
+  availability_zone = var.availability_zones[count.index]
   # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   map_public_ip_on_launch = true
 
   tags = {
     # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-    Name                                        = "snet-public-${var.availability_zones[count.index]}"
-    "kubernetes.io/role/elb"                    = "1"
+    Name                     = "snet-public-${var.availability_zones[count.index]}"
+    "kubernetes.io/role/elb" = "1"
     # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
   }
-# Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # Private subnets (for EKS nodes)
 resource "aws_subnet" "private" {
   # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  count             = length(var.availability_zones)
-  vpc_id            = aws_vpc.main.id
+  count  = length(var.availability_zones)
+  vpc_id = aws_vpc.main.id
   # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
   availability_zone = var.availability_zones[count.index]
 
   # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tags = {
-    Name                                        = "snet-private-${var.availability_zones[count.index]}"
+    Name = "snet-private-${var.availability_zones[count.index]}"
     # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/role/internal-elb"             = "1"
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-  # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 }
 
@@ -109,7 +109,7 @@ resource "aws_internet_gateway" "main" {
   # Note 25: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tags = {
     Name = "igw-${var.project}-${var.environment}"
-  # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 26: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 }
 
@@ -121,7 +121,7 @@ resource "aws_eip" "nat" {
   # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tags = {
     Name = "eip-nat-${var.project}-${var.environment}"
-  # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 }
 
@@ -130,7 +130,7 @@ resource "aws_eip" "nat" {
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
   # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  subnet_id     = aws_subnet.public[0].id
+  subnet_id = aws_subnet.public[0].id
 
   tags = {
     # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -156,7 +156,7 @@ resource "aws_route_table" "public" {
   # Note 37: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tags = {
     Name = "rt-public-${var.project}-${var.environment}"
-  # Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 }
 
@@ -166,7 +166,7 @@ resource "aws_route_table" "private" {
 
   # Note 40: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   route {
-    cidr_block     = "0.0.0.0/0"
+    cidr_block = "0.0.0.0/0"
     # Note 41: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     nat_gateway_id = aws_nat_gateway.main.id
   }
@@ -174,23 +174,23 @@ resource "aws_route_table" "private" {
   # Note 42: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   tags = {
     Name = "rt-private-${var.project}-${var.environment}"
-  # Note 43: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 43: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 }
 
 # Note 44: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "aws_route_table_association" "public" {
-  count          = length(var.availability_zones)
+  count = length(var.availability_zones)
   # Note 45: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
-# Note 46: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 46: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 resource "aws_route_table_association" "private" {
   # Note 47: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  count          = length(var.availability_zones)
-  subnet_id      = aws_subnet.private[count.index].id
+  count     = length(var.availability_zones)
+  subnet_id = aws_subnet.private[count.index].id
   # Note 48: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   route_table_id = aws_route_table.private.id
 }
@@ -200,7 +200,7 @@ resource "aws_route_table_association" "private" {
 # ---------------------------------------------
 # Note 49: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "aws_ecr_repository" "main" {
-  name                 = "${var.project}-${var.environment}"
+  name = "${var.project}-${var.environment}"
   # Note 50: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image_tag_mutability = "IMMUTABLE"
   force_delete         = false
@@ -208,14 +208,14 @@ resource "aws_ecr_repository" "main" {
   # Note 51: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   image_scanning_configuration {
     scan_on_push = true # Automatically scan images for CVEs
-  # Note 52: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 52: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 
   encryption_configuration {
     # Note 53: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     encryption_type = "AES256"
   }
-# Note 54: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 54: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
@@ -235,23 +235,23 @@ resource "aws_iam_role" "eks_cluster" {
       # Note 58: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       Principal = {
         Service = "eks.amazonaws.com"
-      # Note 59: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+        # Note 59: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       }
     }]
-  # Note 60: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 60: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   })
 }
 
 # Note 61: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  role       = aws_iam_role.eks_cluster.name
+  role = aws_iam_role.eks_cluster.name
   # Note 62: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
 # Note 63: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
-  role       = aws_iam_role.eks_cluster.name
+  role = aws_iam_role.eks_cluster.name
   # Note 64: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
 }
@@ -275,31 +275,31 @@ resource "aws_iam_role" "eks_nodes" {
         # Note 69: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         Service = "ec2.amazonaws.com"
       }
-    # Note 70: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 70: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }]
   })
-# Note 71: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 71: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
   # Note 72: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   role       = aws_iam_role.eks_nodes.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-# Note 73: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 73: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
   # Note 74: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   role       = aws_iam_role.eks_nodes.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-# Note 75: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 75: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 resource "aws_iam_role_policy_attachment" "ecr_read_only" {
   # Note 76: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   role       = aws_iam_role.eks_nodes.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-# Note 77: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 77: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
@@ -307,8 +307,8 @@ resource "aws_iam_role_policy_attachment" "ecr_read_only" {
 # ---------------------------------------------
 resource "aws_eks_cluster" "main" {
   # Note 78: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  name     = local.cluster_name
-  version  = var.kubernetes_version
+  name    = local.cluster_name
+  version = var.kubernetes_version
   # Note 79: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   role_arn = aws_iam_role.eks_cluster.arn
 

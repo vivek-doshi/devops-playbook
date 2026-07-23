@@ -66,7 +66,7 @@ docker compose -f compose/microservices-example/docker-compose.yml up
 make hooks
 ```
 
-Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)  
+Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)
 Details: [docs/guides/pre-commit-setup.md](../guides/pre-commit-setup.md)
 
 ---
@@ -158,7 +158,7 @@ terraform init
 terraform apply
 ```
 
-Provisions: App Service Plan, Web App (container), Application Insights.  
+Provisions: App Service Plan, Web App (container), Application Insights.
 Files: [`terraform/azure-app-service/main.tf`](../../terraform/azure-app-service/main.tf) · [`variables.tf`](../../terraform/azure-app-service/variables.tf)
 
 ---
@@ -180,7 +180,7 @@ The workflow:
 3. Runs a smoke test (HTTP 200 on `/`)
 4. Notifies Slack
 
-Authentication uses OIDC (no secrets stored in GitHub):  
+Authentication uses OIDC (no secrets stored in GitHub):
 Guide: [docs/guides/github-actions-oidc.md](../guides/github-actions-oidc.md)
 
 ---
@@ -193,7 +193,7 @@ Guide: [docs/guides/github-actions-oidc.md](../guides/github-actions-oidc.md)
 | staging | PR merged to `release/*` | Git SHA |
 | production | Manual approval in GitHub Actions environment | Same SHA as staging |
 
-Configure environment protection rules (required reviewers, deployment branches):  
+Configure environment protection rules (required reviewers, deployment branches):
 Guide: [`ci/github-actions/_shared/environment-protection.md`](../../ci/github-actions/_shared/environment-protection.md)
 
 ---

@@ -135,7 +135,7 @@ Create an IAM policy that grants read access to CUR data and Cost Explorer API:
    ```
 
 2. **Create IAM role with trust policy**:
-   
+
    Create a file `trust-policy.json`:
    ```json
    {
@@ -201,7 +201,7 @@ kubecostProductConfigs:
   athenaRegion: "us-east-1"
   athenaDatabase: "athenacurcfn_kubecost_cur"
   athenaTable: "kubecost_cur"
-  
+
 serviceAccount:
   create: true
   annotations:
@@ -216,7 +216,7 @@ opencost:
     aws:
       access_key_id: ""  # Leave empty when using IRSA
       secret_access_key: ""  # Leave empty when using IRSA
-      
+
   serviceAccount:
     create: true
     annotations:
@@ -336,7 +336,7 @@ kubecostProductConfigs:
   azureTenantID: "YOUR_TENANT_ID"
   azureClientPassword: "YOUR_CLIENT_SECRET"
   azureOfferDurableID: "MS-AZR-0003P"  # Pay-As-You-Go (adjust for your offer type)
-  
+
 # Alternative: Use existing secret
 kubecostProductConfigs:
   azureSubscriptionID: "YOUR_SUBSCRIPTION_ID"
@@ -354,7 +354,7 @@ opencost:
       client_id: "YOUR_CLIENT_ID"
       client_secret: "YOUR_CLIENT_SECRET"
       tenant_id: "YOUR_TENANT_ID"
-      
+
 # Alternative: Use existing secret
 opencost:
   exporter:
@@ -378,7 +378,7 @@ For enhanced security, use Azure Managed Identity instead of service principal:
 3. **Assign Cost Management Reader role**:
    ```bash
    IDENTITY_PRINCIPAL_ID=$(az identity show --name kubecost-identity --resource-group your-rg --query principalId -o tsv)
-   
+
    az role assignment create \
      --assignee $IDENTITY_PRINCIPAL_ID \
      --role "Cost Management Reader" \
@@ -389,11 +389,11 @@ For enhanced security, use Azure Managed Identity instead of service principal:
    ```bash
    # Install AAD Pod Identity (if not already installed)
    kubectl apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
-   
+
    # Create AzureIdentity
    IDENTITY_CLIENT_ID=$(az identity show --name kubecost-identity --resource-group your-rg --query clientId -o tsv)
    IDENTITY_RESOURCE_ID=$(az identity show --name kubecost-identity --resource-group your-rg --query id -o tsv)
-   
+
    cat <<EOF | kubectl apply -f -
    apiVersion: "aadpodidentity.k8s.io/v1"
    kind: AzureIdentity
@@ -532,7 +532,7 @@ includedPermissions:
   - bigquery.tables.getData
   - bigquery.tables.list
   - bigquery.jobs.create
-  
+
   # Compute permissions
   - compute.instances.list
   - compute.instances.get
@@ -540,7 +540,7 @@ includedPermissions:
   - compute.disks.get
   - compute.zones.list
   - compute.regions.list
-  
+
   # GKE permissions
   - container.clusters.get
   - container.clusters.list
@@ -580,7 +580,7 @@ kubecostProductConfigs:
   gcpProjectID: "YOUR_GCP_PROJECT_ID"
   gcpBillingDataDataset: "billing_export.gcp_billing_export_v1_XXXXXX"  # Replace with your table name
   gcpServiceKeyName: ""  # Leave empty when using Workload Identity
-  
+
 serviceAccount:
   create: true
   annotations:
@@ -595,7 +595,7 @@ opencost:
     gcp:
       project_id: "YOUR_GCP_PROJECT_ID"
       billing_dataset: "billing_export.gcp_billing_export_v1_XXXXXX"
-      
+
   serviceAccount:
     create: true
     annotations:
@@ -813,6 +813,6 @@ After completing cloud provider configuration:
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-01-15  
+**Document Version**: 1.0
+**Last Updated**: 2025-01-15
 **Maintained By**: Platform Engineering Team

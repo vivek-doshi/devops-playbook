@@ -22,23 +22,23 @@ opencost:
       serviceName: prometheus-operated
       namespaceName: monitoring
       port: 9090
-    
+
     # External Prometheus endpoint (if not using internal)
     external:
       enabled: false
       url: http://prometheus-server.monitoring.svc:9090  # <-- CHANGE THIS if using external Prometheus
-  
+
   # Exporter configuration
   exporter:
     # Default cluster ID for cost allocation
     # Used to identify costs in multi-cluster environments
     defaultClusterId: default-cluster  # <-- CHANGE THIS to your cluster identifier
-    
+
     # Cloud provider configuration
     # OpenCost will attempt to detect the cloud provider automatically
     # Override these settings for explicit configuration
     cloudProviderApiKey: ""  # Optional: API key for cloud provider pricing data
-    
+
     # AWS configuration
     # Requires IAM role with access to Cost and Usage Reports
     aws:
@@ -53,7 +53,7 @@ opencost:
       # Service account annotations for IAM role (IRSA)
       serviceAccountAnnotations:
         eks.amazonaws.com/role-arn: ""  # <-- CHANGE THIS to your IAM role ARN
-    
+
     # Azure configuration
     # Requires service principal with Cost Management Reader role
     azure:
@@ -68,7 +68,7 @@ opencost:
       # Azure client secret (stored in Kubernetes Secret)
       clientSecretName: opencost-azure-secret  # <-- CHANGE THIS if using different secret name
       clientSecretKey: azure-client-secret
-    
+
     # GCP configuration
     # Requires service account with BigQuery Data Viewer role
     gcp:
@@ -83,7 +83,7 @@ opencost:
       # Service account key (stored in Kubernetes Secret)
       serviceAccountSecretName: opencost-gcp-secret  # <-- CHANGE THIS if using different secret name
       serviceAccountSecretKey: gcp-service-account-key
-    
+
     # Additional environment variables
     extraEnv:
       # Emit KSM v1 metrics for compatibility
@@ -95,7 +95,7 @@ opencost:
       LOG_LEVEL: info  # <-- CHANGE THIS to debug for troubleshooting
       # Data retention period in days
       RETENTION_DAYS: "90"  # <-- CHANGE THIS to adjust retention (default: 90 days)
-  
+
   # UI configuration
   ui:
     enabled: true
@@ -107,7 +107,7 @@ opencost:
       limits:
         cpu: 100m
         memory: 128Mi
-  
+
   # Service configuration
   service:
     enabled: true
@@ -118,7 +118,7 @@ opencost:
       prometheus.io/scrape: "true"
       prometheus.io/port: "9003"
       prometheus.io/path: "/metrics"
-  
+
   # ServiceMonitor for Prometheus Operator
   # Enables automatic discovery and scraping by Prometheus
   serviceMonitor:
@@ -128,7 +128,7 @@ opencost:
       release: kube-prometheus-stack  # <-- CHANGE THIS to match your Prometheus Operator release
     interval: 30s
     scrapeTimeout: 10s
-  
+
   # Resource limits for OpenCost exporter
   resources:
     requests:
@@ -137,13 +137,13 @@ opencost:
     limits:
       cpu: 500m
       memory: 1Gi
-  
+
   # Node selector for pod placement
   nodeSelector: {}
-  
+
   # Tolerations for pod scheduling
   tolerations: []
-  
+
   # Affinity rules for pod scheduling
   affinity: {}
 

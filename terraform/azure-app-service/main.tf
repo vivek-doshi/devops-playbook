@@ -18,7 +18,7 @@ terraform {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/azurerm"
       version = "~> 4.78.0" # <-- CHANGE THIS: pin to latest stable
-    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
 
@@ -29,7 +29,7 @@ terraform {
   #   container_name       = "tfstate"
   #   key                  = "appservice.terraform.tfstate"
   # }
-# Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "azurerm" {
@@ -46,12 +46,12 @@ provider "azurerm" {
 # ---------------------------------------------
 # Note 7: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "azurerm_resource_group" "main" {
-  name     = "rg-${var.project}-${var.environment}"
+  name = "rg-${var.project}-${var.environment}"
   # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   location = var.location
 
   tags = local.common_tags
-# Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
@@ -62,13 +62,13 @@ resource "azurerm_service_plan" "main" {
   name                = "asp-${var.project}-${var.environment}"
   resource_group_name = azurerm_resource_group.main.name
   # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  location            = azurerm_resource_group.main.location
-  os_type             = var.os_type
+  location = azurerm_resource_group.main.location
+  os_type  = var.os_type
   # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  sku_name            = var.sku_name
+  sku_name = var.sku_name
 
   tags = local.common_tags
-# Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
@@ -79,10 +79,10 @@ resource "azurerm_linux_web_app" "main" {
   name                = "app-${var.project}-${var.environment}" # <-- CHANGE THIS: must be globally unique
   resource_group_name = azurerm_resource_group.main.name
   # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  location            = azurerm_resource_group.main.location
-  service_plan_id     = azurerm_service_plan.main.id
+  location        = azurerm_resource_group.main.location
+  service_plan_id = azurerm_service_plan.main.id
   # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  https_only          = true
+  https_only = true
 
   site_config {
     # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -95,23 +95,23 @@ resource "azurerm_linux_web_app" "main" {
       # python_version = "3.12"       # <-- CHANGE THIS: Python 3.12
       # java_version   = "17"         # <-- CHANGE THIS: Java 17
       # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      docker_image_name        = "${var.docker_image}:latest" # <-- CHANGE THIS: or use a specific tag
-      docker_registry_url      = var.docker_registry_url
+      docker_image_name   = "${var.docker_image}:latest" # <-- CHANGE THIS: or use a specific tag
+      docker_registry_url = var.docker_registry_url
       # Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       docker_registry_username = var.docker_registry_username
       docker_registry_password = var.docker_registry_password
-    # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
 
     health_check_path = "/health" # <-- CHANGE THIS: your health endpoint
-  # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 21: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 
   app_settings = {
     # Note 22: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
     "ASPNETCORE_ENVIRONMENT"              = var.environment == "prod" ? "Production" : "Development" # <-- CHANGE THIS: for non-.NET apps
-  # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+    # Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   }
 
   identity {
@@ -128,25 +128,25 @@ resource "azurerm_linux_web_app" "main" {
 # ---------------------------------------------
 # Note 26: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "azurerm_linux_web_app_slot" "staging" {
-  name           = "staging"
+  name = "staging"
   # Note 27: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   app_service_id = azurerm_linux_web_app.main.id
   https_only     = true
 
   # Note 28: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   site_config {
-    always_on         = var.sku_name != "F1"
+    always_on = var.sku_name != "F1"
     # Note 29: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     health_check_path = "/health"
 
     application_stack {
       # Note 30: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      docker_image_name        = "${var.docker_image}:latest"
-      docker_registry_url      = var.docker_registry_url
+      docker_image_name   = "${var.docker_image}:latest"
+      docker_registry_url = var.docker_registry_url
       # Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       docker_registry_username = var.docker_registry_username
       docker_registry_password = var.docker_registry_password
-    # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 32: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
 
@@ -154,7 +154,7 @@ resource "azurerm_linux_web_app_slot" "staging" {
   app_settings = {
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
     # Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-    "ASPNETCORE_ENVIRONMENT"              = "Staging"
+    "ASPNETCORE_ENVIRONMENT" = "Staging"
   }
 
   # Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -166,7 +166,7 @@ resource "azurerm_linux_web_app_slot" "staging" {
 # ---------------------------------------------
 # Note 36: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "azurerm_application_insights" "main" {
-  name                = "ai-${var.project}-${var.environment}"
+  name = "ai-${var.project}-${var.environment}"
   # Note 37: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location

@@ -40,8 +40,8 @@
 
 ## OpenCost
 
-**Website**: https://www.opencost.io  
-**CNCF**: Sandbox project  
+**Website**: https://www.opencost.io
+**CNCF**: Sandbox project
 **Built by**: Originally by Kubecost, donated to CNCF
 
 ### Strengths
@@ -75,7 +75,7 @@ helm upgrade --install opencost opencost/opencost \
 
 ## Kubecost
 
-**Website**: https://www.kubecost.com  
+**Website**: https://www.kubecost.com
 **Built on**: OpenCost (Kubecost contributed the core to CNCF)
 
 ### Strengths

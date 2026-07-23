@@ -14,7 +14,7 @@ global:
   prometheus:
     enabled: false  # Disable bundled Prometheus, use existing one
     fqdn: http://prometheus-operated.monitoring.svc:9090  # <-- CHANGE THIS if Prometheus is in a different namespace
-  
+
   grafana:
     enabled: false  # Use existing Grafana from observability stack
     domainName: grafana.example.com  # <-- CHANGE THIS to match your Grafana domain
@@ -23,7 +23,7 @@ global:
 # Kubecost primary deployment configuration
 kubecostDeployment:
   replicas: 1
-  
+
 # Kubecost frontend configuration
 kubecostFrontend:
   replicas: 1
@@ -33,7 +33,7 @@ kubecostModel:
   # Data retention period (90 days default per requirements)
   etlDailyStoreDurationDays: 91  # Keep 91 days to ensure full 90-day queries work
   etlHourlyStoreDurationHours: 2184  # 91 days * 24 hours
-  
+
   # Resource configuration
   resources:
     requests:
@@ -42,11 +42,11 @@ kubecostModel:
     limits:
       cpu: "2"
       memory: 4Gi
-  
+
   # Cloud provider cost integration
   # These settings enable Kubecost to fetch actual cloud billing data
   # for accurate cost allocation beyond Kubernetes resource costs
-  
+
   # AWS Cost and Usage Report (CUR) integration
   # Requirement 9.1: Configure Kubecost to use AWS Cost and Usage Reports
   # Uncomment and configure when deploying to AWS EKS:
@@ -57,7 +57,7 @@ kubecostModel:
   #   athenaRegion: "us-east-1"  # <-- CHANGE THIS
   #   athenaDatabase: "athenacurcfn_your_cur_database"  # <-- CHANGE THIS
   #   athenaTable: "your_cur_table"  # <-- CHANGE THIS
-  
+
   # Azure Cost Management API integration
   # Requirement 9.2: Configure Kubecost to use Azure Cost Management API
   # Uncomment and configure when deploying to Azure AKS:
@@ -67,7 +67,7 @@ kubecostModel:
   #   clientID: "your-service-principal-client-id"  # <-- CHANGE THIS
   #   clientSecret: "your-service-principal-secret"  # <-- CHANGE THIS (use Secret reference in production)
   #   tenantID: "your-azure-tenant-id"  # <-- CHANGE THIS
-  
+
   # GCP Billing Export integration
   # Requirement 9.3: Configure Kubecost to use GCP Billing Export
   # Uncomment and configure when deploying to GCP GKE:
@@ -88,7 +88,7 @@ prometheus:
   server:
     # Use existing Prometheus server
     enabled: false
-  
+
   # Kubecost-specific metrics retention
   # Note: Main Prometheus retention is 30d, but Kubecost stores aggregated data
   serverFiles:
@@ -148,7 +148,7 @@ networkCosts:
   enabled: true
   podMonitor:
     enabled: true
-  
+
   # Traffic logging for detailed network cost analysis
   trafficLogging:
     enabled: false  # Enable if detailed network flow analysis is needed (increases storage)
@@ -168,10 +168,10 @@ serviceMonitor:
 reporting:
   # Enable cost reports and recommendations
   valuesReporting: true
-  
+
   # Error reporting (disable in air-gapped environments)
   errorReporting: false
-  
+
   # Product analytics (disable for privacy/compliance)
   productAnalytics:
     enabled: false
@@ -183,10 +183,10 @@ kubecostProductConfigs:
   # Default currency for cost display
   # Requirement 9.5: Convert all amounts to USD for consistent comparison
   currencyCode: "USD"
-  
+
   # Cluster name for multi-cluster identification
   clusterName: "production-cluster"  # <-- CHANGE THIS to your cluster name
-  
+
   # Label configuration for cost allocation
   labelMappingConfigs:
     enabled: true
@@ -292,14 +292,14 @@ costAllocation:
     - finops
     - cert-manager
     - ingress-nginx
-  
+
   # Idle cost allocation
   idleCostAllocation: proportional  # Options: proportional, even, none
 
 # Savings recommendations
 savings:
   enabled: true
-  
+
   # Rightsizing recommendations
   # Requirement 3.6: Highlight recommendations with >20% potential savings
   rightsizing:

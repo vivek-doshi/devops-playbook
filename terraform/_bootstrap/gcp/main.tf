@@ -18,17 +18,17 @@ terraform {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/google"
       version = "~> 5.10.0" # <-- CHANGE THIS: pin to latest stable
-    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
-# Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "google" {
   # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   project = local.gcp_project_id
   region  = local.gcp_region
-# Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
@@ -92,11 +92,11 @@ output "bucket_prefix_example" {
 # Locals
 # ---------------------------------------------
 locals {
-  project         = "devops-playbook"             # <-- CHANGE THIS: replace with your organisation or platform project name
-  gcp_project_id  = "my-gcp-project"             # <-- CHANGE THIS: set the target project ID that will own shared Terraform state
-  gcp_region      = "europe-west1"               # <-- CHANGE THIS: choose the GCP region used by your platform team
-  bucket_name     = "devops-playbook-tfstate"    # <-- CHANGE THIS: must be globally unique across all GCP projects
-  bucket_location = "EU"                         # <-- CHANGE THIS: use a region or multi-region that matches your compliance needs
+  project         = "devops-playbook"         # <-- CHANGE THIS: replace with your organisation or platform project name
+  gcp_project_id  = "my-gcp-project"          # <-- CHANGE THIS: set the target project ID that will own shared Terraform state
+  gcp_region      = "europe-west1"            # <-- CHANGE THIS: choose the GCP region used by your platform team
+  bucket_name     = "devops-playbook-tfstate" # <-- CHANGE THIS: must be globally unique across all GCP projects
+  bucket_location = "EU"                      # <-- CHANGE THIS: use a region or multi-region that matches your compliance needs
 
   common_labels = {
     project     = local.project

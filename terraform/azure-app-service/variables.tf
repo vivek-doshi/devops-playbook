@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform Variables — Azure App Service
 # WHAT TO CHANGE: Update default values or create a terraform.tfvars
 # ============================================================
@@ -7,14 +7,14 @@
 variable "project" {
   description = "Project name — used as a prefix for all resource names"
   # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
-  default     = "myapp" # <-- CHANGE THIS
+  type    = string
+  default = "myapp" # <-- CHANGE THIS
 
   validation {
     condition     = length(trim(var.project)) > 0
     error_message = "Project must be a non-empty string."
   }
-# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "cost_center" {
@@ -33,7 +33,7 @@ variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string
   # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default     = "dev" # <-- CHANGE THIS
+  default = "dev" # <-- CHANGE THIS
 
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
@@ -56,9 +56,9 @@ variable "owner" {
 variable "location" {
   description = "Azure region for all resources"
   # Note 7: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
-  default     = "australiaeast" # <-- CHANGE THIS
-# Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type    = string
+  default = "australiaeast" # <-- CHANGE THIS
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "os_type" {
@@ -66,16 +66,16 @@ variable "os_type" {
   description = "OS type for the App Service Plan (Linux or Windows)"
   type        = string
   # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default     = "Linux"
+  default = "Linux"
 }
 
 # Note 11: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "sku_name" {
   description = "SKU for the App Service Plan — see https://azure.microsoft.com/en-us/pricing/details/app-service/"
   # Note 12: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
-  default     = "P1v3" # <-- CHANGE THIS: B1 for dev, P1v3+ for production
-# Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type    = string
+  default = "P1v3" # <-- CHANGE THIS: B1 for dev, P1v3+ for production
+  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "docker_image" {
@@ -83,7 +83,7 @@ variable "docker_image" {
   description = "Docker image name (without tag)"
   type        = string
   # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default     = "myapp" # <-- CHANGE THIS
+  default = "myapp" # <-- CHANGE THIS
 }
 
 # Note 16: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.

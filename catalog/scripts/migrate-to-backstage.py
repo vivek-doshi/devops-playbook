@@ -40,7 +40,9 @@ def to_backstage(service: dict[str, Any], repo_slug: str) -> dict[str, Any]:
 
     name = meta.get("name", "unknown-service")
     owner = meta.get("owner", "unknown-team")
-    namespace_entries = spec.get("namespaces", []) if isinstance(spec.get("namespaces"), list) else []
+    namespace_entries = (
+        spec.get("namespaces", []) if isinstance(spec.get("namespaces"), list) else []
+    )
 
     return {
         "apiVersion": "backstage.io/v1alpha1",
@@ -84,9 +86,15 @@ def to_backstage(service: dict[str, Any], repo_slug: str) -> dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Migrate service catalog entries to Backstage YAML")
-    parser.add_argument("--output-dir", default="backstage/catalog", help="Output directory for Backstage files")
-    parser.add_argument("--repo-slug", default="your-org/your-repo", help="GitHub repo slug for annotations")
+    parser = argparse.ArgumentParser(
+        description="Migrate service catalog entries to Backstage YAML"
+    )
+    parser.add_argument(
+        "--output-dir", default="backstage/catalog", help="Output directory for Backstage files"
+    )
+    parser.add_argument(
+        "--repo-slug", default="your-org/your-repo", help="GitHub repo slug for annotations"
+    )
     args = parser.parse_args()
 
     out_root = ROOT / args.output_dir

@@ -147,7 +147,9 @@ class TestReportStructure:
         assert "remov" in action.lower() or "Reduce" in action
 
     def test_report_has_required_keys(self):
-        report = build_report([make_workload(cpu_pct=5.0, mem_pct=5.0)], DEFAULT_UTILIZATION_THRESHOLD)
+        report = build_report(
+            [make_workload(cpu_pct=5.0, mem_pct=5.0)], DEFAULT_UTILIZATION_THRESHOLD
+        )
         assert "report_id" in report
         assert "generated_at" in report
         assert "threshold_pct" in report
