@@ -34,7 +34,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} -m pip install -r requirements-dev.txt'
+      - "{{.PYTHON}} -m pip install -r requirements-dev.txt"
 
   # ---------------------------------------------------------------------------
   # DOCKER
@@ -306,14 +306,15 @@ tasks:
   quality:_lint-python:
     internal: true
     cmds:
-      - ruff check .
+      - pre-commit run ruff-check --all-files
+      - pre-commit run mypy --all-files
 
-  # What: Runs eslint for JS/TS files across the repository (internal helper).
+  # What: Runs ESLint for the website workspace (internal helper).
   # Run: task quality:_lint-js
   quality:_lint-js:
     internal: true
     cmds:
-      - npx eslint . --ext .js,.ts,.jsx,.tsx
+      - npm --prefix website run lint
 
   # What: Runs golangci-lint across Go packages (internal helper).
   # Run: task quality:_lint-go
@@ -333,7 +334,7 @@ tasks:
     deps:
       - python:deps
     cmds:
-      - '{{.PYTHON}} catalog/scripts/validate-catalog.py --strict --skip-url-check'
+      - "{{.PYTHON}} catalog/scripts/validate-catalog.py --strict --skip-url-check"
 
   # What: Regenerates .github/CODEOWNERS from catalog team ownership metadata.
   # Run: task catalog:codeowners
@@ -342,7 +343,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS'
+      - "{{.PYTHON}} catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS"
 
   # ---------------------------------------------------------------------------
   # FINOPS
@@ -356,7 +357,7 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/analyze-rightsizing.py --all-namespaces'
+      - "{{.PYTHON}} finops/scripts/analyze-rightsizing.py --all-namespaces"
 
   # What: Generates optimization patches/PR artifacts with safety checks.
   # Run: task finops:optimize-pr
@@ -366,7 +367,7 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/generate-optimization-pr.py --all-namespaces'
+      - "{{.PYTHON}} finops/scripts/generate-optimization-pr.py --all-namespaces"
 
   # What: Normalizes multi-cloud costs to a common unit for comparison.
   # Run: task finops:normalize-costs
@@ -375,7 +376,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/normalize-cloud-costs.py'
+      - "{{.PYTHON}} finops/scripts/normalize-cloud-costs.py"
 
   # What: Produces reserved-capacity recommendations with risk scoring.
   # Run: task finops:reserved-capacity
@@ -385,7 +386,7 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/reserved-capacity-advisor.py'
+      - "{{.PYTHON}} finops/scripts/reserved-capacity-advisor.py"
 
   # What: Runs FinOps unit tests.
   # Run: task finops:test
@@ -394,7 +395,7 @@ tasks:
     deps:
       - python:deps
     cmds:
-      - '{{.PYTHON}} -m pytest finops/scripts -q'
+      - "{{.PYTHON}} -m pytest finops/scripts -q"
 
   # What: Builds the website frontend and generated content index.
   # Run: task website:build
@@ -424,7 +425,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json'
+      - "{{.PYTHON}} secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json"
 
   # What: Validates SLO YAML parseability and recording-rule naming convention.
   # Run: task security:slo-validate

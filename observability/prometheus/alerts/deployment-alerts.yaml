@@ -60,3 +60,4 @@ spec:
             summary: An HPA cannot retrieve the metrics it needs to make scaling decisions.
             description: HPA {{ $labels.horizontalpodautoscaler }} in namespace {{ $labels.namespace }} cannot read scaling metrics, which often indicates a metrics-server or metric pipeline issue.
             runbook_url: https://runbooks.example.com/hpametricsmissing # <-- CHANGE THIS
+
