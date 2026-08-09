@@ -1,0 +1,9 @@
+# TEMPLATE: Pulumi Stack Config — Azure Development
+# WHEN TO USE: Development configuration for Azure app-layer Pulumi deployment.
+# PREREQUISITES: Pulumi stack initialized and non-production secrets configured with pulumi config set --secret.
+# MATURITY: Stable
+config:
+  azure-native:location: eastus
+  azure-aks:nodeCount: "1"
+  azure-aks:nodeVmSize: Standard_B2s
+  azure-aks:kubernetesVersion: "1.29"

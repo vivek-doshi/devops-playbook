@@ -1,3 +1,7 @@
+# TEMPLATE: Pulumi Stack Config — Azure Production
+# WHEN TO USE: Production configuration for Azure app-layer Pulumi deployment.
+# PREREQUISITES: Pulumi stack initialized and production secrets configured with pulumi config set --secret.
+# MATURITY: Stable
 config:
   azure-native:location: eastus
   azure-aks:nodeCount: "3"

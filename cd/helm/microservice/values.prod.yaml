@@ -1,0 +1,39 @@
+# TEMPLATE: Helm Values Override — Microservice Production
+# WHEN TO USE: Production-only overrides for the microservice chart.
+# PREREQUISITES: Base values in values.yaml and production environment approvals.
+# MATURITY: Stable
+replicaCount: 3
+
+image:
+  tag: "1.0.0"
+
+ingress:
+  host: service.example.com
+  tls: true
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+finops:
+  labels:
+    environment: production
+
+serviceMesh:
+  enabled: true
+  mode: istio
+
+messaging:
+  enabled: true
+  provider: kafka
+  broker: kafka.production.svc.cluster.local:9092
+  topic: service-events

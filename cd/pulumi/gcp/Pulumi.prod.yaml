@@ -1,3 +1,7 @@
+# TEMPLATE: Pulumi Stack Config — GCP Production
+# WHEN TO USE: Production configuration for GCP app-layer Pulumi deployment.
+# PREREQUISITES: Pulumi stack initialized and production secrets configured with pulumi config set --secret.
+# MATURITY: Stable
 config:
   gcp:project: my-project-id
   gcp:region: us-central1

@@ -1,0 +1,106 @@
+# TEMPLATE: Helm Template — Microservice Deployment
+# WHEN TO USE: Renders the Deployment with optional sidecars and messaging/service mesh config.
+# PREREQUISITES: values.yaml configured with image, resources, sidecar, and FinOps labels.
+# MATURITY: Stable
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "microservice.fullname" . }}
+  labels:
+    app: {{ include "microservice.name" . }}
+    version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+    {{- include "microservice.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "microservice.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "microservice.name" . }}
+        version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+        finops.org/costcenter: {{ .Values.finops.labels.costCenter | quote }}
+        finops.org/environment: {{ .Values.finops.labels.environment | quote }}
+        {{- include "microservice.selectorLabels" . | nindent 8 }}
+      {{- if and .Values.serviceMesh.enabled .Values.serviceMesh.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.serviceMesh.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "microservice.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.messaging.enabled }}
+            - name: MESSAGING_PROVIDER
+              value: {{ .Values.messaging.provider | quote }}
+            - name: MESSAGING_BROKER
+              value: {{ .Values.messaging.broker | quote }}
+            - name: MESSAGING_TOPIC
+              value: {{ .Values.messaging.topic | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+        {{- if and .Values.sidecars.enabled .Values.sidecars.containers }}
+        {{- range .Values.sidecars.containers }}
+        - name: {{ .name }}
+          image: {{ .image | quote }}
+          imagePullPolicy: {{ .imagePullPolicy | default "IfNotPresent" }}
+          {{- if .args }}
+          args:
+            {{- toYaml .args | nindent 12 }}
+          {{- end }}
+          {{- if .ports }}
+          ports:
+            {{- toYaml .ports | nindent 12 }}
+          {{- end }}
+          {{- if .resources }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}

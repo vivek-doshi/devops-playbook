@@ -29,7 +29,7 @@ spec:
         # Run database migrations
         # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: db-migrate
-          image: my-registry/my-app:latest
+          image: my-registry/my-app:v1.0.0
           command: ['dotnet', 'ef', 'database', 'update']
           # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           env:
@@ -43,6 +43,6 @@ spec:
       # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       containers:
         - name: app
-          image: my-registry/my-app:latest
+          image: my-registry/my-app:v1.0.0
           ports:
             - containerPort: 8080

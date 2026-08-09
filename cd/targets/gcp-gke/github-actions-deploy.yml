@@ -22,6 +22,11 @@ env:
   # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   GKE_CLUSTER: my-gke-cluster
   GKE_ZONE: us-central1-a
+  HEALTHCHECK_URL: https://app.example.com/health/ready
+
+concurrency:
+  group: deploy-gcp-gke-production
+  cancel-in-progress: false
 
 # Note 5: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
@@ -32,6 +37,7 @@ jobs:
       # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       id-token: write
       contents: read
+    environment: production
 
     # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
@@ -56,4 +62,77 @@ jobs:
       - name: Deploy
         run: |
           kubectl apply -k cd/kubernetes/_overlays/prod
-          kubectl rollout status deployment/app
+          kubectl rollout status deployment/app -n production --timeout=5m
+
+      - name: Smoke test
+        run: |
+          for i in {1..12}; do
+            if curl -fsS "$HEALTHCHECK_URL" >/dev/null; then
+              echo "Smoke test passed"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Smoke test failed"
+          exit 1
+
+  rollback:
+    if: ${{ failure() }}
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+
+      - name: Roll back failed deployment
+        run: |
+          kubectl rollout undo deployment/app -n production
+          kubectl rollout status deployment/app -n production --timeout=5m
+
+  notify-failure:
+    if: ${{ failure() }}
+    needs: [deploy, rollback]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on deployment failure
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: *${{ github.repository }}* deployment *failed*\n*Target:* `gcp-gke`\n*Environment:* `production`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Run" },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

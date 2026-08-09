@@ -55,10 +55,6 @@ spec:
   # Adjust to your expected training duration + a safety margin.
   activeDeadlineSeconds: 21600             # <-- CHANGE THIS
 
-  # Keep history for post-mortem inspection.
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
-
   template:
     metadata:
       labels:

@@ -6,6 +6,7 @@ metadata:
   name: app
   labels:
     app: app
+    version: "1.0.0"
 # Note 3: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 spec:
   replicas: 2
@@ -25,6 +26,9 @@ spec:
       # Note 7: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
         app: app
+        version: "1.0.0"
+        finops.org/costcenter: "engineering"      # <-- CHANGE THIS: must match finops/config/budgets.yaml
+        finops.org/environment: "dev"             # <-- CHANGE THIS: dev | staging | production
     spec:
       # Security: run as non-root
       # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -37,7 +41,7 @@ spec:
       containers:
         - name: app
           # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-          image: my-registry/my-app:latest  # Overridden per environment
+          image: my-registry/my-app:v1.0.0  # Overridden per environment
           ports:
             - containerPort: 8080
           # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.

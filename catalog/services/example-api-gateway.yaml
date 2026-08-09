@@ -36,7 +36,7 @@ spec:
     latency_target_ms: 500
     definition_file: observability/prometheus/slos/my-service-availability-slo.yaml
 
-  runbook_url: https://github.com/example-org/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md
+  runbook_url: https://kubernetes.io/docs/concepts/overview/
   docs_url: https://confluence.example.com/platform/api-gateway
 
   cost_center: engineering

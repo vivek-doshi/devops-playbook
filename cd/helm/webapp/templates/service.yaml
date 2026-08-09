@@ -1,0 +1,19 @@
+# TEMPLATE: Helm Template — Webapp Service
+# WHEN TO USE: Exposes webapp pods internally through a Kubernetes Service.
+# PREREQUISITES: deployment selector labels and service.* values configured.
+# MATURITY: Stable
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "webapp.fullname" . }}
+  labels:
+    {{- include "webapp.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "webapp.selectorLabels" . | nindent 4 }}

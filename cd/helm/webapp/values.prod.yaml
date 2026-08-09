@@ -1,4 +1,8 @@
-﻿# Production overrides
+﻿# TEMPLATE: Helm Values Override — Webapp Production
+# WHEN TO USE: Production-only overrides for the webapp chart.
+# PREREQUISITES: Base values in values.yaml and production environment approvals.
+# MATURITY: Stable
+# Production overrides
 # Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 replicaCount: 3
 

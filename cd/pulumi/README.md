@@ -17,19 +17,28 @@ pulumi/
 │   ├── index.ts
 │   ├── Pulumi.yaml
 <!-- Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-│   └── Pulumi.prod.yaml
+│   ├── Pulumi.dev.yaml
+│   ├── Pulumi.staging.yaml
+│   ├── Pulumi.prod.yaml
+│   └── package.json
 ├── azure/                ← AKS cluster + container app
 <!-- Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 │   ├── index.ts
 │   ├── Pulumi.yaml
 <!-- Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-│   └── Pulumi.prod.yaml
+│   ├── Pulumi.dev.yaml
+│   ├── Pulumi.staging.yaml
+│   ├── Pulumi.prod.yaml
+│   └── package.json
 └── gcp/                  ← GKE Autopilot cluster + Cloud Run
     <!-- Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
     ├── index.ts
     ├── Pulumi.yaml
     <!-- Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-    └── Pulumi.prod.yaml
+    ├── Pulumi.dev.yaml
+    ├── Pulumi.staging.yaml
+    ├── Pulumi.prod.yaml
+    └── package.json
 ```
 
 <!-- Note 11: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
@@ -60,8 +69,10 @@ the Terraform pipeline:
 
 ## Backend State
 
-By default these examples use **Pulumi Cloud** for state management.
-To use a self-hosted backend, set `PULUMI_BACKEND_URL`:
+These examples are configured for **remote backends** in each `Pulumi.yaml`.
+Use backend URLs created by `terraform/_bootstrap/<cloud>/` and keep state remote-only.
+
+If you need to override backend at runtime, set `PULUMI_BACKEND_URL`:
 
 ```bash
 # AWS S3
@@ -79,3 +90,4 @@ export PULUMI_BACKEND_URL=gs://my-pulumi-state
 - `ci/github-actions/terraform/plan-apply.yml` — equivalent Terraform pipeline
 - `terraform/` — Terraform versions of the same infrastructure
 - `docs/guides/github-actions-oidc.md` — OIDC authentication setup
+- `cd/pulumi/OWNERSHIP-BOUNDARY.md` — Terraform vs Pulumi ownership decision
