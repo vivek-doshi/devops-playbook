@@ -16,41 +16,48 @@
 variable "db_admin_username" {
   description = "PostgreSQL administrator login"
   type        = string
-  default     = "dbadmin"             # <-- CHANGE THIS
+  default     = "dbadmin" # <-- CHANGE THIS
 }
 
 variable "db_sku" {
   description = "Flexible Server SKU (tier_name)"
   type        = string
-  default     = "GP_Standard_D2s_v3"  # <-- CHANGE THIS: B for dev, GP for prod
+  default     = "GP_Standard_D2s_v3" # <-- CHANGE THIS: B for dev, GP for prod
 }
 
 variable "db_storage_mb" {
   type    = number
-  default = 32768                      # 32 GB  # <-- CHANGE THIS
+  default = 32768 # 32 GB  # <-- CHANGE THIS
 }
 
 variable "db_version" {
   type    = string
-  default = "16"                       # <-- CHANGE THIS
+  default = "16" # <-- CHANGE THIS
 }
 
 variable "backup_retention_days" {
   description = "Backup retention period in days (7–35)"
   type        = number
-  default     = 14                     # <-- CHANGE THIS
+  default     = 14 # <-- CHANGE THIS
 }
 
 variable "geo_redundant_backup" {
   description = "Enable geo-redundant backup (required for cross-region restore)"
   type        = bool
-  default     = true                   # always true in production
+  default     = true # always true in production
 }
 
 variable "dr_location" {
   description = "Secondary Azure region for the geo-replica"
   type        = string
-  default     = "westus2"             # <-- CHANGE THIS
+  default     = "westus2" # <-- CHANGE THIS
+}
+
+variable "key_vault_id" {
+  description = "Optional Key Vault resource ID for storing the generated database password"
+  type        = string
+  default     = null
+  nullable    = true
 }
 
 # ---------------------------------------------
@@ -84,26 +91,26 @@ resource "azurerm_postgresql_flexible_server" "primary" {
 
   # Credentials — store in Key Vault; retrieve with data source or use BYOK
   administrator_login    = var.db_admin_username
-  administrator_password = random_password.db_admin.result  # generated below
+  administrator_password = random_password.db_admin.result # generated below
 
   # Networking — private access only
-  delegated_subnet_id    = azurerm_subnet.db.id
-  private_dns_zone_id    = azurerm_private_dns_zone.postgres.id
+  delegated_subnet_id = azurerm_subnet.db.id
+  private_dns_zone_id = azurerm_private_dns_zone.postgres.id
 
   # ── Backup configuration ─────────────────────────────────────────────
   backup_retention_days        = var.backup_retention_days
-  geo_redundant_backup_enabled = var.geo_redundant_backup  # enables cross-region restore
+  geo_redundant_backup_enabled = var.geo_redundant_backup # enables cross-region restore
   # ────────────────────────────────────────────────────────────────────
 
   # High Availability — zone-redundant for production
   high_availability {
-    mode                      = "ZoneRedundant"  # <-- CHANGE THIS: SameZone for lower cost
-    standby_availability_zone = "2"              # <-- CHANGE THIS
+    mode                      = "ZoneRedundant" # <-- CHANGE THIS: SameZone for lower cost
+    standby_availability_zone = "2"             # <-- CHANGE THIS
   }
 
   maintenance_window {
-    day_of_week  = 0  # Sunday
-    start_hour   = 3  # 03:00 UTC  # <-- CHANGE THIS
+    day_of_week  = 0 # Sunday
+    start_hour   = 3 # 03:00 UTC  # <-- CHANGE THIS
     start_minute = 0
   }
 
@@ -131,12 +138,13 @@ resource "random_password" "db_admin" {
 
 # Store the generated password in Key Vault
 resource "azurerm_key_vault_secret" "db_admin_password" {
+  count        = var.key_vault_id != null ? 1 : 0
   name         = "db-admin-password"
   value        = random_password.db_admin.result
-  key_vault_id = azurerm_key_vault.main.id   # references Key Vault from main.tf  # <-- CHANGE THIS
+  key_vault_id = var.key_vault_id # <-- CHANGE THIS: supply an existing Key Vault ID
 
   # Set expiry so secret rotation (azure-keyvault-rotation.tf) triggers
-  expiration_date = timeadd(timestamp(), "720h")  # 30 days
+  expiration_date = timeadd(timestamp(), "720h") # 30 days
 
   tags = local.common_tags
 }
@@ -148,7 +156,7 @@ resource "azurerm_subnet" "db" {
   name                 = "snet-db"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.1.3.0/24"]  # <-- CHANGE THIS: non-overlapping with AKS subnet
+  address_prefixes     = ["10.1.3.0/24"] # <-- CHANGE THIS: non-overlapping with AKS subnet
 
   delegation {
     name = "postgres-delegation"
@@ -169,16 +177,16 @@ resource "azurerm_subnet" "db" {
 #       to abstract the connection endpoint across failover.
 # ---------------------------------------------
 resource "azurerm_postgresql_flexible_server" "dr_replica" {
-  count = var.environment == "prod" ? 1 : 0   # <-- CHANGE THIS
+  count = var.environment == "prod" ? 1 : 0 # <-- CHANGE THIS
 
   name                = "psql-${var.project}-${var.environment}-dr"
   resource_group_name = azurerm_resource_group.main.name
   location            = var.dr_location
 
   # Geo-restore: source from the primary's latest backup
-  create_mode               = "GeoRestore"
-  source_server_id          = azurerm_postgresql_flexible_server.primary.id
-  point_in_time_restore_time_in_utc = null  # null = latest available backup
+  create_mode                       = "GeoRestore"
+  source_server_id                  = azurerm_postgresql_flexible_server.primary.id
+  point_in_time_restore_time_in_utc = null # null = latest available backup
 
   version    = var.db_version
   sku_name   = var.db_sku
@@ -188,7 +196,7 @@ resource "azurerm_postgresql_flexible_server" "dr_replica" {
   administrator_password = random_password.db_admin.result
 
   backup_retention_days        = var.backup_retention_days
-  geo_redundant_backup_enabled = false  # DR replica doesn't need geo-backup
+  geo_redundant_backup_enabled = false # DR replica doesn't need geo-backup
 
   tags = merge(local.common_tags, { Component = "database", Role = "dr-replica" })
 }
@@ -201,21 +209,21 @@ resource "azurerm_monitor_metric_alert" "db_backup_failed" {
   resource_group_name = azurerm_resource_group.main.name
   scopes              = [azurerm_postgresql_flexible_server.primary.id]
   description         = "PostgreSQL Flexible Server backup has failed"
-  severity            = 1  # Critical
+  severity            = 1 # Critical
 
   criteria {
     metric_namespace = "Microsoft.DBforPostgreSQL/flexibleServers"
     metric_name      = "backup_storage_used"
     aggregation      = "Average"
     operator         = "LessThan"
-    threshold        = 1  # alert if backup storage drops to zero
+    threshold        = 1 # alert if backup storage drops to zero
   }
 
-  window_size        = "PT24H"
-  frequency          = "PT6H"
+  window_size = "P1D"
+  frequency   = "PT1H"
 
   action {
-    action_group_id = var.alert_action_group_id  # <-- CHANGE THIS: pass in your action group
+    action_group_id = var.alert_action_group_id # <-- CHANGE THIS: pass in your action group
   }
 
   tags = local.common_tags
@@ -232,11 +240,11 @@ output "postgres_fqdn" {
 
 output "db_admin_secret_name" {
   description = "Key Vault secret name for the DB admin password"
-  value       = azurerm_key_vault_secret.db_admin_password.name
+  value       = try(azurerm_key_vault_secret.db_admin_password[0].name, null)
 }
 
 variable "alert_action_group_id" {
   description = "Azure Monitor action group ID for backup failure alerts"
   type        = string
-  default     = ""  # <-- CHANGE THIS
+  default     = "" # <-- CHANGE THIS
 }

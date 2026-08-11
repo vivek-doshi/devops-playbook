@@ -16,36 +16,36 @@
 variable "db_tier" {
   description = "Cloud SQL machine type"
   type        = string
-  default     = "db-custom-2-7680"     # 2 vCPU, 7.5 GB RAM  # <-- CHANGE THIS
+  default     = "db-custom-2-7680" # 2 vCPU, 7.5 GB RAM  # <-- CHANGE THIS
 }
 
 variable "db_version" {
   type    = string
-  default = "POSTGRES_16"              # <-- CHANGE THIS: POSTGRES_16 | MYSQL_8_0
+  default = "POSTGRES_16" # <-- CHANGE THIS: POSTGRES_16 | MYSQL_8_0
 }
 
 variable "backup_start_time" {
   description = "HH:MM UTC time for the daily backup window"
   type        = string
-  default     = "02:00"               # <-- CHANGE THIS
+  default     = "02:00" # <-- CHANGE THIS
 }
 
 variable "backup_retention_count" {
   description = "Number of automated backups to retain (1–365)"
   type        = number
-  default     = 14                    # <-- CHANGE THIS
+  default     = 14 # <-- CHANGE THIS
 }
 
 variable "pitr_enabled" {
   description = "Enable Point-In-Time Recovery (requires binary logging / WAL archiving)"
   type        = bool
-  default     = true                  # always true in production
+  default     = true # always true in production
 }
 
 variable "dr_region" {
   description = "GCP region for the cross-region read replica"
   type        = string
-  default     = "us-west1"           # <-- CHANGE THIS
+  default     = "us-west1" # <-- CHANGE THIS
 }
 
 # ---------------------------------------------
@@ -56,23 +56,23 @@ resource "google_sql_database_instance" "primary" {
   database_version = var.db_version
   region           = var.gcp_region
 
-  deletion_protection = true          # prevents accidental terraform destroy
+  deletion_protection = true # prevents accidental terraform destroy
 
   settings {
     tier              = var.db_tier
-    availability_type = "REGIONAL"    # multi-zone HA; use ZONAL for dev  # <-- CHANGE THIS
+    availability_type = "REGIONAL" # multi-zone HA; use ZONAL for dev  # <-- CHANGE THIS
 
     disk_autoresize       = true
-    disk_autoresize_limit = 500       # GB cap  # <-- CHANGE THIS
-    disk_size             = 20        # initial GB
+    disk_autoresize_limit = 500 # GB cap  # <-- CHANGE THIS
+    disk_size             = 20  # initial GB
     disk_type             = "PD_SSD"
 
     # ── Backup configuration ────────────────────────────────────────────
     backup_configuration {
       enabled                        = true
       start_time                     = var.backup_start_time
-      point_in_time_recovery_enabled = var.pitr_enabled   # WAL archiving for PITR
-      transaction_log_retention_days = 7                  # days to keep WAL logs  # <-- CHANGE THIS
+      point_in_time_recovery_enabled = var.pitr_enabled # WAL archiving for PITR
+      transaction_log_retention_days = 7                # days to keep WAL logs  # <-- CHANGE THIS
 
       backup_retention_settings {
         retained_backups = var.backup_retention_count
@@ -82,15 +82,15 @@ resource "google_sql_database_instance" "primary" {
     # ────────────────────────────────────────────────────────────────────
 
     maintenance_window {
-      day          = 7   # Sunday
-      hour         = 3   # 03:00 UTC  # <-- CHANGE THIS
+      day          = 7 # Sunday
+      hour         = 3 # 03:00 UTC  # <-- CHANGE THIS
       update_track = "stable"
     }
 
     # Private IP only — no public IP
     ip_configuration {
       ipv4_enabled                                  = false
-      private_network                               = google_compute_network.main.id  # from main.tf
+      private_network                               = google_compute_network.main.id # from main.tf
       enable_private_path_for_google_cloud_services = true
     }
 
@@ -104,14 +104,14 @@ resource "google_sql_database_instance" "primary" {
     }
     database_flags {
       name  = "log_min_duration_statement"
-      value = "1000"  # log queries > 1s  # <-- CHANGE THIS
+      value = "1000" # log queries > 1s  # <-- CHANGE THIS
     }
 
     insights_config {
       query_insights_enabled  = true
       query_string_length     = 1024
       record_application_tags = true
-      record_client_address   = false  # privacy: don't log client IPs
+      record_client_address   = false # privacy: don't log client IPs
     }
   }
 
@@ -139,7 +139,7 @@ resource "google_service_networking_connection" "private_vpc" {
 # Cloud SQL Database + User
 # ---------------------------------------------
 resource "google_sql_database" "app" {
-  name     = var.project       # <-- CHANGE THIS
+  name     = var.project # <-- CHANGE THIS
   instance = google_sql_database_instance.primary.name
 }
 
@@ -154,7 +154,7 @@ resource "random_password" "db_user" {
 }
 
 resource "google_sql_user" "app" {
-  name     = "${var.project}_user"   # <-- CHANGE THIS
+  name     = "${var.project}_user" # <-- CHANGE THIS
   instance = google_sql_database_instance.primary.name
   password = random_password.db_user.result
 }
@@ -165,7 +165,7 @@ resource "google_secret_manager_secret" "db_password" {
   project   = var.gcp_project_id
 
   replication {
-    auto {}  # Google manages cross-region replication automatically
+    auto {} # Google manages cross-region replication automatically
   }
 }
 
@@ -180,7 +180,7 @@ resource "google_secret_manager_secret_version" "db_password" {
 #   gcloud sql instances promote-replica sql-<project>-<env>-dr
 # ---------------------------------------------
 resource "google_sql_database_instance" "dr_replica" {
-  count = var.environment == "prod" ? 1 : 0   # <-- CHANGE THIS
+  count = var.environment == "prod" ? 1 : 0 # <-- CHANGE THIS
 
   name                 = "sql-${var.project}-${var.environment}-dr"
   database_version     = var.db_version
@@ -190,12 +190,12 @@ resource "google_sql_database_instance" "dr_replica" {
   deletion_protection = true
 
   replica_configuration {
-    failover_target = false  # set true to enable auto-failover (Cloud SQL HA)
+    failover_target = false # set true to enable auto-failover (Cloud SQL HA)
   }
 
   settings {
     tier              = var.db_tier
-    availability_type = "ZONAL"   # replica doesn't need HA — primary is the SLA boundary
+    availability_type = "ZONAL" # replica doesn't need HA — primary is the SLA boundary
 
     disk_autoresize       = true
     disk_autoresize_limit = 500
@@ -203,7 +203,7 @@ resource "google_sql_database_instance" "dr_replica" {
 
     # Replica inherits backup settings from primary, but set explicitly for clarity
     backup_configuration {
-      enabled    = false   # do not back up the replica — restore from primary backups
+      enabled    = false # do not back up the replica — restore from primary backups
       start_time = var.backup_start_time
     }
 
@@ -231,17 +231,17 @@ resource "google_monitoring_alert_policy" "sql_backup_failed" {
       comparison      = "COMPARISON_LT"
       threshold_value = 1
       aggregations {
-        alignment_period   = "93600s"  # 26 hours
+        alignment_period   = "93600s" # 26 hours
         per_series_aligner = "ALIGN_SUM"
       }
     }
   }
 
-  notification_channels = []  # <-- CHANGE THIS: add your notification channel IDs
+  notification_channels = [] # <-- CHANGE THIS: add your notification channel IDs
   severity              = "CRITICAL"
 
   alert_strategy {
-    auto_close = "604800s"  # auto-close after 7 days if not acknowledged
+    auto_close = "604800s" # auto-close after 7 days if not acknowledged
   }
 }
 

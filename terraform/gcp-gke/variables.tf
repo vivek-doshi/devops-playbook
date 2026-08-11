@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform Variables — GCP GKE
 # WHAT TO CHANGE: Update default values or create a terraform.tfvars
 # ============================================================
@@ -7,9 +7,9 @@
 variable "project" {
   description = "Project name — used as a prefix for all resource names"
   # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
-  default     = "myapp" # <-- CHANGE THIS
-# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type    = string
+  default = "myapp" # <-- CHANGE THIS
+  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "environment" {
@@ -17,14 +17,14 @@ variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string
   # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default     = "dev" # <-- CHANGE THIS
+  default = "dev" # <-- CHANGE THIS
 }
 
 # Note 6: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "gcp_project_id" {
   description = "GCP project ID (not the project name)"
   # Note 7: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
+  type = string
   # <-- CHANGE THIS: no default, must be set in terraform.tfvars or via -var
 }
 
@@ -32,9 +32,9 @@ variable "gcp_project_id" {
 variable "gcp_region" {
   description = "GCP region for all resources"
   # Note 9: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
-  default     = "us-central1" # <-- CHANGE THIS
-# Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type    = string
+  default = "us-central1" # <-- CHANGE THIS
+  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "subnet_cidr" {
@@ -42,16 +42,16 @@ variable "subnet_cidr" {
   description = "Primary CIDR range for the GKE subnet"
   type        = string
   # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default     = "10.0.0.0/20"
+  default = "10.0.0.0/20"
 }
 
 # Note 13: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "pods_cidr" {
   description = "Secondary CIDR range for GKE pods"
   # Note 14: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
-  default     = "10.4.0.0/14"
-# Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type    = string
+  default = "10.4.0.0/14"
+  # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "services_cidr" {
@@ -59,16 +59,16 @@ variable "services_cidr" {
   description = "Secondary CIDR range for GKE services"
   type        = string
   # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default     = "10.8.0.0/20"
+  default = "10.8.0.0/20"
 }
 
 # Note 18: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "node_machine_type" {
   description = "Machine type for GKE nodes — see https://cloud.google.com/compute/docs/machine-types"
   # Note 19: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type        = string
-  default     = "e2-standard-4" # <-- CHANGE THIS: size to your workload
-# Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type    = string
+  default = "e2-standard-4" # <-- CHANGE THIS: size to your workload
+  # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "node_count" {
