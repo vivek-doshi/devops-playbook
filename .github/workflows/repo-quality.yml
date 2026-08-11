@@ -29,12 +29,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check markdown links
-        uses: lycheeverse/lychee-action@v2.4.0
+        uses: lycheeverse/lychee-action@v2.9.0
         with:
           fail: true
           args: >-
             --verbose
-            --config .mlc-config.json
+            --config .mlc-config.toml
             docs/**/*.md README.md GETTING_STARTED.md
 
   actionlint:

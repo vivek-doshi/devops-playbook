@@ -71,7 +71,7 @@ install_kubeconform
 install_conftest
 
 step "Markdown links"
-npx -y lychee --config .mlc-config.json docs/**/*.md README.md GETTING_STARTED.md
+npx -y lychee --config .mlc-config.toml docs/**/*.md README.md GETTING_STARTED.md
 
 step "Actionlint"
 actionlint -color

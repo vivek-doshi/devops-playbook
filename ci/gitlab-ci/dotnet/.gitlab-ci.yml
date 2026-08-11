@@ -54,9 +54,9 @@ test:
   image: mcr.microsoft.com/dotnet/sdk:8.0
   script:
     # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-    - dotnet test --configuration Release
+    - >
+      dotnet test --configuration Release
       --logger "junit;LogFilePath=test-results.xml"
-      # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       --collect:"XPlat Code Coverage"
   artifacts:
     when: always

@@ -87,6 +87,18 @@ loki:
       split_queries_by_interval: 24h # Split long queries into 1-day chunks to bound fan-out.
       cache_results: true
 
+    ruler:
+      # Store rule files on the local filesystem, read from the mounted ConfigMap.
+      storage:
+        type: local
+        local:
+          directory: /var/loki/rules
+      # <-- CHANGE THIS to the Alertmanager service in your monitoring namespace.
+      alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring:9093
+      enable_alertmanager_v2: true
+      poll_interval: 1m
+      enable_api: true
+
     storage_config:
       tsdb_shipper:
         active_index_directory: /var/loki/index
@@ -115,6 +127,19 @@ loki:
   podLabels:
     app: loki
     monitoring: "true" # Opt in to the additionalScrapeConfigs job in prometheus/values.yaml.
+
+  # Mount the loki-ruler-config ConfigMap into the Loki pod so the ruler can read
+  # alert rules without requiring a pod restart on rule changes.
+  extraVolumes:
+    - name: loki-ruler-rules
+      configMap:
+        name: loki-ruler-config
+
+  extraVolumeMounts:
+    - name: loki-ruler-rules
+      # /var/loki/rules/fake/ - "fake" is the single-tenant org ID.
+      mountPath: /var/loki/rules/fake
+      readOnly: true
 
 # ─── Promtail ─────────────────────────────────────────────────────────────────
 

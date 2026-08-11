@@ -1,0 +1,14 @@
+exclude_all_private = true
+timeout = "20s"
+max_retries = 3
+retry_wait_time = 2
+
+exclude = [
+  'localhost',
+  'example\.com',
+  'YOUR-ORG',
+  'your-org',
+  'my-app',
+  'my-service',
+  'grafana\.internal\.company\.com',
+]

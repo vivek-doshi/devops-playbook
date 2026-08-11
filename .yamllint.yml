@@ -8,6 +8,7 @@ rules:
     check-keys: false
   comments:
     min-spaces-from-content: 1
+  colons: disable
   braces:
     max-spaces-inside: 1
   brackets:
@@ -17,4 +18,5 @@ ignore: |
   .devcontainer/
   node_modules/
   .git/
+  tmp/
   cd/helm/*/templates/
