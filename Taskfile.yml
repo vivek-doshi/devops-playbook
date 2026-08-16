@@ -293,14 +293,53 @@ tasks:
     cmds:
       - pre-commit run --all-files
 
-  # What: Executes Python, JavaScript, and Go linters in parallel via deps.
+  # What: Executes Python, JavaScript, Go, markdown, and YAML linters in parallel via deps.
   # Run: task quality:lint-all
   quality:lint-all:
-    desc: "Run ruff, eslint, and golangci-lint in parallel"
+    desc: "Run ruff, eslint, golangci-lint, markdownlint, and yamllint in parallel"
     deps:
-      - quality:_lint-python
-      - quality:_lint-js
-      - quality:_lint-go
+      - quality:lint-python
+      - quality:lint-js
+      - quality:lint-go
+      - quality:lint-markdown
+      - quality:lint-yaml
+
+  # What: Runs ruff checks across the repository.
+  # Run: task quality:lint-python
+  quality:lint-python:
+    desc: "Run ruff and mypy checks"
+    cmds:
+      - task: quality:_lint-python
+
+  # What: Runs ESLint for the website workspace.
+  # Run: task quality:lint-js
+  quality:lint-js:
+    desc: "Run ESLint for the website workspace"
+    cmds:
+      - task: quality:_lint-js
+
+  # What: Runs golangci-lint across Go packages.
+  # Run: task quality:lint-go
+  quality:lint-go:
+    desc: "Run golangci-lint across Go packages"
+    cmds:
+      - task: quality:_lint-go
+
+  # What: Runs markdownlint across the repo's Markdown files.
+  # Run: task quality:lint-markdown
+  quality:lint-markdown:
+    desc: "Lint Markdown files with markdownlint"
+    cmds:
+      - task: quality:_lint-markdown
+
+  # What: Runs yamllint against the repo config using the repository ruleset.
+  # Run: task quality:lint-yaml
+  quality:lint-yaml:
+    desc: "Lint YAML files with yamllint"
+    deps:
+      - python:deps
+    cmds:
+      - task: quality:_lint-yaml
 
   # What: Runs ruff checks across the repository (internal helper).
   # Run: task quality:_lint-python
@@ -323,6 +362,20 @@ tasks:
     internal: true
     cmds:
       - golangci-lint run ./...
+
+  # What: Runs markdownlint across the repo's Markdown files (internal helper).
+  # Run: task quality:_lint-markdown
+  quality:_lint-markdown:
+    internal: true
+    cmds:
+      - npx --yes markdownlint-cli2 "**/*.md"
+
+  # What: Runs yamllint against the repo config using the repository ruleset (internal helper).
+  # Run: task quality:_lint-yaml
+  quality:_lint-yaml:
+    internal: true
+    cmds:
+      - "{{.PYTHON}} -m yamllint -c .yamllint.yml ."
 
   # ---------------------------------------------------------------------------
   # SERVICE CATALOG
