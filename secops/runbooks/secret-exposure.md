@@ -278,9 +278,9 @@ echo "Update security/secret-detection/ patterns and re-run pipeline scans"
 ```markdown
 # Incident Report: Secret Exposure
 
-**Incident ID:** INC-YYYYMMDD-HHMMSS  
-**Date:** YYYY-MM-DD  
-**Severity:** HIGH/CRITICAL  
+**Incident ID:** INC-YYYYMMDD-HHMMSS
+**Date:** YYYY-MM-DD
+**Severity:** HIGH/CRITICAL
 **Status:** Resolved
 
 ## Timeline

@@ -1,7 +1,7 @@
 # FinOps Runbook: Investigate a Cost Spike
 
-> **Audience**: Platform team, FinOps practitioners  
-> **Trigger**: `CostAnomalySpike` or `CostAnomalyCritical` Prometheus alert, or manual observation of unexpected cost growth  
+> **Audience**: Platform team, FinOps practitioners
+> **Trigger**: `CostAnomalySpike` or `CostAnomalyCritical` Prometheus alert, or manual observation of unexpected cost growth
 > **Time to resolve**: 15–60 minutes depending on root cause
 
 ---
@@ -79,7 +79,7 @@ curl "http://kubecost.finops.svc.cluster.local:9090/model/allocation?window=24h&
 ## Step 4 — Root cause categories and remediation
 
 ### A. Runaway HPA scaling
-**Signs**: Many more replicas than expected, HPA at maxReplicas  
+**Signs**: Many more replicas than expected, HPA at maxReplicas
 **Remediation**:
 ```bash
 # Check HPA status
@@ -90,7 +90,7 @@ kubectl scale deployment <name> -n <namespace> --replicas=<target>
 ```
 
 ### B. Accidental large resource request
-**Signs**: Single pod consuming disproportionate CPU/memory  
+**Signs**: Single pod consuming disproportionate CPU/memory
 **Remediation**:
 ```bash
 # Inspect resource requests
@@ -100,7 +100,7 @@ kubectl edit deployment <name> -n <namespace>
 ```
 
 ### C. GPU workload running without approval
-**Signs**: `nvidia.com/gpu` limit in pod spec, no `finops.org/gpu-approved` annotation  
+**Signs**: `nvidia.com/gpu` limit in pod spec, no `finops.org/gpu-approved` annotation
 **Remediation**:
 ```bash
 # Find GPU pods
@@ -110,7 +110,7 @@ kubectl delete pod <gpu-pod> -n <namespace>
 ```
 
 ### D. Storage cost spike (PV over-provisioning or new large volume)
-**Signs**: Storage cost component spike in Kubecost  
+**Signs**: Storage cost component spike in Kubecost
 **Remediation**:
 ```bash
 # Check PVC usage
@@ -119,11 +119,11 @@ python finops/scripts/detect-unused-volumes.py
 ```
 
 ### E. Network egress spike
-**Signs**: Network cost component spike  
+**Signs**: Network cost component spike
 **Remediation**: Check for data exfiltration patterns, inspect service mesh traffic metrics, check for misconfigured data replication.
 
 ### F. New untagged workload in high-cost namespace
-**Signs**: `CostTagComplianceLow` alert also firing  
+**Signs**: `CostTagComplianceLow` alert also firing
 **Remediation**:
 ```bash
 python finops/scripts/validate-cost-tags.py --namespace <namespace>

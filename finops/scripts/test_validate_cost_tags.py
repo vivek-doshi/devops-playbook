@@ -30,10 +30,12 @@ def make_pod(name="pod-1", namespace="test-ns", labels=None):
 
 class TestValidatePod:
     def test_compliant_pod(self):
-        pod = make_pod(labels={
-            "finops.org/costcenter": "engineering",
-            "finops.org/environment": "production",
-        })
+        pod = make_pod(
+            labels={
+                "finops.org/costcenter": "engineering",
+                "finops.org/environment": "production",
+            }
+        )
         result = validate_pod(pod)
         assert result["compliant"] is True
         assert result["missing_labels"] == []
@@ -57,20 +59,24 @@ class TestValidatePod:
         assert result["missing_labels"] == ["finops.org/costcenter"]
 
     def test_extra_labels_dont_affect_compliance(self):
-        pod = make_pod(labels={
-            "finops.org/costcenter": "eng",
-            "finops.org/environment": "dev",
-            "app": "myapp",
-            "team": "platform",
-        })
+        pod = make_pod(
+            labels={
+                "finops.org/costcenter": "eng",
+                "finops.org/environment": "dev",
+                "app": "myapp",
+                "team": "platform",
+            }
+        )
         result = validate_pod(pod)
         assert result["compliant"] is True
 
     def test_empty_string_label_not_compliant(self):
-        pod = make_pod(labels={
-            "finops.org/costcenter": "",
-            "finops.org/environment": "production",
-        })
+        pod = make_pod(
+            labels={
+                "finops.org/costcenter": "",
+                "finops.org/environment": "production",
+            }
+        )
         result = validate_pod(pod)
         assert result["compliant"] is False
 
@@ -87,10 +93,14 @@ class TestValidatePod:
 
 
 class TestBuildReport:
-    COMPLIANT_POD = make_pod("compliant", "ns-a", {
-        "finops.org/costcenter": "engineering",
-        "finops.org/environment": "production",
-    })
+    COMPLIANT_POD = make_pod(
+        "compliant",
+        "ns-a",
+        {
+            "finops.org/costcenter": "engineering",
+            "finops.org/environment": "production",
+        },
+    )
     NON_COMPLIANT_POD = make_pod("non-compliant", "ns-b", {"app": "legacy"})
 
     def test_all_compliant(self):
@@ -129,7 +139,9 @@ class TestBuildReport:
     def test_95_threshold(self):
         # 95 compliant pods out of 100 → compliant
         pods = [
-            make_pod(f"p{i}", "ns", {"finops.org/costcenter": "eng", "finops.org/environment": "prod"})
+            make_pod(
+                f"p{i}", "ns", {"finops.org/costcenter": "eng", "finops.org/environment": "prod"}
+            )
             for i in range(95)
         ] + [make_pod(f"nc{i}", "ns", {}) for i in range(5)]
         report = build_report(pods, "ns")

@@ -73,6 +73,7 @@ updates:
       - "platform-team"
     commit-message:
       prefix: "build(deps)"
+
     groups:
       docker-all:
         patterns:

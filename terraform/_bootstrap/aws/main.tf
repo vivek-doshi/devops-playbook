@@ -25,10 +25,10 @@ terraform {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/aws"
       version = "~> 5.31.0" # <-- CHANGE THIS: pin to latest stable
-    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
-# Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "aws" {
@@ -39,7 +39,7 @@ provider "aws" {
     # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     tags = local.common_tags
   }
-# Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
@@ -197,11 +197,11 @@ output "ci_backend_policy_json" {
 # Locals
 # ---------------------------------------------
 locals {
-  aws_region        = "us-east-1"                  # <-- CHANGE THIS: choose the region that will host your shared Terraform state
-  project           = "devops-playbook"           # <-- CHANGE THIS: replace with your organisation or platform project name
+  aws_region        = "us-east-1"       # <-- CHANGE THIS: choose the region that will host your shared Terraform state
+  project           = "devops-playbook" # <-- CHANGE THIS: replace with your organisation or platform project name
   environment       = "shared"
-  state_bucket_name = "devops-playbook-tfstate"   # <-- CHANGE THIS: must be globally unique across all AWS accounts
-  lock_table_name   = "terraform-locks-shared"    # <-- CHANGE THIS: rename if your organisation uses a different lock-table standard
+  state_bucket_name = "devops-playbook-tfstate" # <-- CHANGE THIS: must be globally unique across all AWS accounts
+  lock_table_name   = "terraform-locks-shared"  # <-- CHANGE THIS: rename if your organisation uses a different lock-table standard
 
   common_tags = {
     Project     = local.project

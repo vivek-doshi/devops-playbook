@@ -109,7 +109,7 @@ Successfully applied 1 migration to schema "public" (execution time 00:00.234s)
 
 If the logs loop on `Waiting for postgres:5432...`, the database pod is not ready — check `kubectl get pods -n default`.
 
-Script: [`local-dev/kind/setup.sh`](../../local-dev/kind/setup.sh)  
+Script: [`local-dev/kind/setup.sh`](../../local-dev/kind/setup.sh)
 Pattern: [`cd/kubernetes/_patterns/db-migration-job.yaml`](../../cd/kubernetes/_patterns/db-migration-job.yaml)
 
 ---

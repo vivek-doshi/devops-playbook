@@ -72,7 +72,7 @@ docker compose -f compose/python-postgres-redis/docker-compose.yml run pipeline
 make hooks
 ```
 
-Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)  
+Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)
 Details: [docs/guides/pre-commit-setup.md](../guides/pre-commit-setup.md)
 
 ---
@@ -133,7 +133,7 @@ terraform init
 terraform apply
 ```
 
-Provisions: ECS cluster, task definition, IAM execution role, CloudWatch log group.  
+Provisions: ECS cluster, task definition, IAM execution role, CloudWatch log group.
 Files: [`terraform/aws-ecs/`](../../terraform/aws-ecs/)
 
 ---
@@ -204,7 +204,7 @@ Data pipelines typically need database credentials and cloud storage access. Use
 # Change secretKey to point to your pipeline's secrets
 ```
 
-File: [`secrets/external-secrets/example-external-secret.yaml`](../../secrets/external-secrets/example-external-secret.yaml)  
+File: [`secrets/external-secrets/example-external-secret.yaml`](../../secrets/external-secrets/example-external-secret.yaml)
 Store configs: [`secrets/external-secrets/aws-secret-store.yaml`](../../secrets/external-secrets/aws-secret-store.yaml)
 
 For ECS, the task IAM role accesses Secrets Manager directly — no sidecar needed.

@@ -57,6 +57,6 @@ Usage: Copy the checklist section below into your PR description.
 
 ---
 
-📊 [FinOps Dashboard](https://grafana.internal.company.com/d/finops-cost-overview) | 
+📊 [FinOps Dashboard](https://grafana.internal.company.com/d/finops-cost-overview) |
 📖 [FinOps Workflow Guide](../finops/docs/finops-workflow.md) |
 🔍 [Cost Tagging Schema](../finops/docs/cost-tagging-schema.md)

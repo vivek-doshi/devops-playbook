@@ -42,39 +42,39 @@
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
-  name: app-vpa                 # <-- CHANGE THIS: match your deployment name
-  namespace: default            # <-- CHANGE THIS
+  name: app-vpa # <-- CHANGE THIS: match your deployment name
+  namespace: default # <-- CHANGE THIS
 spec:
   targetRef:
     # Note 2: targetRef points to the workload VPA should manage.
     # Supported: Deployment, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob.
     apiVersion: apps/v1
-    kind:       Deployment
-    name:       app             # <-- CHANGE THIS: must match Deployment metadata.name
+    kind: Deployment
+    name: app # <-- CHANGE THIS: must match Deployment metadata.name
 
   updatePolicy:
     # Note 3: Start with "Off" to collect recommendations without touching pods.
     # Read current recommendation:
     #   kubectl describe vpa app-vpa | grep -A 20 "Recommendation:"
     # Switch to "Initial" after validating recommendations are reasonable.
-    updateMode: "Off"           # <-- CHANGE THIS: Off | Initial | Recreate | Auto
+    updateMode: "Off" # <-- CHANGE THIS: Off | Initial | Recreate | Auto
 
   resourcePolicy:
     containerPolicies:
-      - containerName: app      # <-- CHANGE THIS: match your container name in deployment.yaml
+      - containerName: app # <-- CHANGE THIS: match your container name in deployment.yaml
         # Note 4: minAllowed prevents VPA from recommending values so low that the
         # container becomes unstable. Always set a floor for production workloads.
         minAllowed:
-          cpu:    "50m"         # <-- CHANGE THIS: minimum CPU the container needs
-          memory: "64Mi"        # <-- CHANGE THIS: minimum memory the container needs
+          cpu: "50m" # <-- CHANGE THIS: minimum CPU the container needs
+          memory: "64Mi" # <-- CHANGE THIS: minimum memory the container needs
         # Note 5: maxAllowed caps recommendations to prevent VPA from requesting
         # resources the node cannot provide. Set to ~70-80% of your largest node size.
         maxAllowed:
-          cpu:    "2"           # <-- CHANGE THIS: maximum CPU this container should use
-          memory: "1Gi"         # <-- CHANGE THIS: maximum memory this container should use
+          cpu: "2" # <-- CHANGE THIS: maximum CPU this container should use
+          memory: "1Gi" # <-- CHANGE THIS: maximum memory this container should use
         # Note 6: controlledResources defaults to [cpu, memory]. Set to ["memory"] only
         # if you want HPA to manage CPU (and VPA should only manage memory).
-        controlledResources: ["cpu", "memory"]  # <-- CHANGE THIS if using VPA+HPA
+        controlledResources: ["cpu", "memory"] # <-- CHANGE THIS if using VPA+HPA
         # Note 7: controlledValues:
         #   "RequestsAndLimits" — VPA adjusts both requests and limits (maintains ratio)
         #   "RequestsOnly"      — VPA adjusts requests only, leaves limits unchanged.

@@ -28,7 +28,7 @@ Run the environment checker before anything else:
 bash scripts/env-checker.sh
 ```
 
-Required: Git 2.40+, Docker Desktop 4.x, kubectl 1.29+, kind 0.24+, Helm 3.14+, pre-commit 3.x.  
+Required: Git 2.40+, Docker Desktop 4.x, kubectl 1.29+, kind 0.24+, Helm 3.14+, pre-commit 3.x.
 Full list with install links: [docs/guides/onboarding.md](../guides/onboarding.md)
 
 ---
@@ -55,7 +55,7 @@ This script:
 3. Installs ingress-nginx
 4. Creates a `dev` namespace and applies the dev Kustomize overlay
 
-Config: [`local-dev/kind/kind-config.yaml`](../../local-dev/kind/kind-config.yaml)  
+Config: [`local-dev/kind/kind-config.yaml`](../../local-dev/kind/kind-config.yaml)
 Script: [`local-dev/kind/setup.sh`](../../local-dev/kind/setup.sh)
 
 To tear down:
@@ -86,7 +86,7 @@ Hooks run on every `git commit` and `git push`. What they check:
 | Secret scan | Gitleaks | Credentials committed to Git |
 | IaC format | terraform fmt | Malformatted Terraform |
 
-Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)  
+Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)
 Full details: [docs/guides/pre-commit-setup.md](../guides/pre-commit-setup.md)
 
 ---
@@ -126,7 +126,7 @@ with:
   dockerfile: docker/<stack>/Dockerfile
 ```
 
-Source: [`ci/github-actions/_shared/reusable-docker-build.yml`](../../ci/github-actions/_shared/reusable-docker-build.yml)  
+Source: [`ci/github-actions/_shared/reusable-docker-build.yml`](../../ci/github-actions/_shared/reusable-docker-build.yml)
 Dockerfile templates: [`docker/<stack>/Dockerfile`](../../docker/)
 
 > **Rule:** Never push or deploy with the `latest` tag. The pipeline tags images with the Git SHA.
@@ -277,7 +277,7 @@ Do not put secrets in manifests. Use External Secrets Operator to sync from your
 | Azure | [`secrets/external-secrets/azure-secret-store.yaml`](../../secrets/external-secrets/azure-secret-store.yaml) |
 | GCP | [`secrets/external-secrets/gcp-secret-store.yaml`](../../secrets/external-secrets/gcp-secret-store.yaml) |
 
-Reference secret in a manifest: [`secrets/external-secrets/example-external-secret.yaml`](../../secrets/external-secrets/example-external-secret.yaml)  
+Reference secret in a manifest: [`secrets/external-secrets/example-external-secret.yaml`](../../secrets/external-secrets/example-external-secret.yaml)
 Full guide: [docs/guides/secrets-management.md](../guides/secrets-management.md)
 
 ---
@@ -468,7 +468,7 @@ Then verify the team's budget has headroom:
 
 ### FinOps PR Checklist
 
-Include the FinOps checklist in your PR for infrastructure changes:  
+Include the FinOps checklist in your PR for infrastructure changes:
 [`finops/templates/pr-checklist.md`](../../finops/templates/pr-checklist.md)
 
 ---

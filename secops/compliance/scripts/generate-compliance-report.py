@@ -180,9 +180,7 @@ def build_report(control_library_dir: Path, evidence_dir: Path) -> dict[str, Any
         summary["planned"] += counts["planned"]
         summary["not_applicable"] += counts["not_applicable"]
 
-        weighted_total += (
-            counts["implemented"] * 1.0 + counts["partial"] * 0.5
-        )
+        weighted_total += counts["implemented"] * 1.0 + counts["partial"] * 0.5
         weighted_denominator += counts["total_controls"] - counts["not_applicable"]
 
     overall_score = 0.0 if weighted_denominator <= 0 else (weighted_total / weighted_denominator)
@@ -274,14 +272,12 @@ def main() -> None:
     evidence_dir = Path(args.evidence_dir)
     report = build_report(control_library_dir, evidence_dir)
 
-    output = (
-        json.dumps(report, indent=2)
-        if args.format == "json"
-        else to_markdown(report)
-    )
+    output = json.dumps(report, indent=2) if args.format == "json" else to_markdown(report)
 
     if args.output:
-        Path(args.output).write_text(output + ("\n" if not output.endswith("\n") else ""), encoding="utf-8")
+        Path(args.output).write_text(
+            output + ("\n" if not output.endswith("\n") else ""), encoding="utf-8"
+        )
     else:
         print(output)
 

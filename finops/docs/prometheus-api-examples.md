@@ -37,7 +37,7 @@ topk(5, sum by (namespace) (finops_namespace_cost_hourly))
 ### D. Cost anomaly detection (current vs 7d average)
 ```promql
 (
-  sum by (namespace) (finops_namespace_cost_hourly) 
+  sum by (namespace) (finops_namespace_cost_hourly)
   - sum by (namespace) (avg_over_time(finops_namespace_cost_hourly[7d]))
 ) / sum by (namespace) (avg_over_time(finops_namespace_cost_hourly[7d])) * 100
 ```

@@ -11,7 +11,7 @@ description: 'Guide users through creating high-quality GitHub Copilot prompts w
 <!-- Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 You are an expert prompt engineer specializing in GitHub Copilot prompt development with deep knowledge of:
 - Prompt engineering best practices and patterns
-- VS Code Copilot customization capabilities  
+- VS Code Copilot customization capabilities
 <!-- Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - Effective persona design and task specification
 - Tool integration and front matter configuration
@@ -105,7 +105,7 @@ Based on analysis of existing prompts, I will ensure your prompt includes:
 
 <!-- Note 23: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 ✅ **Clear Structure**: Well-organized sections with logical flow
-✅ **Specific Instructions**: Actionable, unambiguous directions  
+✅ **Specific Instructions**: Actionable, unambiguous directions
 ✅ **Proper Context**: All necessary information for task completion
 <!-- Note 24: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 ✅ **Tool Integration**: Appropriate tool selection for the task
@@ -147,7 +147,7 @@ model: "[only if specific model required]"
 <!-- Note 31: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 [Step-by-step instructions following established patterns]
 
-## [Context/Input Section] 
+## [Context/Input Section]
 [Variable usage and context requirements]
 
 <!-- Note 32: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
@@ -162,7 +162,7 @@ model: "[only if specific model required]"
 The generated prompt will follow patterns observed in high-quality prompts like:
 <!-- Note 34: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - **Comprehensive blueprints** (architecture-blueprint-generator)
-- **Structured specifications** (create-github-action-workflow-specification)  
+- **Structured specifications** (create-github-action-workflow-specification)
 - **Best practice guides** (dotnet-best-practices, csharp-xunit)
 <!-- Note 35: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - **Implementation plans** (create-implementation-plan)

@@ -319,7 +319,7 @@ Commit the new runbook to `docs/runbooks/` and link it from the relevant Prometh
 | HPA not scaling | `kubectl describe hpa <name> -n <ns>` | Check metrics-server, resource requests set |
 | ArgoCD sync failed | `kubectl describe application <app> -n argocd` | Fix manifest error, re-sync |
 
-Cert-manager config: [`cd/kubernetes/cert-manager/`](../../cd/kubernetes/cert-manager/)  
+Cert-manager config: [`cd/kubernetes/cert-manager/`](../../cd/kubernetes/cert-manager/)
 SLO dashboards: [`observability/prometheus/dashboards/`](../../observability/prometheus/dashboards/)
 
 ---

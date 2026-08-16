@@ -61,6 +61,7 @@ spec:
                   for resource in $(kubectl -n "${namespace}" get deployments,statefulsets -o name); do
                     kubectl -n "${namespace}" scale "${resource}" --replicas=0
                   done
+
 ---
 apiVersion: batch/v1
 kind: CronJob

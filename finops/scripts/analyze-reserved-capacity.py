@@ -36,6 +36,7 @@ def fetch_workload_metrics(prometheus_url: str, namespace: str | None) -> list[d
     """Fetch 90-day CPU/memory stats per workload from Prometheus."""
     try:
         import requests  # noqa: PLC0415
+
         ns_filter = f',namespace="{namespace}"' if namespace else ""
 
         def query(q):
@@ -44,35 +45,61 @@ def fetch_workload_metrics(prometheus_url: str, namespace: str | None) -> list[d
             return resp.json().get("data", {}).get("result", [])
 
         # Average usage
-        cpu_avg = query(f'avg_over_time(container_cpu_usage_seconds_total{{container!=""{ns_filter}}}[90d])')
+        cpu_avg = query(
+            f'avg_over_time(container_cpu_usage_seconds_total{{container!=""{ns_filter}}}[90d])'
+        )
         # Standard deviation approximated via quantile range
-        cpu_p95 = query(f'quantile_over_time(0.95, container_cpu_usage_seconds_total{{container!=""{ns_filter}}}[90d])')
-        cpu_p5 = query(f'quantile_over_time(0.05, container_cpu_usage_seconds_total{{container!=""{ns_filter}}}[90d])')
+        cpu_p95 = query(
+            f'quantile_over_time(0.95, container_cpu_usage_seconds_total{{container!=""{ns_filter}}}[90d])'
+        )
+        cpu_p5 = query(
+            f'quantile_over_time(0.05, container_cpu_usage_seconds_total{{container!=""{ns_filter}}}[90d])'
+        )
 
-        mem_avg = query(f'avg_over_time(container_memory_working_set_bytes{{container!=""{ns_filter}}}[90d])')
+        mem_avg = query(
+            f'avg_over_time(container_memory_working_set_bytes{{container!=""{ns_filter}}}[90d])'
+        )
 
         # Build workload data
         data: dict[tuple, dict] = {}
         for r in cpu_avg:
-            key = (r["metric"].get("namespace"), r["metric"].get("pod"), r["metric"].get("container"))
+            key = (
+                r["metric"].get("namespace"),
+                r["metric"].get("pod"),
+                r["metric"].get("container"),
+            )
             data[key] = {"cpu_avg": float(r["value"][1])}
         for r in cpu_p95:
-            key = (r["metric"].get("namespace"), r["metric"].get("pod"), r["metric"].get("container"))
+            key = (
+                r["metric"].get("namespace"),
+                r["metric"].get("pod"),
+                r["metric"].get("container"),
+            )
             data.setdefault(key, {})["cpu_p95"] = float(r["value"][1])
         for r in cpu_p5:
-            key = (r["metric"].get("namespace"), r["metric"].get("pod"), r["metric"].get("container"))
+            key = (
+                r["metric"].get("namespace"),
+                r["metric"].get("pod"),
+                r["metric"].get("container"),
+            )
             data.setdefault(key, {})["cpu_p5"] = float(r["value"][1])
         for r in mem_avg:
-            key = (r["metric"].get("namespace"), r["metric"].get("pod"), r["metric"].get("container"))
+            key = (
+                r["metric"].get("namespace"),
+                r["metric"].get("pod"),
+                r["metric"].get("container"),
+            )
             data.setdefault(key, {})["mem_avg_bytes"] = float(r["value"][1])
 
         return [
             {
-                "namespace": k[0], "pod": k[1], "container": k[2],
+                "namespace": k[0],
+                "pod": k[1],
+                "container": k[2],
                 "cpu_avg_cores": v.get("cpu_avg", 0),
                 "cpu_p95_cores": v.get("cpu_p95", 0),
                 "cpu_p5_cores": v.get("cpu_p5", 0),
-                "mem_avg_gib": v.get("mem_avg_bytes", 0) / (1024 ** 3),
+                "mem_avg_gib": v.get("mem_avg_bytes", 0) / (1024**3),
             }
             for k, v in data.items()
         ]
@@ -84,12 +111,33 @@ def fetch_workload_metrics(prometheus_url: str, namespace: str | None) -> list[d
 def _mock_metrics(namespace: str | None) -> list[dict[str, Any]]:
     ns = namespace or "team-a"
     return [
-        {"namespace": ns, "pod": "api", "container": "app",
-         "cpu_avg_cores": 1.8, "cpu_p95_cores": 1.95, "cpu_p5_cores": 1.65, "mem_avg_gib": 3.8},
-        {"namespace": ns, "pod": "db", "container": "postgres",
-         "cpu_avg_cores": 0.5, "cpu_p95_cores": 0.55, "cpu_p5_cores": 0.45, "mem_avg_gib": 2.0},
-        {"namespace": ns, "pod": "worker", "container": "worker",
-         "cpu_avg_cores": 0.2, "cpu_p95_cores": 2.0, "cpu_p5_cores": 0.05, "mem_avg_gib": 0.5},
+        {
+            "namespace": ns,
+            "pod": "api",
+            "container": "app",
+            "cpu_avg_cores": 1.8,
+            "cpu_p95_cores": 1.95,
+            "cpu_p5_cores": 1.65,
+            "mem_avg_gib": 3.8,
+        },
+        {
+            "namespace": ns,
+            "pod": "db",
+            "container": "postgres",
+            "cpu_avg_cores": 0.5,
+            "cpu_p95_cores": 0.55,
+            "cpu_p5_cores": 0.45,
+            "mem_avg_gib": 2.0,
+        },
+        {
+            "namespace": ns,
+            "pod": "worker",
+            "container": "worker",
+            "cpu_avg_cores": 0.2,
+            "cpu_p95_cores": 2.0,
+            "cpu_p5_cores": 0.05,
+            "mem_avg_gib": 0.5,
+        },
     ]
 
 
@@ -117,27 +165,29 @@ def build_report(workloads: list[dict[str, Any]], cloud_provider: str) -> dict[s
             continue
 
         on_demand_monthly = (
-            w["cpu_avg_cores"] * DEFAULT_CPU_HOURLY_RATE +
-            w["mem_avg_gib"] * DEFAULT_MEMORY_HOURLY_RATE
+            w["cpu_avg_cores"] * DEFAULT_CPU_HOURLY_RATE
+            + w["mem_avg_gib"] * DEFAULT_MEMORY_HOURLY_RATE
         ) * 730
 
         reserved_monthly = on_demand_monthly * (1 - best_discount)
         annual_savings = (on_demand_monthly - reserved_monthly) * 12
 
-        stable.append({
-            "namespace": w["namespace"],
-            "workload": w["pod"],
-            "container": w["container"],
-            "cpu_avg_cores": round(w["cpu_avg_cores"], 3),
-            "mem_avg_gib": round(w["mem_avg_gib"], 2),
-            "cpu_variance_pct": round(variance_pct, 1),
-            "on_demand_monthly_usd": round(on_demand_monthly, 2),
-            "reserved_monthly_usd": round(reserved_monthly, 2),
-            "monthly_savings_usd": round(on_demand_monthly - reserved_monthly, 2),
-            "annual_savings_usd": round(annual_savings, 2),
-            "recommended_term": best_term,
-            "discount_pct": round(best_discount * 100, 0),
-        })
+        stable.append(
+            {
+                "namespace": w["namespace"],
+                "workload": w["pod"],
+                "container": w["container"],
+                "cpu_avg_cores": round(w["cpu_avg_cores"], 3),
+                "mem_avg_gib": round(w["mem_avg_gib"], 2),
+                "cpu_variance_pct": round(variance_pct, 1),
+                "on_demand_monthly_usd": round(on_demand_monthly, 2),
+                "reserved_monthly_usd": round(reserved_monthly, 2),
+                "monthly_savings_usd": round(on_demand_monthly - reserved_monthly, 2),
+                "annual_savings_usd": round(annual_savings, 2),
+                "recommended_term": best_term,
+                "discount_pct": round(best_discount * 100, 0),
+            }
+        )
 
     stable.sort(key=lambda x: x["annual_savings_usd"], reverse=True)
     total_annual_savings = sum(s["annual_savings_usd"] for s in stable)
@@ -162,7 +212,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Analyze reserved capacity candidates")
     parser.add_argument("--namespace", "-n")
     parser.add_argument("--all-namespaces", "-A", action="store_true")
-    parser.add_argument("--prometheus-url", default="http://prometheus-operated.monitoring.svc.cluster.local:9090")
+    parser.add_argument(
+        "--prometheus-url", default="http://prometheus-operated.monitoring.svc.cluster.local:9090"
+    )
     parser.add_argument("--cloud-provider", default="aws", choices=["aws", "azure", "gcp"])
     parser.add_argument("--format", choices=["text", "json"], default="text")
     parser.add_argument("--output", "-o")
@@ -189,8 +241,12 @@ def main() -> None:
         for w in report["stable_workloads"][:15]:
             lines.append(f"\n  {w['workload']}/{w['container']} ({w['namespace']})")
             lines.append(f"    CPU: {w['cpu_avg_cores']}c avg | Variance: {w['cpu_variance_pct']}%")
-            lines.append(f"    On-demand: ${w['on_demand_monthly_usd']:.2f}/mo → Reserved: ${w['reserved_monthly_usd']:.2f}/mo")
-            lines.append(f"    Savings: ${w['annual_savings_usd']:.2f}/yr ({w['discount_pct']:.0f}% with {w['recommended_term']})")
+            lines.append(
+                f"    On-demand: ${w['on_demand_monthly_usd']:.2f}/mo → Reserved: ${w['reserved_monthly_usd']:.2f}/mo"
+            )
+            lines.append(
+                f"    Savings: ${w['annual_savings_usd']:.2f}/yr ({w['discount_pct']:.0f}% with {w['recommended_term']})"
+            )
         output = "\n".join(lines)
 
     if args.output:
