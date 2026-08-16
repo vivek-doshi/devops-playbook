@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: ArgoCD ApplicationSet — Auto-generate Applications
 # WHEN TO USE: Creating one ArgoCD Application per service/environment
 # PREREQUISITES: ArgoCD installed, ApplicationSet controller

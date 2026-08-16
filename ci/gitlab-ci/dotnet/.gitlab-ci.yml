@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — .NET Build, Test, Scan & Package
 # WHEN TO USE: .NET 8+ projects hosted on GitLab
 # PREREQUISITES: .NET solution in the repository root

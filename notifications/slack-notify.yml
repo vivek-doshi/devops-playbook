@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Slack Notification (Reusable)
 # WHEN TO USE: Any pipeline needing Slack success/failure alerts
 # PREREQUISITES: Slack Incoming Webhook URL

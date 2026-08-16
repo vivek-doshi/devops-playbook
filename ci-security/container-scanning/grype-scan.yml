@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Grype Container Scan (Anchore)
 # WHEN TO USE: Alternative to Trivy for Docker image vulnerability scanning
 # PREREQUISITES: Dockerfile in the repository

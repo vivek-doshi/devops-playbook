@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Java Build & Test (Maven + Gradle)
 # WHEN TO USE: Java / Spring Boot projects
 # PREREQUISITES: pom.xml (Maven) or build.gradle (Gradle)

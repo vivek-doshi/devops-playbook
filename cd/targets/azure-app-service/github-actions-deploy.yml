@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to Azure App Service
 # WHEN TO USE: Teams not yet on Kubernetes, using Azure PaaS
 # PREREQUISITES: Azure Container Registry, App Service plan

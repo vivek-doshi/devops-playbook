@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Template — Microservice NetworkPolicy
 # WHEN TO USE: Restricts ingress/egress for microservice workloads under zero-trust defaults.
 # PREREQUISITES: CNI with NetworkPolicy enforcement and networkPolicy.* values configured.

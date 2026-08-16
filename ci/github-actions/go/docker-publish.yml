@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — Go Docker Build & Publish
 # WHEN TO USE: Publishing Go container images to GHCR

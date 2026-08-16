@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — Checkov IaC Security Scan
 # WHEN TO USE: Advisory scanning across Terraform, Kubernetes, Helm, Compose, and Docker assets

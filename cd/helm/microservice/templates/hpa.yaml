@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Template — Microservice HorizontalPodAutoscaler
 # WHEN TO USE: Enables CPU-driven autoscaling for the microservice Deployment.
 # PREREQUISITES: metrics-server installed and autoscaling.enabled set true.

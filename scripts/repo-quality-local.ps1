@@ -39,7 +39,7 @@ $NpxCmd = Get-NodeCmd -BaseName 'npx'
 $NpmCmd = Get-NodeCmd -BaseName 'npm'
 
 Write-Step "Markdown links"
-& $NpxCmd -y lychee --config .mlc-config.toml docs/**/*.md README.md GETTING_STARTED.md
+& $NpxCmd -y lychee --config .lychee.toml docs/**/*.md README.md GETTING_STARTED.md
 
 Write-Step "Actionlint"
 Require-Command 'actionlint'

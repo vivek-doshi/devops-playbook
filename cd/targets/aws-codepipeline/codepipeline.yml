@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: AWS CodePipeline — Build, Test, Deploy (CloudFormation)
 # WHEN TO USE: Teams using AWS-native CI/CD instead of GitHub/GitLab
 # PREREQUISITES: CodeStar Connection to repo, ECR repository, ECS/EKS target

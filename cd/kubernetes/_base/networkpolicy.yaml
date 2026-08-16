@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Kubernetes NetworkPolicy — default-deny + allow rules
 # WHEN TO USE: Restrict pod-to-pod and pod-to-external traffic.

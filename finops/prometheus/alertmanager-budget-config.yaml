@@ -1,3 +1,4 @@
+---
 # finops/prometheus/alertmanager-budget-config.yaml
 # Alertmanager configuration for routing FinOps budget and anomaly alerts.
 # Integrates with Slack, Microsoft Teams, and PagerDuty.

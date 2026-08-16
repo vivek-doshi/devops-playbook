@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Template — Webapp Ingress
 # WHEN TO USE: Publishes HTTP/S routes for webapp traffic.
 # PREREQUISITES: ingress controller installed and ingress.* values configured.

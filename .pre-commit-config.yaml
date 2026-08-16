@@ -1,3 +1,4 @@
+---
 # Pre-commit is the first local gate before CI.
 # Heavy repository-wide hooks such as Checkov and mypy are intentionally excluded from the default pre-push stage
 # so final push feedback stays fast; only the lightweight gitleaks secret scan runs at pre-push by default.

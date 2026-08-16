@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Template — Microservice PodDisruptionBudget
 # WHEN TO USE: Protects minimum pod availability during voluntary disruptions.
 # PREREQUISITES: deployment replica strategy and pdb.* values configured.

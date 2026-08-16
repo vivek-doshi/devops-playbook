@@ -1,3 +1,4 @@
+---
 # finops/cicd/gitlab-ci-infracost.yml
 # GitLab CI job template: run Infracost after terraform plan and post cost
 # estimate as a merge request note. Fails the MR if cost exceeds threshold.

@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — tfsec Terraform Security Scan
 # WHEN TO USE: Provider-aware Terraform misconfiguration scanning for cloud infrastructure modules

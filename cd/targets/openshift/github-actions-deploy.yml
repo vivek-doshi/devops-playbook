@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to Red Hat OpenShift
 # WHEN TO USE: Deploying to OpenShift via service account token
 # PREREQUISITES: OpenShift cluster, service account with deploy permissions

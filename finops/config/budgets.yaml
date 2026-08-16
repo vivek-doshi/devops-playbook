@@ -1,3 +1,4 @@
+---
 # finops/config/budgets.yaml
 # Budget configuration for FinOps cost alerts.
 # Each entry defines a monthly spending threshold for a cost center.

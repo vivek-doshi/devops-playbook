@@ -1,3 +1,4 @@
+---
 # Start in audit mode to identify existing violations before enforcing.
 #
 # Switching to enforce without auditing first will block all Deployments, Services,

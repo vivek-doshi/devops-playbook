@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Datadog Deployment Notification (Reusable)
 # WHEN TO USE: Tracking deployments in Datadog for APM correlation and DORA metrics
 # PREREQUISITES: Datadog account, API key

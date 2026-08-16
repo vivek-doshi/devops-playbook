@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — Terraform Module Tests
 # WHEN TO USE: Run native `terraform test` on every PR that touches

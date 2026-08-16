@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ArgoCD Fleet - Platform Component ApplicationSet
 # WHEN TO USE: Propagate shared platform components to all registered clusters

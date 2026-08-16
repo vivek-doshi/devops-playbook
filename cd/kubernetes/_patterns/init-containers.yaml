@@ -1,4 +1,5 @@
-﻿# Init Containers Pattern
+---
+# Init Containers Pattern
 # Run setup tasks before the main container starts
 # Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: apps/v1

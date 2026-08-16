@@ -1,3 +1,4 @@
+---
 # Branch protection: require only the `✅ Repo Quality Gate` job as the single required status check.
 name: Repo Quality Gate
 
@@ -34,7 +35,7 @@ jobs:
           fail: true
           args: >-
             --verbose
-            --config .mlc-config.toml
+            --config .lychee.toml
             docs/**/*.md README.md GETTING_STARTED.md
 
   actionlint:

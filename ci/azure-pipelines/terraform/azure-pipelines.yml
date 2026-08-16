@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Terraform Plan / Apply
 # WHEN TO USE: Automating Terraform workflows in Azure DevOps
 # PREREQUISITES: Azure service connection, Terraform extension installed

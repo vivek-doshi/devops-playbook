@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Parent-Child Pipeline (Monorepo)
 # WHEN TO USE: Monorepos where each service has its own .gitlab-ci.yml
 # PREREQUISITES: Per-service .gitlab-ci.yml files

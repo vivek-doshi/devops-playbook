@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Python Security Scan
 # WHEN TO USE: Python projects needing SAST + dependency vulnerability checks
 # PREREQUISITES: requirements.txt

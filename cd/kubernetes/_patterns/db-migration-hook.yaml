@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Database Migration — Helm Pre-Upgrade Hook
 # WHEN TO USE: When you manage your application with Helm and want

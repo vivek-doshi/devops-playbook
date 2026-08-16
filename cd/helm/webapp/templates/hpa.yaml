@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Template — Webapp HorizontalPodAutoscaler
 # WHEN TO USE: Enables CPU-driven autoscaling for the webapp Deployment.
 # PREREQUISITES: metrics-server installed and autoscaling.enabled set true.

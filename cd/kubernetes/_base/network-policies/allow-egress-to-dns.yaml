@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Allow egress to CoreDNS (DNS resolution)
 # WHEN TO USE: Apply this after default-deny in every namespace.

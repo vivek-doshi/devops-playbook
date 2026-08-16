@@ -1,4 +1,5 @@
-﻿# TEMPLATE: Pulumi Stack Config — AWS Production
+---
+# TEMPLATE: Pulumi Stack Config — AWS Production
 # WHEN TO USE: Production configuration for AWS app-layer Pulumi deployment.
 # PREREQUISITES: Pulumi stack initialized and production secrets configured with pulumi config set --secret.
 # MATURITY: Stable

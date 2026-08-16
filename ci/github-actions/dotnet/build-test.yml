@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — .NET Build & Test
 # WHEN TO USE: Any ASP.NET Core / .NET 8+ project
 # PREREQUISITES: None (self-contained)

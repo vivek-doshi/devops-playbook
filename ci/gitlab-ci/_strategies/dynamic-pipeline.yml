@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Dynamic Pipeline Generation
 # WHEN TO USE: Generate child pipeline YAML at runtime based on changed files
 # PREREQUISITES: Python script at scripts/generate-pipeline.py

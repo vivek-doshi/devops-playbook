@@ -1,3 +1,4 @@
+---
 # finops/cicd/github-actions-infracost.yml
 # GitHub Actions workflow template: run Infracost after terraform plan,
 # post cost estimate as a PR comment, and fail the check if cost exceeds threshold.

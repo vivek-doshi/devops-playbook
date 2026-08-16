@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Terraform Cost Estimation with Infracost
 # WHEN TO USE: On every pull request that changes Terraform files.

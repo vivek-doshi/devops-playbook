@@ -1,3 +1,4 @@
+---
 # finops/prometheus/budget-alerts.yaml
 # Prometheus alerting rules for budget threshold monitoring.
 # Triggers at 80% (warning), 100% (critical), and 120% (emergency).

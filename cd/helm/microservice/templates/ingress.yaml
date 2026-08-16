@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Template — Microservice Ingress
 # WHEN TO USE: Publishes HTTP/S routes for the microservice.
 # PREREQUISITES: ingress controller installed and ingress.* values configured.

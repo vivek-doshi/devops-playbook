@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Kubernetes VerticalPodAutoscaler (VPA)
 # WHEN TO USE: Get CPU/memory request recommendations for pods

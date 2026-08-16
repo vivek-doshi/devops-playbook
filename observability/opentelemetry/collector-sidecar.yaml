@@ -1,3 +1,4 @@
+---
 # Add this sidecar to any Deployment that needs distributed tracing.
 #
 # This is a strategic merge patch. Apply it to an existing Deployment with:

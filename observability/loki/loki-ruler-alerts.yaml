@@ -1,3 +1,4 @@
+---
 # loki-ruler-alerts.yaml
 #
 # Kubernetes ConfigMap that holds Loki ruler alert rules in the Loki rule-file format.

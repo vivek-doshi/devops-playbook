@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Prometheus SLO — Availability
 # WHEN TO USE: You want multi-window burn-rate alerting for

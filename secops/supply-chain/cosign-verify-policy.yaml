@@ -1,3 +1,4 @@
+---
 # Kyverno ClusterPolicy: Image Signature Verification
 # Requirements: 4.1–4.7, 20.1, 20.4, 20.5
 #

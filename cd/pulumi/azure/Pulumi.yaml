@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Pulumi Project — Azure AKS
 # WHEN TO USE: Pulumi project metadata and remote backend settings for Azure app-layer resources.
 # PREREQUISITES: Provisioned backend container from terraform/_bootstrap/azure and Pulumi CLI login.

@@ -1,4 +1,5 @@
-﻿# TEMPLATE: Helm Values Override — Webapp Development
+---
+# TEMPLATE: Helm Values Override — Webapp Development
 # WHEN TO USE: Development-only overrides for the webapp chart.
 # PREREQUISITES: Base values in values.yaml and a dev namespace.
 # MATURITY: Stable

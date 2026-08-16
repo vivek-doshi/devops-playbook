@@ -1,3 +1,4 @@
+---
 # finops/cicd/azure-pipelines-infracost.yml
 # Azure Pipelines template: run Infracost after terraform plan and post
 # cost estimate as a PR comment. Marks the check failed if threshold exceeded.

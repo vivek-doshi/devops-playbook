@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Kyverno - Fleet Policy Propagation Validation
 # WHEN TO USE: Validate fleet label and secret-sharing guardrails across clusters

@@ -1,3 +1,4 @@
+---
 # kube-prometheus-stack values for chart 55.x
 # Production teams should layer environment-specific overrides on top of this file
 # instead of editing shared defaults directly.

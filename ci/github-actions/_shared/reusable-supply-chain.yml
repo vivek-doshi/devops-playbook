@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions - Reusable Supply Chain Security
 # WHEN TO USE: Call after Docker build/push to sign image and attach attestations

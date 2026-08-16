@@ -1,3 +1,4 @@
+---
 # Exception registry for policy and quality-gate waivers.
 # Entries are reviewed in PR and consumed by compliance evidence collection.
 

@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Reusable Test Template
 # WHEN TO USE: Standardise .NET test steps across pipelines
 # PREREQUISITES: Test projects following naming convention

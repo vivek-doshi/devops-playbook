@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions - Reusable Supply Chain Verify
 # WHEN TO USE: Pull request check to verify a referenced image is already signed

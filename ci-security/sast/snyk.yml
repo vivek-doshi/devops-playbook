@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Snyk Security Scan
 # WHEN TO USE: Combined SAST + dependency vulnerability scanning
 # PREREQUISITES: Snyk account with project configured

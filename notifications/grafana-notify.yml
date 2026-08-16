@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Grafana Deployment Notification (Reusable)
 # WHEN TO USE: Annotating deployments on Grafana dashboards for visual correlation
 # PREREQUISITES: Grafana instance with API access (Cloud or self-hosted)

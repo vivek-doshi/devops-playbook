@@ -1,3 +1,4 @@
+---
 # ============================================================
 # SLO Definition Schema
 # Copy this file to observability/prometheus/slos/<your-service>-slo.yaml

@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Pulumi Stack Config — Azure Staging
 # WHEN TO USE: Staging configuration for Azure app-layer Pulumi deployment.
 # PREREQUISITES: Pulumi stack initialized and staging secrets configured with pulumi config set --secret.

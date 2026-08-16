@@ -1,3 +1,4 @@
+---
 # finops/prometheus/anomaly-alerts.yaml
 # Prometheus alerting rules for cost anomaly detection.
 # Triggers when costs spike >50% vs 7-day average or new namespaces exceed $100/24h.

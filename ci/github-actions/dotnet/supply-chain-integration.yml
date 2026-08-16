@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions - .NET Supply Chain Integration
 # WHEN TO USE: Wire reusable Docker build with reusable supply chain controls

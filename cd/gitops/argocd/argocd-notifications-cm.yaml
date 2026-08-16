@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ArgoCD Notifications ConfigMap — Sync Failure Alerts
 # WHEN TO USE: Send Slack and PagerDuty notifications for failed sync/deploy events

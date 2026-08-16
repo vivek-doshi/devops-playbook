@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Kubernetes PodDisruptionBudget
 # WHEN TO USE: Prevent Kubernetes from evicting too many pods at

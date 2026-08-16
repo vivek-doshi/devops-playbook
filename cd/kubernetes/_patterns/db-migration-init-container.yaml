@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Database Migration via Init Container
 # WHEN TO USE: Short migrations (< 5 minutes) where you want migrations

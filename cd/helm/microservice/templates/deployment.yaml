@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Template — Microservice Deployment
 # WHEN TO USE: Renders the Deployment with optional sidecars and messaging/service mesh config.
 # PREREQUISITES: values.yaml configured with image, resources, sidecar, and FinOps labels.

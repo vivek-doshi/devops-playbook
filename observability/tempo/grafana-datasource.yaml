@@ -1,3 +1,4 @@
+---
 # Grafana datasource ConfigMap for Tempo.
 # The Grafana datasource sidecar picks this up automatically via the grafana_datasource: "1" label.
 #

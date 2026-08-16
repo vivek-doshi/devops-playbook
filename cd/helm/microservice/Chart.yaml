@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Chart Metadata — Microservice
 # WHEN TO USE: Defines chart identity, versioning, and maintainers for the microservice chart.
 # PREREQUISITES: Helm 3 and semantic versioning policy for release tags.

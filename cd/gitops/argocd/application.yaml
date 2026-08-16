@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: ArgoCD Application — Single Application
 # WHEN TO USE: Deploying one service via ArgoCD GitOps
 # PREREQUISITES: ArgoCD installed, Git repo accessible from cluster

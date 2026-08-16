@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Database Migration Job (Kubernetes)
 # WHEN TO USE: Run schema migrations safely before a new app version

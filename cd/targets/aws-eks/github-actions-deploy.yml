@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to AWS EKS
 # WHEN TO USE: Deploying to Amazon EKS via OIDC
 # PREREQUISITES: EKS cluster, IAM role for OIDC

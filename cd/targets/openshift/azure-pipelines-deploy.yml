@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Deploy to Red Hat OpenShift
 # WHEN TO USE: OpenShift deployment from Azure DevOps pipelines
 # PREREQUISITES: OpenShift cluster, service account token stored in Azure DevOps

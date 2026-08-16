@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — semantic-release (non-Node stacks)
 # WHEN TO USE: Automated versioning + changelog for Python, Go,
