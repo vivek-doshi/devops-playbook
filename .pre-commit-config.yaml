@@ -36,6 +36,11 @@ repos:
       - id: terraform_validate
         files: ^terraform/.*\.tf(vars)?$
         pass_filenames: false
+      - id: terraform_tflint
+        name: tflint (terraform syntax + best-practice lint)
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+        files: ^terraform/.*\.tf$
 
   - repo: local
     hooks:
@@ -71,6 +76,18 @@ repos:
       - id: detect-private-key
       - id: mixed-line-ending
         args: [--fix=lf]
+
+  # ------------------------------------------------------------
+  # YAML
+  # check-yaml above only confirms parseable YAML; yamllint enforces the same
+  # style rules (.yamllint.yml) that the CI Yamllint job runs, so issues surface
+  # before push instead of after CI.
+  # ------------------------------------------------------------
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1  # <-- UPDATE QUARTERLY — keep in sync with ci/ Yamllint job pip version
+    hooks:
+      - id: yamllint
+        args: [--config-file=.yamllint.yml]
 
   # ------------------------------------------------------------
   # Python

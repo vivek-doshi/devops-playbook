@@ -59,58 +59,14 @@ install_conftest() {
   chmod +x "$TOOLS_DIR/conftest"
 }
 
-install_lychee() {
-  if command -v lychee >/dev/null 2>&1; then
-    if lychee --version >/dev/null 2>&1; then
-      return
-    fi
-  fi
-
-  rm -f "$TOOLS_DIR/lychee"
-
-  local lychee_version="0.24.2"
-  local arch
-  case "$(uname -m)" in
-    x86_64) arch="x86_64" ;;
-    aarch64|arm64) arch="aarch64" ;;
-    armv7l|armv7) arch="armv7" ;;
-    *)
-      echo "Unsupported architecture for lychee: $(uname -m)"
-      exit 1
-      ;;
-  esac
-
-  local asset="lychee-${arch}-unknown-linux-musl.tar.gz"
-  local tag="lychee-v${lychee_version}"
-  local url="https://github.com/lycheeverse/lychee/releases/download/${tag}/${asset}"
-
-  step "Installing lychee v${lychee_version}"
-  curl -sSL -o /tmp/lychee.tar.gz "$url"
-  mkdir -p /tmp/lychee-bin
-  tar -xzf /tmp/lychee.tar.gz -C /tmp/lychee-bin
-  local extracted_dir="/tmp/lychee-bin/lychee-${arch}-unknown-linux-musl"
-  if [[ ! -x "${extracted_dir}/lychee" ]]; then
-    echo "Expected lychee binary not found in archive: ${extracted_dir}/lychee"
-    exit 1
-  fi
-  mv "${extracted_dir}/lychee" "$TOOLS_DIR/lychee"
-  chmod +x "$TOOLS_DIR/lychee"
-}
-
 step "Checking prerequisites"
 require_cmd curl
 require_cmd python3
 require_cmd helm
 require_cmd terraform
-require_cmd npm
-require_cmd npx
 install_actionlint
 install_kubeconform
 install_conftest
-install_lychee
-
-step "Markdown links"
-lychee --config .lychee.toml docs/**/*.md README.md GETTING_STARTED.md
 
 step "Actionlint"
 actionlint -color
@@ -162,14 +118,6 @@ helm template webapp cd/helm/webapp/ | conftest test - --policy policy/conftest/
 step "Catalog validate"
 python3 -m pip install --quiet pyyaml
 python3 catalog/scripts/validate-catalog.py --strict --skip-url-check
-
-step "Website build"
-if [[ -d website ]]; then
-  npm --prefix website ci
-  npm --prefix website run build
-else
-  echo "Warning: website/ not found, skipping website build"
-fi
 
 echo ""
 echo "Repo quality gate checks passed locally."

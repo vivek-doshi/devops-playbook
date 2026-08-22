@@ -16,7 +16,8 @@ Practical search terms and patterns to accelerate accurate retrieval.
 
 - ci/**/build-test.yml
 - cd/targets/**
-- terraform/**/main.tf
+- terraform/<target>/main.tf (orchestrator — module calls only)
+- terraform/<target>/modules/**/main.tf (actual resources, one component per module)
 - security/**
 - secops/runbooks/**
 - finops/**

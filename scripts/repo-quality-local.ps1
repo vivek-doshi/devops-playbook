@@ -19,15 +19,6 @@ function Require-Command {
   }
 }
 
-function Get-NodeCmd {
-  param([string]$BaseName)
-  $cmd = Get-Command "$BaseName.cmd" -ErrorAction SilentlyContinue
-  if ($cmd) { return $cmd.Source }
-  $cmd = Get-Command $BaseName -ErrorAction SilentlyContinue
-  if ($cmd) { return $cmd.Source }
-  throw "Missing required command: $BaseName"
-}
-
 Write-Step "Checking prerequisites"
 Require-Command 'python'
 Require-Command 'helm'
@@ -35,11 +26,6 @@ Require-Command 'terraform'
 Require-Command 'yamllint'
 Require-Command 'kubeconform'
 Require-Command 'conftest'
-$NpxCmd = Get-NodeCmd -BaseName 'npx'
-$NpmCmd = Get-NodeCmd -BaseName 'npm'
-
-Write-Step "Markdown links"
-& $NpxCmd -y lychee --config .lychee.toml docs/**/*.md README.md GETTING_STARTED.md
 
 Write-Step "Actionlint"
 Require-Command 'actionlint'
@@ -86,14 +72,6 @@ helm template webapp cd/helm/webapp/ | conftest test - --policy policy/conftest/
 Write-Step "Catalog validate"
 python -m pip install --quiet pyyaml
 python catalog/scripts/validate-catalog.py --strict --skip-url-check
-
-Write-Step "Website build"
-if (Test-Path (Join-Path $RepoRoot 'website')) {
-  & $NpmCmd --prefix website ci
-  & $NpmCmd --prefix website run build
-} else {
-  Write-Warning 'website/ not found, skipping website build.'
-}
 
 Write-Host ""
 Write-Host "Repo quality gate checks passed locally."

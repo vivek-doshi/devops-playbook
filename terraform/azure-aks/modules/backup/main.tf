@@ -1,63 +1,15 @@
 # ============================================================
 # TEMPLATE: Terraform — Azure Database Backup & DR Policies
-# WHEN TO USE: Add alongside terraform/azure-aks/main.tf to ensure
+# WHEN TO USE: Enable alongside terraform/azure-aks/ to ensure
 #              Azure Database for PostgreSQL Flexible Server (or MySQL)
 #              has automated backups, geo-redundancy, and PITR configured.
-# PREREQUISITES: Existing resource group and VNet from main.tf.
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: terraform/azure-aks/main.tf
-#                cd/kubernetes/_patterns/velero-backup.yaml
+# RELATED FILES: cd/kubernetes/_patterns/velero-backup.yaml
 # MATURITY: Stable
 # ============================================================
 
-# ---------------------------------------------
-# Variables
-# ---------------------------------------------
-variable "db_admin_username" {
-  description = "PostgreSQL administrator login"
-  type        = string
-  default     = "dbadmin" # <-- CHANGE THIS
-}
-
-variable "db_sku" {
-  description = "Flexible Server SKU (tier_name)"
-  type        = string
-  default     = "GP_Standard_D2s_v3" # <-- CHANGE THIS: B for dev, GP for prod
-}
-
-variable "db_storage_mb" {
-  type    = number
-  default = 32768 # 32 GB  # <-- CHANGE THIS
-}
-
-variable "db_version" {
-  type    = string
-  default = "16" # <-- CHANGE THIS
-}
-
-variable "backup_retention_days" {
-  description = "Backup retention period in days (7–35)"
-  type        = number
-  default     = 14 # <-- CHANGE THIS
-}
-
-variable "geo_redundant_backup" {
-  description = "Enable geo-redundant backup (required for cross-region restore)"
-  type        = bool
-  default     = true # always true in production
-}
-
-variable "dr_location" {
-  description = "Secondary Azure region for the geo-replica"
-  type        = string
-  default     = "westus2" # <-- CHANGE THIS
-}
-
-variable "key_vault_id" {
-  description = "Optional Key Vault resource ID for storing the generated database password"
-  type        = string
-  default     = null
-  nullable    = true
+locals {
+  name_prefix = "${var.project}-${var.environment}"
 }
 
 # ---------------------------------------------
@@ -65,15 +17,15 @@ variable "key_vault_id" {
 # ---------------------------------------------
 resource "azurerm_private_dns_zone" "postgres" {
   name                = "${var.project}-${var.environment}.postgres.database.azure.com"
-  resource_group_name = azurerm_resource_group.main.name
-  tags                = local.common_tags
+  resource_group_name = var.rg_name
+  tags                = var.common_tags
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
   name                  = "dns-link-postgres"
   private_dns_zone_name = azurerm_private_dns_zone.postgres.name
-  virtual_network_id    = azurerm_virtual_network.main.id
-  resource_group_name   = azurerm_resource_group.main.name
+  virtual_network_id    = var.vnet_id
+  resource_group_name   = var.rg_name
   registration_enabled  = false
 }
 
@@ -82,8 +34,8 @@ resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
 # ---------------------------------------------
 resource "azurerm_postgresql_flexible_server" "primary" {
   name                = "psql-${var.project}-${var.environment}"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+  resource_group_name = var.rg_name
+  location            = var.location
 
   version    = var.db_version
   sku_name   = var.db_sku
@@ -114,13 +66,7 @@ resource "azurerm_postgresql_flexible_server" "primary" {
     start_minute = 0
   }
 
-  # Enable PgBouncer for connection pooling
-  # authentication {
-  #   active_directory_auth_enabled = true  # optional: AAD auth
-  #   password_auth_enabled         = true
-  # }
-
-  tags = merge(local.common_tags, { Component = "database" })
+  tags = merge(var.common_tags, { Component = "database" })
 
   depends_on = [azurerm_private_dns_zone_virtual_network_link.postgres]
 }
@@ -146,7 +92,7 @@ resource "azurerm_key_vault_secret" "db_admin_password" {
   # Set expiry so secret rotation (azure-keyvault-rotation.tf) triggers
   expiration_date = timeadd(timestamp(), "720h") # 30 days
 
-  tags = local.common_tags
+  tags = var.common_tags
 }
 
 # ---------------------------------------------
@@ -154,8 +100,8 @@ resource "azurerm_key_vault_secret" "db_admin_password" {
 # ---------------------------------------------
 resource "azurerm_subnet" "db" {
   name                 = "snet-db"
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
+  resource_group_name  = var.rg_name
+  virtual_network_name = var.vnet_name
   address_prefixes     = ["10.1.3.0/24"] # <-- CHANGE THIS: non-overlapping with AKS subnet
 
   delegation {
@@ -172,15 +118,12 @@ resource "azurerm_subnet" "db" {
 # ---------------------------------------------
 # Geo-Replica in secondary region (DR target)
 # Read replica in dr_location; promote manually during DR.
-# Note: Flexible Server geo-restore creates a new server from backup
-#       rather than a live replica — use azurerm_postgresql_flexible_server_virtual_endpoint
-#       to abstract the connection endpoint across failover.
 # ---------------------------------------------
 resource "azurerm_postgresql_flexible_server" "dr_replica" {
   count = var.environment == "prod" ? 1 : 0 # <-- CHANGE THIS
 
   name                = "psql-${var.project}-${var.environment}-dr"
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = var.rg_name
   location            = var.dr_location
 
   # Geo-restore: source from the primary's latest backup
@@ -198,7 +141,7 @@ resource "azurerm_postgresql_flexible_server" "dr_replica" {
   backup_retention_days        = var.backup_retention_days
   geo_redundant_backup_enabled = false # DR replica doesn't need geo-backup
 
-  tags = merge(local.common_tags, { Component = "database", Role = "dr-replica" })
+  tags = merge(var.common_tags, { Component = "database", Role = "dr-replica" })
 }
 
 # ---------------------------------------------
@@ -206,7 +149,7 @@ resource "azurerm_postgresql_flexible_server" "dr_replica" {
 # ---------------------------------------------
 resource "azurerm_monitor_metric_alert" "db_backup_failed" {
   name                = "alert-db-backup-failed-${local.name_prefix}"
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = var.rg_name
   scopes              = [azurerm_postgresql_flexible_server.primary.id]
   description         = "PostgreSQL Flexible Server backup has failed"
   severity            = 1 # Critical
@@ -226,25 +169,5 @@ resource "azurerm_monitor_metric_alert" "db_backup_failed" {
     action_group_id = var.alert_action_group_id # <-- CHANGE THIS: pass in your action group
   }
 
-  tags = local.common_tags
-}
-
-# ---------------------------------------------
-# Outputs
-# ---------------------------------------------
-output "postgres_fqdn" {
-  description = "PostgreSQL Flexible Server FQDN"
-  value       = azurerm_postgresql_flexible_server.primary.fqdn
-  sensitive   = true
-}
-
-output "db_admin_secret_name" {
-  description = "Key Vault secret name for the DB admin password"
-  value       = try(azurerm_key_vault_secret.db_admin_password[0].name, null)
-}
-
-variable "alert_action_group_id" {
-  description = "Azure Monitor action group ID for backup failure alerts"
-  type        = string
-  default     = "" # <-- CHANGE THIS
+  tags = var.common_tags
 }

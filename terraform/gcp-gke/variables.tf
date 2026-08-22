@@ -3,72 +3,52 @@
 # WHAT TO CHANGE: Update default values or create a terraform.tfvars
 # ============================================================
 
-# Note 1: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "project" {
   description = "Project name — used as a prefix for all resource names"
-  # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type    = string
-  default = "myapp" # <-- CHANGE THIS
-  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type        = string
+  default     = "myapp" # <-- CHANGE THIS
 }
 
 variable "environment" {
-  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Environment name (dev, staging, prod)"
   type        = string
-  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default = "dev" # <-- CHANGE THIS
+  default     = "dev" # <-- CHANGE THIS
 }
 
-# Note 6: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "gcp_project_id" {
   description = "GCP project ID (not the project name)"
-  # Note 7: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type = string
+  type        = string
   # <-- CHANGE THIS: no default, must be set in terraform.tfvars or via -var
 }
 
-# Note 8: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "gcp_region" {
   description = "GCP region for all resources"
-  # Note 9: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type    = string
-  default = "us-central1" # <-- CHANGE THIS
-  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type        = string
+  default     = "us-central1" # <-- CHANGE THIS
 }
 
 variable "subnet_cidr" {
-  # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Primary CIDR range for the GKE subnet"
   type        = string
-  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default = "10.0.0.0/20"
+  default     = "10.0.0.0/20"
 }
 
-# Note 13: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "pods_cidr" {
   description = "Secondary CIDR range for GKE pods"
-  # Note 14: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type    = string
-  default = "10.4.0.0/14"
-  # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type        = string
+  default     = "10.4.0.0/14"
 }
 
 variable "services_cidr" {
-  # Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Secondary CIDR range for GKE services"
   type        = string
-  # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  default = "10.8.0.0/20"
+  default     = "10.8.0.0/20"
 }
 
-# Note 18: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "node_machine_type" {
   description = "Machine type for GKE nodes — see https://cloud.google.com/compute/docs/machine-types"
-  # Note 19: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
-  type    = string
-  default = "e2-standard-4" # <-- CHANGE THIS: size to your workload
-  # Note 20: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  type        = string
+  default     = "e2-standard-4" # <-- CHANGE THIS: size to your workload
 }
 
 variable "node_count" {
@@ -93,4 +73,71 @@ variable "node_max_count" {
   description = "Maximum node count per zone when autoscaling is enabled"
   type        = number
   default     = 5
+}
+
+# ---------------------------------------------
+# Feature toggles — used only by the orchestrator (main.tf) to select
+# which modules to run. Disabling "network" breaks dependent modules
+# unless you also disable everything that depends on it.
+# ---------------------------------------------
+variable "enable_network" {
+  description = "Provision the VPC network, subnet, and NAT (core dependency for other modules)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_artifact_registry" {
+  description = "Provision the Artifact Registry Docker repository"
+  type        = bool
+  default     = true
+}
+
+variable "enable_gke" {
+  description = "Provision the GKE cluster and node pool"
+  type        = bool
+  default     = true
+}
+
+variable "enable_backup" {
+  description = "Provision the Cloud SQL backup/DR stack (modules/backup)"
+  type        = bool
+  default     = false
+}
+
+# ---------------------------------------------
+# Backup / DR (modules/backup) — only used when enable_backup = true
+# ---------------------------------------------
+variable "db_tier" {
+  description = "Cloud SQL machine type"
+  type        = string
+  default     = "db-custom-2-7680" # 2 vCPU, 7.5 GB RAM  # <-- CHANGE THIS
+}
+
+variable "db_version" {
+  type    = string
+  default = "POSTGRES_16" # <-- CHANGE THIS: POSTGRES_16 | MYSQL_8_0
+}
+
+variable "backup_start_time" {
+  description = "HH:MM UTC time for the daily backup window"
+  type        = string
+  default     = "02:00" # <-- CHANGE THIS
+}
+
+variable "backup_retention_count" {
+  description = "Number of automated backups to retain (1-365)"
+  type        = number
+  default     = 14 # <-- CHANGE THIS
+}
+
+variable "pitr_enabled" {
+  description = "Enable Point-In-Time Recovery (requires binary logging / WAL archiving)"
+  type        = bool
+  default     = true # always true in production
+}
+
+variable "dr_region" {
+  description = "GCP region for the cross-region read replica"
+  type        = string
+  default     = "us-west1" # <-- CHANGE THIS
 }

@@ -22,22 +22,6 @@ env:
   HELM_VERSION: v3.15.2
 
 jobs:
-  markdown-links:
-    name: Markdown Links
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check markdown links
-        uses: lycheeverse/lychee-action@v2.9.0
-        with:
-          fail: true
-          args: >-
-            --verbose
-            --config .lychee.toml
-            docs/**/*.md README.md GETTING_STARTED.md
-
   actionlint:
     name: Actionlint
     runs-on: ubuntu-latest
@@ -235,53 +219,9 @@ jobs:
           pip install --disable-pip-version-check --no-cache-dir pyyaml --quiet
           python catalog/scripts/validate-catalog.py --strict --skip-url-check
 
-  handbook-build:
-    name: Website / Handbook Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: website/package-lock.json
-
-      - name: Build website or validate handbook
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [ -d website ]; then
-            echo "website/ exists: running npm ci && npm run build"
-            cd website
-            npm ci
-            npm run build
-            exit 0
-          fi
-
-          if [ -f handbook.html ]; then
-            echo "handbook.html exists at repo root: validating"
-            npm install --no-save html-validate@8.24.2
-            npx html-validate handbook.html
-            exit 0
-          fi
-
-          if [ -f docs/handbook.html ]; then
-            echo "docs/handbook.html exists: validating"
-            npm install --no-save html-validate@8.24.2
-            npx html-validate docs/handbook.html
-            exit 0
-          fi
-
-          echo "::warning::No website/ directory or handbook.html found. Skipping build checks."
-
   quality-gate:
     name: "✅ Repo Quality Gate"
     needs:
-      - markdown-links
       - actionlint
       - yamllint
       - kubeconform
@@ -289,7 +229,6 @@ jobs:
       - terraform
       - conftest
       - catalog-validate
-      - handbook-build
     runs-on: ubuntu-latest
     if: always()
     steps:

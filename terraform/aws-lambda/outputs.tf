@@ -1,42 +1,34 @@
 # ============================================================
 # TEMPLATE: Terraform Outputs — AWS Lambda
+# Values are read from the modules selected by the orchestrator (main.tf).
 # ============================================================
 
-# Note 1: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 output "function_name" {
   description = "Name of the Lambda function"
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  value = aws_lambda_function.main.function_name
+  value       = try(module.lambda[0].function_name, null)
 }
 
-# Note 3: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 output "function_arn" {
   description = "ARN of the Lambda function"
-  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  value = aws_lambda_function.main.arn
+  value       = try(module.lambda[0].function_arn, null)
 }
 
-# Note 5: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 output "api_gateway_url" {
   description = "API Gateway invocation URL — this is your public endpoint"
-  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  value = aws_apigatewayv2_api.main.api_endpoint
+  value       = try(module.api_gateway[0].api_endpoint, null)
 }
 
-# Note 7: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 output "api_gateway_id" {
   description = "API Gateway ID"
-  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  value = aws_apigatewayv2_api.main.id
+  value       = try(module.api_gateway[0].api_id, null)
 }
 
-# Note 9: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 output "lambda_log_group" {
   description = "CloudWatch Log Group for Lambda — view logs here"
-  value       = aws_cloudwatch_log_group.lambda.name
+  value       = try(module.lambda[0].log_group_name, null)
 }
 
 output "lambda_role_arn" {
   description = "IAM role ARN assigned to the Lambda function — attach additional policies here"
-  value       = aws_iam_role.lambda.arn
+  value       = try(module.iam[0].role_arn, null)
 }

@@ -1,52 +1,12 @@
 # ============================================================
 # TEMPLATE: Terraform — GCP Cloud SQL Backup & DR Policies
-# WHEN TO USE: Add alongside terraform/gcp-gke/main.tf to ensure
-#              Cloud SQL (PostgreSQL) has automated backups, PITR,
-#              and a cross-region replica configured.
-# PREREQUISITES: GCP project with Cloud SQL API enabled (in main.tf).
+# WHEN TO USE: Enable alongside terraform/gcp-gke/ to ensure Cloud SQL
+#              (PostgreSQL) has automated backups, PITR, and a
+#              cross-region replica configured.
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: terraform/gcp-gke/main.tf
-#                cd/kubernetes/_patterns/velero-backup.yaml
+# RELATED FILES: cd/kubernetes/_patterns/velero-backup.yaml
 # MATURITY: Stable
 # ============================================================
-
-# ---------------------------------------------
-# Variables
-# ---------------------------------------------
-variable "db_tier" {
-  description = "Cloud SQL machine type"
-  type        = string
-  default     = "db-custom-2-7680" # 2 vCPU, 7.5 GB RAM  # <-- CHANGE THIS
-}
-
-variable "db_version" {
-  type    = string
-  default = "POSTGRES_16" # <-- CHANGE THIS: POSTGRES_16 | MYSQL_8_0
-}
-
-variable "backup_start_time" {
-  description = "HH:MM UTC time for the daily backup window"
-  type        = string
-  default     = "02:00" # <-- CHANGE THIS
-}
-
-variable "backup_retention_count" {
-  description = "Number of automated backups to retain (1–365)"
-  type        = number
-  default     = 14 # <-- CHANGE THIS
-}
-
-variable "pitr_enabled" {
-  description = "Enable Point-In-Time Recovery (requires binary logging / WAL archiving)"
-  type        = bool
-  default     = true # always true in production
-}
-
-variable "dr_region" {
-  description = "GCP region for the cross-region read replica"
-  type        = string
-  default     = "us-west1" # <-- CHANGE THIS
-}
 
 # ---------------------------------------------
 # Cloud SQL Primary Instance
@@ -90,7 +50,7 @@ resource "google_sql_database_instance" "primary" {
     # Private IP only — no public IP
     ip_configuration {
       ipv4_enabled                                  = false
-      private_network                               = google_compute_network.main.id # from main.tf
+      private_network                               = var.network_id
       enable_private_path_for_google_cloud_services = true
     }
 
@@ -126,11 +86,11 @@ resource "google_compute_global_address" "private_services" {
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16
-  network       = google_compute_network.main.id
+  network       = var.network_id
 }
 
 resource "google_service_networking_connection" "private_vpc" {
-  network                 = google_compute_network.main.id
+  network                 = var.network_id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_services.name]
 }
@@ -209,7 +169,7 @@ resource "google_sql_database_instance" "dr_replica" {
 
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.main.id
+      private_network = var.network_id
     }
   }
 }
@@ -243,23 +203,4 @@ resource "google_monitoring_alert_policy" "sql_backup_failed" {
   alert_strategy {
     auto_close = "604800s" # auto-close after 7 days if not acknowledged
   }
-}
-
-# ---------------------------------------------
-# Outputs
-# ---------------------------------------------
-output "cloud_sql_connection_name" {
-  description = "Cloud SQL connection name (use with Cloud SQL Proxy)"
-  value       = google_sql_database_instance.primary.connection_name
-}
-
-output "db_private_ip" {
-  description = "Private IP of the Cloud SQL primary instance"
-  value       = google_sql_database_instance.primary.private_ip_address
-  sensitive   = true
-}
-
-output "db_password_secret_id" {
-  description = "Secret Manager secret ID for the application DB user password"
-  value       = google_secret_manager_secret.db_password.secret_id
 }

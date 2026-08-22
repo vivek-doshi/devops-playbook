@@ -1,72 +1,16 @@
 # ============================================================
 # TEMPLATE: Terraform — AWS RDS Backup & DR Policies
-# WHEN TO USE: Add alongside terraform/aws-eks/main.tf to ensure RDS
-#              instances have automated backups, PITR, and cross-region
-#              replicas configured before an incident forces your hand.
-# PREREQUISITES: An existing RDS instance or create one here.
+# WHEN TO USE: Add alongside terraform/aws-eks/ to ensure RDS instances have
+#              automated backups, PITR, and cross-region replicas configured
+#              before an incident forces your hand.
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: terraform/aws-eks/main.tf
-#                cd/kubernetes/_patterns/velero-backup.yaml
+# RELATED FILES: cd/kubernetes/_patterns/velero-backup.yaml
 # MATURITY: Stable
 # ============================================================
 
-# ---------------------------------------------
-# Variables
-# ---------------------------------------------
-variable "db_instance_class" {
-  description = "RDS instance class"
-  type        = string
-  default     = "db.t3.medium" # <-- CHANGE THIS
-}
-
-variable "db_engine" {
-  description = "Database engine"
-  type        = string
-  default     = "postgres" # <-- CHANGE THIS: postgres | mysql | mariadb
-}
-
-variable "db_engine_version" {
-  type    = string
-  default = "16.1" # <-- CHANGE THIS: use latest stable
-}
-
-variable "db_name" {
-  type    = string
-  default = "appdb" # <-- CHANGE THIS
-}
-
-variable "backup_retention_days" {
-  description = "Days to retain automated backups (1–35)"
-  type        = number
-  default     = 14 # <-- CHANGE THIS: 30 for compliance-sensitive workloads
-}
-
-variable "backup_window" {
-  description = "UTC window for automated backups — must not overlap maintenance_window"
-  type        = string
-  default     = "02:00-03:00" # <-- CHANGE THIS: pick off-peak for your region
-}
-
-variable "maintenance_window" {
-  type    = string
-  default = "Mon:04:00-Mon:05:00" # <-- CHANGE THIS
-}
-
-variable "dr_region" {
-  description = "Region for the cross-region read replica (DR target)"
-  type        = string
-  default     = "us-west-2" # <-- CHANGE THIS
-}
-
-variable "snapshot_s3_bucket" {
-  description = "S3 bucket for exported snapshots (DR archive)"
-  type        = string
-  default     = "" # <-- CHANGE THIS: leave empty to skip export
-}
-
 locals {
   name_prefix = "${var.project}-${var.environment}"
-  db_tags     = merge(local.common_tags, { Component = "database" })
+  db_tags     = merge(var.common_tags, { Component = "database" })
 }
 
 # ---------------------------------------------
@@ -75,7 +19,7 @@ locals {
 resource "aws_db_subnet_group" "main" {
   name        = "dbsng-${local.name_prefix}"
   description = "Private subnets for RDS"
-  subnet_ids  = aws_subnet.private[*].id # references subnets from main.tf
+  subnet_ids  = var.private_subnet_ids
   tags        = local.db_tags
 }
 
@@ -84,7 +28,7 @@ resource "aws_db_subnet_group" "main" {
 resource "aws_security_group" "rds" {
   name_prefix = "sg-rds-${local.name_prefix}-"
   description = "Database access from the EKS VPC"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "PostgreSQL from VPC workloads"
@@ -205,7 +149,7 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 resource "aws_db_instance" "dr_replica" {
   count = var.environment == "prod" ? 1 : 0 # only in production  # <-- CHANGE THIS
 
-  provider   = aws.dr_region # configure a second provider alias
+  provider   = aws.dr_region
   identifier = "rds-${local.name_prefix}-dr"
 
   # Read replica config
@@ -275,18 +219,4 @@ resource "aws_cloudwatch_metric_alarm" "rds_backup_missing" {
 
   alarm_actions = [] # <-- CHANGE THIS: add your SNS topic ARN
   ok_actions    = []
-}
-
-# ---------------------------------------------
-# Outputs
-# ---------------------------------------------
-output "rds_endpoint" {
-  description = "RDS primary endpoint"
-  value       = aws_db_instance.primary.endpoint
-  sensitive   = true
-}
-
-output "rds_master_secret_arn" {
-  description = "ARN of the Secrets Manager secret holding the master password"
-  value       = aws_db_instance.primary.master_user_secret[0].secret_arn
 }
