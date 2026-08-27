@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Deploy to AKS
 # WHEN TO USE: AKS deployment from Azure DevOps pipelines
 # PREREQUISITES: AKS cluster, Azure service connection

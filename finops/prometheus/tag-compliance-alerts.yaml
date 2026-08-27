@@ -1,3 +1,4 @@
+---
 # finops/prometheus/tag-compliance-alerts.yaml
 # Prometheus alerting rules for cost tag compliance.
 # Triggers when >5% of pods lack required finops.org labels.

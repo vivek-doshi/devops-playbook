@@ -21,10 +21,11 @@ from typing import Any
 
 # ─── CPU/memory pricing constants (fallback if API unavailable) ───────────────
 # Approximate AWS us-east-1 on-demand pricing per vCPU-hour and GiB-hour
-DEFAULT_CPU_HOURLY_RATE_USD = 0.048   # $/vCPU-hour
+DEFAULT_CPU_HOURLY_RATE_USD = 0.048  # $/vCPU-hour
 DEFAULT_MEMORY_HOURLY_RATE_USD = 0.006  # $/GiB-hour
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def parse_cpu(cpu_str: str) -> float:
     """Convert Kubernetes CPU string to float cores."""
@@ -42,18 +43,24 @@ def parse_memory(mem_str: str) -> float:
         return 0.0
     s = str(mem_str).strip()
     units = {
-        "Ki": 1 / (1024 ** 2), "Mi": 1 / 1024, "Gi": 1,
-        "Ti": 1024, "Pi": 1024 ** 2, "Ei": 1024 ** 3,
-        "K": 1 / (1000 ** 2) * 1000 / 1024, "M": 1 / 1024 * (1000**2) / (1024**2),
+        "Ki": 1 / (1024**2),
+        "Mi": 1 / 1024,
+        "Gi": 1,
+        "Ti": 1024,
+        "Pi": 1024**2,
+        "Ei": 1024**3,
+        "K": 1 / (1000**2) * 1000 / 1024,
+        "M": 1 / 1024 * (1000**2) / (1024**2),
     }
     for suffix, factor in sorted(units.items(), key=lambda x: -len(x[0])):
         if s.endswith(suffix):
             return float(s[: -len(suffix)]) * factor
-    return float(s) / (1024 ** 3)
+    return float(s) / (1024**3)
 
 
-def calculate_monthly_cost(cpu_cores: float, memory_gib: float,
-                            cpu_rate: float, memory_rate: float) -> float:
+def calculate_monthly_cost(
+    cpu_cores: float, memory_gib: float, cpu_rate: float, memory_rate: float
+) -> float:
     """Return estimated monthly cost in USD (730 hours/month)."""
     return (cpu_cores * cpu_rate + memory_gib * memory_rate) * 730
 
@@ -69,6 +76,7 @@ def classify_priority(savings_pct: float) -> str:
 
 # ─── VPA querying ─────────────────────────────────────────────────────────────
 
+
 def fetch_vpa_recommendations(namespace: str | None, k8s_client=None) -> list[dict[str, Any]]:
     """
     Fetch VPA objects and extract recommendations.
@@ -76,6 +84,7 @@ def fetch_vpa_recommendations(namespace: str | None, k8s_client=None) -> list[di
     """
     try:
         from kubernetes import client, config
+
         config.load_kube_config()
         custom = client.CustomObjectsApi()
 
@@ -139,6 +148,7 @@ def _mock_vpa_data(namespace: str) -> list[dict[str, Any]]:
 
 # ─── Kubecost/OpenCost pricing ────────────────────────────────────────────────
 
+
 def fetch_pricing(kubecost_url: str) -> dict[str, float]:
     """
     Fetch per-node pricing from Kubecost/OpenCost API.
@@ -146,6 +156,7 @@ def fetch_pricing(kubecost_url: str) -> dict[str, float]:
     """
     try:
         import requests  # noqa: PLC0415
+
         resp = requests.get(f"{kubecost_url}/model/node/pricing", timeout=10)
         resp.raise_for_status()
         data = resp.json()
@@ -159,7 +170,10 @@ def fetch_pricing(kubecost_url: str) -> dict[str, float]:
                 "memory_hourly_rate": sum(mem_rates) / len(mem_rates),
             }
     except Exception as exc:  # noqa: BLE001
-        print(f"WARNING: Could not fetch pricing from Kubecost ({exc}). Using defaults.", file=sys.stderr)
+        print(
+            f"WARNING: Could not fetch pricing from Kubecost ({exc}). Using defaults.",
+            file=sys.stderr,
+        )
 
     return {
         "cpu_hourly_rate": DEFAULT_CPU_HOURLY_RATE_USD,
@@ -169,6 +183,7 @@ def fetch_pricing(kubecost_url: str) -> dict[str, float]:
 
 # ─── Current resource requests ────────────────────────────────────────────────
 
+
 def fetch_current_resources(vpa: dict[str, Any]) -> dict[str, dict[str, str]]:
     """
     Fetch current resource requests from the workload referenced by the VPA.
@@ -176,6 +191,7 @@ def fetch_current_resources(vpa: dict[str, Any]) -> dict[str, dict[str, str]]:
     """
     try:
         from kubernetes import client, config  # noqa: PLC0415
+
         config.load_kube_config()
         apps = client.AppsV1Api()
         ref = vpa["spec"]["targetRef"]
@@ -201,7 +217,9 @@ def fetch_current_resources(vpa: dict[str, Any]) -> dict[str, dict[str, str]]:
     except Exception:  # noqa: BLE001
         # Fallback: use 2x the VPA target as "current" for demo
         result = {}
-        for rec in vpa.get("status", {}).get("recommendation", {}).get("containerRecommendations", []):
+        for rec in (
+            vpa.get("status", {}).get("recommendation", {}).get("containerRecommendations", [])
+        ):
             target = rec.get("target", {})
             result[rec["containerName"]] = {
                 "cpu": str(parse_cpu(target.get("cpu", "0")) * 2),
@@ -212,8 +230,13 @@ def fetch_current_resources(vpa: dict[str, Any]) -> dict[str, dict[str, str]]:
 
 # ─── Report generation ────────────────────────────────────────────────────────
 
-def build_report(vpas: list[dict[str, Any]], pricing: dict[str, float],
-                  savings_threshold: float, namespace: str | None) -> dict[str, Any]:
+
+def build_report(
+    vpas: list[dict[str, Any]],
+    pricing: dict[str, float],
+    savings_threshold: float,
+    namespace: str | None,
+) -> dict[str, Any]:
     """Build the full rightsizing report."""
     cpu_rate = pricing["cpu_hourly_rate"]
     mem_rate = pricing["memory_hourly_rate"]
@@ -225,9 +248,7 @@ def build_report(vpas: list[dict[str, Any]], pricing: dict[str, float],
         workload_type = vpa["spec"]["targetRef"]["kind"]
 
         container_recs = (
-            vpa.get("status", {})
-            .get("recommendation", {})
-            .get("containerRecommendations", [])
+            vpa.get("status", {}).get("recommendation", {}).get("containerRecommendations", [])
         )
 
         if not container_recs:
@@ -251,26 +272,28 @@ def build_report(vpas: list[dict[str, Any]], pricing: dict[str, float],
             savings_pct = (savings / current_cost * 100) if current_cost > 0 else 0
             priority = classify_priority(savings_pct)
 
-            recommendations.append({
-                "namespace": ns,
-                "workload_name": workload_name,
-                "workload_type": workload_type,
-                "container_name": container,
-                "current_resources": {
-                    "cpu_request": current["cpu"],
-                    "memory_request": current["memory"],
-                },
-                "recommended_resources": {
-                    "cpu_request": target.get("cpu", "0"),
-                    "memory_request": target.get("memory", "0"),
-                },
-                "current_monthly_cost_usd": round(current_cost, 2),
-                "recommended_monthly_cost_usd": round(rec_cost, 2),
-                "potential_monthly_savings_usd": round(savings, 2),
-                "savings_percentage": round(savings_pct, 1),
-                "priority": priority,
-                "is_high_priority": savings_pct >= savings_threshold,
-            })
+            recommendations.append(
+                {
+                    "namespace": ns,
+                    "workload_name": workload_name,
+                    "workload_type": workload_type,
+                    "container_name": container,
+                    "current_resources": {
+                        "cpu_request": current["cpu"],
+                        "memory_request": current["memory"],
+                    },
+                    "recommended_resources": {
+                        "cpu_request": target.get("cpu", "0"),
+                        "memory_request": target.get("memory", "0"),
+                    },
+                    "current_monthly_cost_usd": round(current_cost, 2),
+                    "recommended_monthly_cost_usd": round(rec_cost, 2),
+                    "potential_monthly_savings_usd": round(savings, 2),
+                    "savings_percentage": round(savings_pct, 1),
+                    "priority": priority,
+                    "is_high_priority": savings_pct >= savings_threshold,
+                }
+            )
 
     # Sort by potential savings descending
     recommendations.sort(key=lambda r: r["potential_monthly_savings_usd"], reverse=True)
@@ -296,7 +319,9 @@ def build_report(vpas: list[dict[str, Any]], pricing: dict[str, float],
             "total_current_monthly_cost_usd": round(total_current, 2),
             "total_recommended_monthly_cost_usd": round(total_rec, 2),
             "total_potential_savings_usd": round(total_savings, 2),
-            "total_savings_percentage": round((total_savings / total_current * 100) if total_current > 0 else 0, 1),
+            "total_savings_percentage": round(
+                (total_savings / total_current * 100) if total_current > 0 else 0, 1
+            ),
         },
         "recommendations": recommendations,
     }
@@ -315,18 +340,27 @@ def print_report_text(report: dict[str, Any]) -> None:
     print(f"  High-priority recs : {s['high_priority_count']}")
     print(f"  Current monthly    : ${s['total_current_monthly_cost_usd']:,.2f}")
     print(f"  Recommended        : ${s['total_recommended_monthly_cost_usd']:,.2f}")
-    print(f"  Potential savings  : ${s['total_potential_savings_usd']:,.2f} ({s['total_savings_percentage']}%)")
+    print(
+        f"  Potential savings  : ${s['total_potential_savings_usd']:,.2f} ({s['total_savings_percentage']}%)"
+    )
     print("=" * 60)
 
     for r in report["recommendations"][:10]:  # top 10
         flag = "🔴 HIGH" if r["is_high_priority"] else "🟡" if r["priority"] == "medium" else "🟢"
         print(f"\n{flag} {r['workload_name']}/{r['container_name']} ({r['namespace']})")
-        print(f"     Current : CPU={r['current_resources']['cpu_request']}  MEM={r['current_resources']['memory_request']}  Cost=${r['current_monthly_cost_usd']:.2f}/mo")
-        print(f"     Recommend: CPU={r['recommended_resources']['cpu_request']}  MEM={r['recommended_resources']['memory_request']}  Cost=${r['recommended_monthly_cost_usd']:.2f}/mo")
-        print(f"     Savings  : ${r['potential_monthly_savings_usd']:.2f}/mo ({r['savings_percentage']}%)")
+        print(
+            f"     Current : CPU={r['current_resources']['cpu_request']}  MEM={r['current_resources']['memory_request']}  Cost=${r['current_monthly_cost_usd']:.2f}/mo"
+        )
+        print(
+            f"     Recommend: CPU={r['recommended_resources']['cpu_request']}  MEM={r['recommended_resources']['memory_request']}  Cost=${r['recommended_monthly_cost_usd']:.2f}/mo"
+        )
+        print(
+            f"     Savings  : ${r['potential_monthly_savings_usd']:.2f}/mo ({r['savings_percentage']}%)"
+        )
 
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -334,11 +368,20 @@ def main() -> None:
     )
     parser.add_argument("--namespace", "-n", help="Target namespace (omit for all)")
     parser.add_argument("--all-namespaces", "-A", action="store_true")
-    parser.add_argument("--kubecost-url", default="http://kubecost.finops.svc.cluster.local:9090",
-                        help="Kubecost/OpenCost API base URL")
+    parser.add_argument(
+        "--kubecost-url",
+        default="http://kubecost.finops.svc.cluster.local:9090",
+        help="Kubecost/OpenCost API base URL",
+    )
     parser.add_argument("--format", choices=["text", "json"], default="text")
-    parser.add_argument("--savings-threshold", "--min-savings", dest="savings_threshold", type=float, default=20.0,
-                        help="%% savings to classify as high-priority (default: 20%%)")
+    parser.add_argument(
+        "--savings-threshold",
+        "--min-savings",
+        dest="savings_threshold",
+        type=float,
+        default=20.0,
+        help="%% savings to classify as high-priority (default: 20%%)",
+    )
     parser.add_argument("--output", "-o", help="Output file path (default: stdout)")
     args = parser.parse_args()
 
@@ -351,6 +394,7 @@ def main() -> None:
         output = json.dumps(report, indent=2)
     else:
         import io
+
         buf = io.StringIO()
         sys.stdout = buf
         print_report_text(report)

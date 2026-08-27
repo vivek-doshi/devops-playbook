@@ -23,19 +23,28 @@ SAMPLE_NS_COSTS = [
     {
         "name": "team-a",
         "properties": {"namespace": "team-a", "labels": {"finops.org/costcenter": "engineering"}},
-        "cpuCost": 1000.0, "ramCost": 500.0, "pvCost": 200.0, "networkCost": 100.0,
+        "cpuCost": 1000.0,
+        "ramCost": 500.0,
+        "pvCost": 200.0,
+        "networkCost": 100.0,
         "totalCost": 1800.0,
     },
     {
         "name": "team-b",
         "properties": {"namespace": "team-b", "labels": {"finops.org/costcenter": "engineering"}},
-        "cpuCost": 500.0, "ramCost": 200.0, "pvCost": 100.0, "networkCost": 50.0,
+        "cpuCost": 500.0,
+        "ramCost": 200.0,
+        "pvCost": 100.0,
+        "networkCost": 50.0,
         "totalCost": 850.0,
     },
     {
         "name": "team-ml",
         "properties": {"namespace": "team-ml", "labels": {"finops.org/costcenter": "data-science"}},
-        "cpuCost": 5000.0, "ramCost": 3000.0, "pvCost": 1000.0, "networkCost": 200.0,
+        "cpuCost": 5000.0,
+        "ramCost": 3000.0,
+        "pvCost": 1000.0,
+        "networkCost": 200.0,
         "totalCost": 9200.0,
     },
 ]
@@ -104,7 +113,10 @@ class TestBuildReport:
             {
                 "name": "no-label-ns",
                 "properties": {"namespace": "no-label-ns", "labels": {}},
-                "cpuCost": 100.0, "ramCost": 50.0, "pvCost": 20.0, "networkCost": 10.0,
+                "cpuCost": 100.0,
+                "ramCost": 50.0,
+                "pvCost": 20.0,
+                "networkCost": 10.0,
                 "totalCost": 180.0,
             }
         ]

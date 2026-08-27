@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Python Build & Test
 # WHEN TO USE: Any Python project with pytest
 # PREREQUISITES: requirements.txt and requirements-dev.txt

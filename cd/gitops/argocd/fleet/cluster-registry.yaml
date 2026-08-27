@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ArgoCD Fleet - Cluster Registry
 # WHEN TO USE: Single source of truth for clusters managed by fleet ApplicationSets

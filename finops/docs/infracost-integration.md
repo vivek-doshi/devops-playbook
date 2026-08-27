@@ -14,7 +14,7 @@ FinOps Cost Estimate
 Monthly cost change: +$127.40 (+8.5%)
 
 + aws_db_instance.main           +$87.60/month
-+ aws_s3_bucket.data             +$15.00/month  
++ aws_s3_bucket.data             +$15.00/month
 + aws_cloudwatch_log_group.app   +$24.80/month
 ```
 

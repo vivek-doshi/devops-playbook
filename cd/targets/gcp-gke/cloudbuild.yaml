@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GCP Cloud Build — Build & Deploy to GKE
 # WHEN TO USE: Native GCP CI/CD pipeline for GKE deployments
 # PREREQUISITES: Cloud Build API enabled, GKE cluster

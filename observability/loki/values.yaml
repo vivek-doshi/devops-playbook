@@ -1,3 +1,4 @@
+---
 # loki-stack chart values (grafana/loki-stack 2.10.x)
 # Installs both Loki and Promtail from a single values file.
 #
@@ -39,7 +40,7 @@ loki:
     schema_config:
       configs:
         - from: "2024-01-01"
-          store: tsdb           # TSDB is the recommended index type for Loki 2.8+.
+          store: tsdb # TSDB is the recommended index type for Loki 2.8+.
           object_store: filesystem # <-- CHANGE THIS to match your storage backend.
           schema: v13
           index:
@@ -56,28 +57,28 @@ loki:
           kvstore:
             store: inmemory
           replication_factor: 1
-      chunk_encoding: snappy    # Snappy gives fast compression with moderate ratio — good default.
+      chunk_encoding: snappy # Snappy gives fast compression with moderate ratio — good default.
       chunk_target_size: 1048576 # 1 MiB target keeps chunks predictably sized for filesystem storage.
-      chunk_idle_period: 30m    # Flush idle chunks after 30 minutes to bound in-memory usage.
-      max_chunk_age: 1h         # Force-flush any chunk older than 1 hour regardless of idle state.
+      chunk_idle_period: 30m # Flush idle chunks after 30 minutes to bound in-memory usage.
+      max_chunk_age: 1h # Force-flush any chunk older than 1 hour regardless of idle state.
 
     compactor:
       working_directory: /var/loki/compactor
       # retention_enabled must be true in the compactor to honour retention_period below.
       retention_enabled: true
-      retention_delete_delay: 2h    # Wait 2 hours after the retention window before deleting chunks.
+      retention_delete_delay: 2h # Wait 2 hours after the retention window before deleting chunks.
       retention_delete_worker_count: 150
 
     limits_config:
       # 30-day retention matches the Prometheus retention set in observability/prometheus/values.yaml
       # so incident timelines stay consistent across metrics and logs.
-      retention_period: 720h         # 720h = exactly 30 days.
-      ingestion_rate_mb: 16          # Per-tenant ingestion ceiling in MB/s.
-      ingestion_burst_size_mb: 32    # Burst allowance above the sustained rate.
+      retention_period: 720h # 720h = exactly 30 days.
+      ingestion_rate_mb: 16 # Per-tenant ingestion ceiling in MB/s.
+      ingestion_burst_size_mb: 32 # Burst allowance above the sustained rate.
       # max_query_length adds a 1-hour buffer beyond the 30-day retention window so range
       # queries ending exactly at "now - 30d" do not hit the boundary mid-request.
       max_query_length: 721h
-      max_streams_per_user: 10000    # Prevents a noisy namespace from exhausting the ingester.
+      max_streams_per_user: 10000 # Prevents a noisy namespace from exhausting the ingester.
       per_stream_rate_limit: 3MB
       per_stream_rate_limit_burst: 15MB
       reject_old_samples: true
@@ -86,6 +87,18 @@ loki:
     query_range:
       split_queries_by_interval: 24h # Split long queries into 1-day chunks to bound fan-out.
       cache_results: true
+
+    ruler:
+      # Store rule files on the local filesystem, read from the mounted ConfigMap.
+      storage:
+        type: local
+        local:
+          directory: /var/loki/rules
+      # <-- CHANGE THIS to the Alertmanager service in your monitoring namespace.
+      alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring:9093
+      enable_alertmanager_v2: true
+      poll_interval: 1m
+      enable_api: true
 
     storage_config:
       tsdb_shipper:
@@ -98,6 +111,43 @@ loki:
         embedded_cache:
           enabled: true
           max_size_mb: 500 # In-process cache reduces repeated storage reads under normal query load.
+
+      # ─── Loki Ruler ───────────────────────────────────────────────────────────────
+      #
+      # The ruler evaluates LogQL alert rules on a schedule and forwards firing alerts
+      # to Alertmanager, where they appear alongside Prometheus alerts on the same
+      # routing tree.
+      #
+      # Prerequisites:
+      #   1. Apply the rules ConfigMap first (or in the same Helm sync):
+      #        kubectl apply -f observability/loki/loki-ruler-alerts.yaml
+      #   2. The ConfigMap is mounted at /var/loki/rules/fake/ — "fake" is the synthetic
+      #      tenant name used in single-tenant mode (auth_enabled=false).
+      #   3. Set alertmanager_url below to match your Alertmanager service FQDN.
+      #
+      # This block extends loki.config defined earlier in this file. The Helm chart
+      # deep-merges the config keys, so only the new ruler section is added here.
+      ruler:
+        storage:
+          type: local
+          local:
+            # This path is also used by common.storage.filesystem.rules_directory above.
+            # The sub-directory "fake" is Loki's default org ID for single-tenant deployments.
+            directory: /var/loki/rules
+
+        # <-- CHANGE THIS to the Alertmanager service in your monitoring namespace.
+        alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring:9093
+
+        # Send alerts to Alertmanager even when only one Loki replica is running.
+        enable_alertmanager_v2: true
+
+        # Poll the rules directory every minute for configuration changes.
+        # Lower values mean faster rule propagation; the minimum supported is 15s.
+        poll_interval: 1m
+
+        # Enable the remote-write path so ruler evaluation results can also be written
+        # back to Prometheus as recording rules (set to false if not needed).
+        enable_api: true
 
   resources:
     requests:
@@ -116,6 +166,19 @@ loki:
     app: loki
     monitoring: "true" # Opt in to the additionalScrapeConfigs job in prometheus/values.yaml.
 
+  # Mount the loki-ruler-config ConfigMap into the Loki pod so the ruler can read
+  # alert rules without requiring a pod restart on rule changes.
+  extraVolumes:
+    - name: loki-ruler-rules
+      configMap:
+        name: loki-ruler-config
+
+  extraVolumeMounts:
+    - name: loki-ruler-rules
+      # /var/loki/rules/fake/ - "fake" is the single-tenant org ID.
+      mountPath: /var/loki/rules/fake
+      readOnly: true
+
 # ─── Promtail ─────────────────────────────────────────────────────────────────
 
 promtail:
@@ -125,7 +188,7 @@ promtail:
   # Promtail spends most of its time blocked on inotify file events rather than doing CPU work.
   resources:
     requests:
-      cpu: 50m    # Minimal CPU; file-tail work is almost entirely I/O-wait, not CPU.
+      cpu: 50m # Minimal CPU; file-tail work is almost entirely I/O-wait, not CPU.
       memory: 64Mi
     limits:
       cpu: 200m
@@ -164,11 +227,11 @@ promtail:
         # Fields that do not exist in a line are silently ignored, so this stage is safe to run globally.
         - json:
             expressions:
-              level: level       # Severity used by structlog, python-json-logger, and the OTel SDK.
-              time: time         # ISO-8601 timestamp emitted by uvicorn's JSON access log formatter.
-              message: message   # Primary log message body.
+              level: level # Severity used by structlog, python-json-logger, and the OTel SDK.
+              time: time # ISO-8601 timestamp emitted by uvicorn's JSON access log formatter.
+              message: message # Primary log message body.
               trace_id: trace_id # OTel trace correlation ID (populated when the OTel sidecar is running).
-              logger: logger     # Logger name, useful for filtering by component within an application.
+              logger: logger # Logger name, useful for filtering by component within an application.
 
         # Stage 3: for plain-text log lines (no JSON), extract level via regex.
         # Handles .NET (ASPNETCORE_ENVIRONMENT), Java (Logback/Log4j), and generic bracketed formats.
@@ -179,13 +242,6 @@ promtail:
               - regex:
                   # Matches formats:
                   #   .NET:    "2024-01-01 12:00:00.000 +00:00 [INF] Message"
-                  #   Java:    "2024-01-01 12:00:00.000  INFO --- [main] Message"
-                  #   Generic: "INFO: Message" or "[ERROR] Message"
-                  expression: '(?i)(?:^|\s)\[?(?P<level>TRACE|DEBUG|INFO|WARN(?:ING)?|ERROR|CRITICAL|FATAL)\]?[\s:]'
-              - labels:
-                  level:
-
-        # Stage 4: parse nginx access log format into structured fields.
         # The selector targets both standalone nginx containers and the ingress-nginx pods.
         - match:
             selector: '{app=~"nginx|ingress.*"}'
@@ -204,7 +260,7 @@ promtail:
         # consistently regardless of whether the app emits "INFO", "Info", or "info".
         - template:
             source: level
-            template: '{{ ToLower .Value }}'
+            template: "{{ ToLower .Value }}"
 
         # Stage 6: promote level and trace_id to indexed Loki stream labels.
         # Keep the label count small — each unique label combination creates a new stream.
@@ -246,58 +302,3 @@ promtail:
     enabled: true
     labels:
       monitoring: "true"
-
-# ─── Loki Ruler ───────────────────────────────────────────────────────────────
-#
-# The ruler evaluates LogQL alert rules on a schedule and forwards firing alerts
-# to Alertmanager, where they appear alongside Prometheus alerts on the same
-# routing tree.
-#
-# Prerequisites:
-#   1. Apply the rules ConfigMap first (or in the same Helm sync):
-#        kubectl apply -f observability/loki/loki-ruler-alerts.yaml
-#   2. The ConfigMap is mounted at /var/loki/rules/fake/ — "fake" is the synthetic
-#      tenant name used in single-tenant mode (auth_enabled=false).
-#   3. Set alertmanager_url below to match your Alertmanager service FQDN.
-#
-# This block extends loki.config defined earlier in this file. The Helm chart
-# deep-merges the config keys, so only the new ruler section is added here.
-loki:
-  config:
-    ruler:
-      # Store rule files on the local filesystem, read from the mounted ConfigMap.
-      # For distributed/microservices mode, switch to an object storage backend:
-      #   storage: { type: s3, s3: { ... } }
-      storage:
-        type: local
-        local:
-          # This path is also used by common.storage.filesystem.rules_directory above.
-          # The sub-directory "fake" is Loki's default org ID for single-tenant deployments.
-          directory: /var/loki/rules
-
-      # <-- CHANGE THIS to the Alertmanager service in your monitoring namespace.
-      alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring:9093
-
-      # Send alerts to Alertmanager even when only one Loki replica is running.
-      enable_alertmanager_v2: true
-
-      # Poll the rules directory every minute for configuration changes.
-      # Lower values mean faster rule propagation; the minimum supported is 15s.
-      poll_interval: 1m
-
-      # Enable the remote-write path so ruler evaluation results can also be written
-      # back to Prometheus as recording rules (set to false if not needed).
-      enable_api: true
-
-  # Mount the loki-ruler-config ConfigMap into the Loki pod so the ruler can read
-  # the alert rules without requiring a pod restart on rule changes.
-  extraVolumes:
-    - name: loki-ruler-rules
-      configMap:
-        name: loki-ruler-config
-
-  extraVolumeMounts:
-    - name: loki-ruler-rules
-      # /var/loki/rules/fake/ — "fake" is the single-tenant org ID.
-      mountPath: /var/loki/rules/fake
-      readOnly: true

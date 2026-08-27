@@ -1,3 +1,4 @@
+---
 # finops/helm/vpa-values.yaml
 # Helm values for the Vertical Pod Autoscaler (VPA) chart.
 # Chart: https://github.com/FairwindsOps/charts/tree/master/stable/vpa

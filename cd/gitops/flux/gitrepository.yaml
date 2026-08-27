@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Flux GitRepository — Source of Truth
 # WHEN TO USE: Define the Git source consumed by Flux Kustomizations and HelmReleases

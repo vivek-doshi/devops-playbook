@@ -1,3 +1,4 @@
+---
 # slo-burn-rate-configmap.yaml
 #
 # Wraps the slo-burn-rate Grafana dashboard JSON in a Kubernetes ConfigMap so

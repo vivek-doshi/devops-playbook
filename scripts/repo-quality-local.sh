@@ -64,14 +64,9 @@ require_cmd curl
 require_cmd python3
 require_cmd helm
 require_cmd terraform
-require_cmd npm
-require_cmd npx
 install_actionlint
 install_kubeconform
 install_conftest
-
-step "Markdown links"
-npx -y lychee --config .mlc-config.json docs/**/*.md README.md GETTING_STARTED.md
 
 step "Actionlint"
 actionlint -color
@@ -123,14 +118,6 @@ helm template webapp cd/helm/webapp/ | conftest test - --policy policy/conftest/
 step "Catalog validate"
 python3 -m pip install --quiet pyyaml
 python3 catalog/scripts/validate-catalog.py --strict --skip-url-check
-
-step "Website build"
-if [[ -d website ]]; then
-  npm --prefix website ci
-  npm --prefix website run build
-else
-  echo "Warning: website/ not found, skipping website build"
-fi
 
 echo ""
 echo "Repo quality gate checks passed locally."

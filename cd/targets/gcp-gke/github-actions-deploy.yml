@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to GCP GKE
 # WHEN TO USE: Deploying to Google Kubernetes Engine via Workload Identity
 # PREREQUISITES: GKE cluster, Workload Identity Federation setup

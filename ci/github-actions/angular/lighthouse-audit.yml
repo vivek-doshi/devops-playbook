@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Lighthouse CI Audit
 # WHEN TO USE: Angular/React apps needing performance score gating on PRs
 # PREREQUISITES: .lighthouserc.json config file in repo root

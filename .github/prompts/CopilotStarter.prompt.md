@@ -74,7 +74,7 @@ Create Coding Agent workflow file:
 
 <!-- Note 16: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 **CRITICAL**: The workflow MUST follow this exact structure:
-- Job name MUST be `copilot-setup-steps` 
+- Job name MUST be `copilot-setup-steps`
 - Include proper triggers (workflow_dispatch, push, pull_request on the workflow file)
 <!-- Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - Set appropriate permissions (minimum required)
@@ -174,7 +174,7 @@ description: "Java Spring Boot development standards"
 **Fetch these awesome-copilot directories:**
 <!-- Note 37: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - **Instructions**: https://github.com/github/awesome-copilot/tree/main/instructions
-- **Prompts**: https://github.com/github/awesome-copilot/tree/main/prompts  
+- **Prompts**: https://github.com/github/awesome-copilot/tree/main/prompts
 - **Chat Modes**: https://github.com/github/awesome-copilot/tree/main/chatmodes
 <!-- Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - **Collections**: https://github.com/github/awesome-copilot/blob/main/docs/README.collections.md
@@ -182,7 +182,7 @@ description: "Java Spring Boot development standards"
 **Awesome-Copilot Collections to Check:**
 - **Frontend Web Development**: React, Angular, Vue, TypeScript, CSS frameworks
 <!-- Note 39: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-- **C# .NET Development**: Testing, documentation, and best practices  
+- **C# .NET Development**: Testing, documentation, and best practices
 - **Java Development**: Spring Boot, Quarkus, testing, documentation
 - **Database Development**: PostgreSQL, SQL Server, and general database best practices
 <!-- Note 40: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->

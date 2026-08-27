@@ -25,7 +25,7 @@ mock_provider "aws" {}
 variables {
   project     = "test"
   environment = "test"
-  aws_region  = "us-east-1"    # <-- CHANGE THIS: match your default region
+  aws_region  = "us-east-1" # <-- CHANGE THIS: match your default region
   vpc_cidr    = "10.0.0.0/16"
   # Add any other required variables from your variables.tf  # <-- CHANGE THIS
 }

@@ -1,3 +1,4 @@
+---
 # Enforces the pod-level and container-level security context demonstrated in:
 #   cd/kubernetes/_base/deployment.yaml
 #

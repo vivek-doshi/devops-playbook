@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Reusable Slack/Teams Notification
 # WHEN TO USE: Post-pipeline notifications to messaging platforms
 # PREREQUISITES: SLACK_WEBHOOK_URL variable configured in GitLab

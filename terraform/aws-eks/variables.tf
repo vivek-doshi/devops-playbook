@@ -1,20 +1,17 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform Variables — AWS EKS
 # WHAT TO CHANGE: Update default values or create a terraform.tfvars
 # ============================================================
 
-# Note 1: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "project" {
   description = "Project name — used as a prefix for all resource names"
-  # Note 2: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "myapp" # <-- CHANGE THIS
 
   validation {
-    condition     = length(trim(var.project)) > 0
+    condition     = length(trimspace(var.project)) > 0
     error_message = "Project must be a non-empty string."
   }
-# Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "cost_center" {
@@ -23,16 +20,14 @@ variable "cost_center" {
   default     = "engineering-shared" # <-- CHANGE THIS
 
   validation {
-    condition     = length(trim(var.cost_center)) > 0
+    condition     = length(trimspace(var.cost_center)) > 0
     error_message = "CostCenter must be a non-empty string."
   }
 }
 
 variable "environment" {
-  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Environment name (dev, staging, prod)"
   type        = string
-  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "dev" # <-- CHANGE THIS
 
   validation {
@@ -52,44 +47,32 @@ variable "owner" {
   }
 }
 
-# Note 6: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "aws_region" {
   description = "AWS region for all resources"
-  # Note 7: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "us-east-1" # <-- CHANGE THIS
-# Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "availability_zones" {
-  # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "List of AZs to deploy across — minimum 2 for high availability"
   type        = list(string)
-  # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = ["us-east-1a", "us-east-1b", "us-east-1c"] # <-- CHANGE THIS: match your region
 }
 
-# Note 11: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
-  # Note 12: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "10.0.0.0/16"
-# Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "kubernetes_version" {
-  # Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Kubernetes version for EKS — see https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html"
   type        = string
-  # Note 15: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "1.29" # <-- CHANGE THIS: use latest stable
 }
 
-# Note 16: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "node_instance_type" {
   description = "EC2 instance type for EKS worker nodes"
-  # Note 17: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "t3.large" # <-- CHANGE THIS: size to your workload
 }
@@ -187,4 +170,99 @@ variable "gpu_node_taint_enabled" {
   description = "Apply a NoSchedule taint to the GPU node group so only explicit ML workloads land on it"
   type        = bool
   default     = true
+}
+
+# ---------------------------------------------
+# Feature toggles — used only by the orchestrator (main.tf) to select
+# which modules to run. Disabling "network"/"iam"/"security_groups" breaks
+# dependent modules unless you also disable everything that depends on them.
+# ---------------------------------------------
+variable "enable_network" {
+  description = "Provision the VPC, subnets, and networking (core dependency for other modules)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ecr" {
+  description = "Provision the ECR repository"
+  type        = bool
+  default     = true
+}
+
+variable "enable_iam" {
+  description = "Provision the EKS cluster and node IAM roles (core dependency for the eks module)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_security_groups" {
+  description = "Provision the EKS cluster control plane security group"
+  type        = bool
+  default     = true
+}
+
+variable "enable_eks" {
+  description = "Provision the EKS cluster and managed node groups"
+  type        = bool
+  default     = true
+}
+
+variable "enable_backup" {
+  description = "Provision the RDS backup/DR stack (modules/backup)"
+  type        = bool
+  default     = false
+}
+
+# ---------------------------------------------
+# Backup / DR (modules/backup) — only used when enable_backup = true
+# ---------------------------------------------
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.medium" # <-- CHANGE THIS
+}
+
+variable "db_engine" {
+  description = "Database engine"
+  type        = string
+  default     = "postgres" # <-- CHANGE THIS: postgres | mysql | mariadb
+}
+
+variable "db_engine_version" {
+  type    = string
+  default = "16.1" # <-- CHANGE THIS: use latest stable
+}
+
+variable "db_name" {
+  type    = string
+  default = "appdb" # <-- CHANGE THIS
+}
+
+variable "backup_retention_days" {
+  description = "Days to retain automated backups (1-35)"
+  type        = number
+  default     = 14 # <-- CHANGE THIS: 30 for compliance-sensitive workloads
+}
+
+variable "backup_window" {
+  description = "UTC window for automated backups — must not overlap maintenance_window"
+  type        = string
+  default     = "02:00-03:00" # <-- CHANGE THIS: pick off-peak for your region
+}
+
+variable "maintenance_window" {
+  type    = string
+  default = "Mon:04:00-Mon:05:00" # <-- CHANGE THIS
+}
+
+variable "dr_region" {
+  description = "Region for the cross-region read replica (DR target)"
+  type        = string
+  default     = "us-west-2" # <-- CHANGE THIS
+}
+
+variable "snapshot_s3_bucket" {
+  description = "S3 bucket for exported snapshots (DR archive)"
+  type        = string
+  default     = "" # <-- CHANGE THIS: leave empty to skip export
 }

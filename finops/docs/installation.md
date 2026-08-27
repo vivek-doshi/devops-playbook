@@ -1,6 +1,6 @@
 # FinOps — Installation Guide
 
-> **Prerequisites**: Prometheus + Grafana (kube-prometheus-stack), Kyverno, kubectl access  
+> **Prerequisites**: Prometheus + Grafana (kube-prometheus-stack), Kyverno, kubectl access
 > **Time**: 60–90 minutes for full deployment
 
 ---

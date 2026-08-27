@@ -1,3 +1,4 @@
+---
 # finops/prometheus/alertmanager-anomaly-config.yaml
 # Dedicated Alertmanager configuration for cost anomaly alerts.
 # Routes anomaly alerts to appropriate channels based on severity and namespace.

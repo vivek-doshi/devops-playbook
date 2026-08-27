@@ -29,12 +29,13 @@ from typing import Any
 
 # ─── Constants ────────────────────────────────────────────────────────────────
 
-DEFAULT_TIMEOUT = 30          # seconds per request
+DEFAULT_TIMEOUT = 30  # seconds per request
 MAX_RETRIES = 3
-RETRY_BACKOFF = 2             # seconds (doubles each retry)
+RETRY_BACKOFF = 2  # seconds (doubles each retry)
 
 
 # ─── Authentication helpers ───────────────────────────────────────────────────
+
 
 def get_oauth2_token(
     token_url: str,
@@ -44,6 +45,7 @@ def get_oauth2_token(
 ) -> str:
     """Obtain a Bearer token via OAuth2 client-credentials flow."""
     import requests  # noqa: PLC0415
+
     resp = requests.post(
         token_url,
         data={
@@ -80,6 +82,7 @@ def build_headers(auth_type: str, credential: str) -> dict[str, str]:
 
 
 # ─── API submission ───────────────────────────────────────────────────────────
+
 
 def post_with_retry(
     url: str,
@@ -128,6 +131,7 @@ def post_with_retry(
 
 # ─── Payload builder ──────────────────────────────────────────────────────────
 
+
 def build_payload(report: dict[str, Any], cluster_name: str) -> list[dict[str, Any]]:
     """
     Transform the cost report JSON into the billing API line-item format.
@@ -149,27 +153,32 @@ def build_payload(report: dict[str, Any], cluster_name: str) -> list[dict[str, A
     billing_period = report.get("month", "unknown")
 
     for entry in report.get("cost_centers", []):
-        line_items.append({
-            "cost_center": entry.get("cost_center", "unknown"),
-            "billing_period": billing_period,
-            "cluster": cluster_name,
-            "total_cost_usd": round(entry.get("total_cost_usd", 0), 4),
-            "compute_cost_usd": round(entry.get("compute_cost_usd", 0), 4),
-            "storage_cost_usd": round(entry.get("storage_cost_usd", 0), 4),
-            "network_cost_usd": round(entry.get("network_cost_usd", 0), 4),
-            "shared_cost_allocation_usd": round(entry.get("shared_cost_usd", 0), 4),
-            "namespaces": entry.get("namespaces", []),
-        })
+        line_items.append(
+            {
+                "cost_center": entry.get("cost_center", "unknown"),
+                "billing_period": billing_period,
+                "cluster": cluster_name,
+                "total_cost_usd": round(entry.get("total_cost_usd", 0), 4),
+                "compute_cost_usd": round(entry.get("compute_cost_usd", 0), 4),
+                "storage_cost_usd": round(entry.get("storage_cost_usd", 0), 4),
+                "network_cost_usd": round(entry.get("network_cost_usd", 0), 4),
+                "shared_cost_allocation_usd": round(entry.get("shared_cost_usd", 0), 4),
+                "namespaces": entry.get("namespaces", []),
+            }
+        )
 
     return line_items
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Send cost report to enterprise billing API")
     parser.add_argument("--report", required=True, help="Path to cost-report JSON file")
-    parser.add_argument("--api-url", default=os.environ.get("BILLING_API_URL", ""), help="Billing API base URL")
+    parser.add_argument(
+        "--api-url", default=os.environ.get("BILLING_API_URL", ""), help="Billing API base URL"
+    )
     parser.add_argument("--auth-type", choices=["oauth2", "api-key"], default="oauth2")
     parser.add_argument("--client-id", default=os.environ.get("BILLING_CLIENT_ID", ""))
     parser.add_argument("--client-secret", default=os.environ.get("BILLING_CLIENT_SECRET", ""))
@@ -198,7 +207,11 @@ def main() -> None:
             if not (args.client_id and args.client_secret):
                 print("ERROR: OAuth2 requires --client-id and --client-secret")
                 sys.exit(1)
-            token_url = f"https://login.microsoftonline.com/{args.tenant_id}/oauth2/v2.0/token" if args.tenant_id else f"{args.api_url}/oauth2/token"
+            token_url = (
+                f"https://login.microsoftonline.com/{args.tenant_id}/oauth2/v2.0/token"
+                if args.tenant_id
+                else f"{args.api_url}/oauth2/token"
+            )
             credential = get_oauth2_token(token_url, args.client_id, args.client_secret)
         else:
             credential = args.api_key

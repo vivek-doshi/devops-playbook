@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Semgrep SAST Scan
 # WHEN TO USE: Fast, customisable static analysis on any codebase
 # PREREQUISITES: None

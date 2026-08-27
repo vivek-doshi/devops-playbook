@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Python Build & Test
 # WHEN TO USE: Python projects in Azure DevOps
 # PREREQUISITES: requirements.txt and requirements-dev.txt

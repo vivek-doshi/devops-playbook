@@ -33,7 +33,7 @@ ${FOCUS_ON_EXTENSIBILITY=true|false} <!-- Emphasize extension points and pattern
   - Framework-specific patterns and conventions
   <!-- Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
   - Build and deployment configurations" : "Focus on ${PROJECT_TYPE} specific patterns and practices"}
-  
+
 - ${ARCHITECTURE_PATTERN == "Auto-detect" ? "Determine the architectural pattern(s) by analyzing:
   - Folder organization and namespacing
   <!-- Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
@@ -168,7 +168,7 @@ Document implementation patterns for cross-cutting concerns:
 <!-- Note 37: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 ${PROJECT_TYPE == "Auto-detect" ? "For each detected technology stack, document specific architectural patterns:" : `Document ${PROJECT_TYPE}-specific architectural patterns:`}
 
-${(PROJECT_TYPE == ".NET" || PROJECT_TYPE == "Auto-detect") ? 
+${(PROJECT_TYPE == ".NET" || PROJECT_TYPE == "Auto-detect") ?
 "#### .NET Architectural Patterns (if detected)
 <!-- Note 38: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - Host and application model implementation
@@ -180,7 +180,7 @@ ${(PROJECT_TYPE == ".NET" || PROJECT_TYPE == "Auto-detect") ?
 - Dependency injection container configuration" : ""}
 
 <!-- Note 40: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-${(PROJECT_TYPE == "Java" || PROJECT_TYPE == "Auto-detect") ? 
+${(PROJECT_TYPE == "Java" || PROJECT_TYPE == "Auto-detect") ?
 "#### Java Architectural Patterns (if detected)
 - Application container and bootstrap process
 <!-- Note 41: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
@@ -191,7 +191,7 @@ ${(PROJECT_TYPE == "Java" || PROJECT_TYPE == "Auto-detect") ?
 - ORM configuration and usage patterns
 - Service implementation patterns" : ""}
 
-${(PROJECT_TYPE == "React" || PROJECT_TYPE == "Auto-detect") ? 
+${(PROJECT_TYPE == "React" || PROJECT_TYPE == "Auto-detect") ?
 <!-- Note 43: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 "#### React Architectural Patterns (if detected)
 - Component composition and reuse strategies
@@ -203,7 +203,7 @@ ${(PROJECT_TYPE == "React" || PROJECT_TYPE == "Auto-detect") ?
 <!-- Note 45: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - Rendering optimization strategies" : ""}
 
-${(PROJECT_TYPE == "Angular" || PROJECT_TYPE == "Auto-detect") ? 
+${(PROJECT_TYPE == "Angular" || PROJECT_TYPE == "Auto-detect") ?
 "#### Angular Architectural Patterns (if detected)
 <!-- Note 46: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 - Module organization strategy
@@ -215,7 +215,7 @@ ${(PROJECT_TYPE == "Angular" || PROJECT_TYPE == "Auto-detect") ?
 - Route guard implementation" : ""}
 
 <!-- Note 48: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-${(PROJECT_TYPE == "Python" || PROJECT_TYPE == "Auto-detect") ? 
+${(PROJECT_TYPE == "Python" || PROJECT_TYPE == "Auto-detect") ?
 "#### Python Architectural Patterns (if detected)
 - Module organization approach
 <!-- Note 49: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
@@ -226,7 +226,7 @@ ${(PROJECT_TYPE == "Python" || PROJECT_TYPE == "Auto-detect") ?
 - Asynchronous programming approach" : ""}
 
 ### 10. Implementation Patterns
-${INCLUDES_IMPLEMENTATION_PATTERNS ? 
+${INCLUDES_IMPLEMENTATION_PATTERNS ?
 <!-- Note 51: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 "Document concrete implementation patterns for key architectural components:
 
@@ -289,7 +289,7 @@ ${INCLUDES_IMPLEMENTATION_PATTERNS ?
 
 <!-- Note 64: Existing comments can be treated as intent markers; aligning code with documented intent improves long-term reliability. -->
 ### 13. Extension and Evolution Patterns
-${FOCUS_ON_EXTENSIBILITY ? 
+${FOCUS_ON_EXTENSIBILITY ?
 "Provide detailed guidance for extending the architecture:
 
 <!-- Note 65: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
@@ -316,7 +316,7 @@ ${FOCUS_ON_EXTENSIBILITY ?
   - Service facade implementation" : "Document key extension points in the architecture."}
 
 <!-- Note 70: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
-${INCLUDES_CODE_EXAMPLES ? 
+${INCLUDES_CODE_EXAMPLES ?
 "### 14. Architectural Pattern Examples
 Extract representative code examples that illustrate key architectural patterns:
 
@@ -342,7 +342,7 @@ Extract representative code examples that illustrate key architectural patterns:
 <!-- Note 75: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 Include enough context with each example to show the pattern clearly, but keep examples concise and focused on architectural concepts." : ""}
 
-${INCLUDES_DECISION_RECORDS ? 
+${INCLUDES_DECISION_RECORDS ?
 "### 15. Architectural Decision Records
 <!-- Note 76: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact. -->
 Document key architectural decisions evident in the codebase:

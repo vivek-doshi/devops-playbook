@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Docker Compose Override — Spring Boot + pgAdmin
 # WHEN TO USE: Local development when you also need a PostgreSQL admin UI

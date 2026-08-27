@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Flux Kustomization — GitOps Reconciliation
 # WHEN TO USE: Deploying Kubernetes manifests via FluxCD
 # PREREQUISITES: Flux installed, GitRepository source configured

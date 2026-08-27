@@ -1,37 +1,51 @@
-﻿import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+﻿import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Files and directories to exclude
 const EXCLUDE_PATTERNS = [
-  'node_modules',
-  '.git',
-  '.github',
-  '.kiro',
-  '.ai',
-  '.venv',
-  'venv',
-  'dist',
-  'website',
-  'scripts',       // Internal utility scripts — not part of the public playbook content.
-  '.next',
-  '__pycache__',
-  '.pytest_cache',
-  '*.lock',
-  '.DS_Store',
-  '.vscode',
-  'gemini.md'
+  "node_modules",
+  ".git",
+  ".github",
+  ".kiro",
+  ".ai",
+  ".venv",
+  "venv",
+  "dist",
+  "website",
+  "scripts", // Internal utility scripts — not part of the public playbook content.
+  ".next",
+  "__pycache__",
+  ".pytest_cache",
+  "*.lock",
+  ".DS_Store",
+  ".vscode",
+  "gemini.md",
 ];
 
-const EXCLUDE_EXTENSIONS = ['.txt', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.drawio'];
-const BINARY_EXTENSIONS = ['.pdf'];
-const EXCLUDE_FILE_NAMES = ['license', 'readme', 'getting_started', 'setup_github_pages'];
+const EXCLUDE_EXTENSIONS = [
+  ".txt",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".ico",
+  ".webp",
+  ".drawio",
+];
+const BINARY_EXTENSIONS = [".pdf"];
+const EXCLUDE_FILE_NAMES = [
+  "license",
+  "readme",
+  "getting_started",
+  "setup_github_pages",
+];
 
 function shouldExclude(filePath) {
-  const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
+  const normalizedPath = filePath.replace(/\\/g, "/").toLowerCase();
   const fileName = path.basename(normalizedPath);
   const ext = path.extname(normalizedPath);
 
@@ -39,13 +53,13 @@ function shouldExclude(filePath) {
     return true;
   }
 
-  if (EXCLUDE_FILE_NAMES.some(name => fileName.startsWith(name))) {
+  if (EXCLUDE_FILE_NAMES.some((name) => fileName.startsWith(name))) {
     return true;
   }
 
-  return EXCLUDE_PATTERNS.some(pattern => {
-    if (pattern.includes('*')) {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+  return EXCLUDE_PATTERNS.some((pattern) => {
+    if (pattern.includes("*")) {
+      const regex = new RegExp(pattern.replace(/\*/g, ".*"));
       return regex.test(normalizedPath);
     }
     return normalizedPath.includes(pattern);
@@ -55,43 +69,43 @@ function shouldExclude(filePath) {
 function getLanguageFromPath(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const langMap = {
-    '.yml': 'yaml',
-    '.yaml': 'yaml',
-    '.json': 'json',
-    '.js': 'javascript',
-    '.ts': 'typescript',
-    '.tsx': 'typescript',
-    '.jsx': 'jsx',
-    '.py': 'python',
-    '.java': 'java',
-    '.go': 'go',
-    '.rb': 'ruby',
-    '.sh': 'bash',
-    '.bash': 'bash',
-    '.ps1': 'powershell',
-    '.tf': 'hcl',
-    '.hcl': 'hcl',
-    '.md': 'markdown',
-    '.markdown': 'markdown',
-    '.dockerfile': 'dockerfile',
-    '.svg': 'svg',
-    '': 'dockerfile' // Dockerfile without extension
+    ".yml": "yaml",
+    ".yaml": "yaml",
+    ".json": "json",
+    ".js": "javascript",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".jsx": "jsx",
+    ".py": "python",
+    ".java": "java",
+    ".go": "go",
+    ".rb": "ruby",
+    ".sh": "bash",
+    ".bash": "bash",
+    ".ps1": "powershell",
+    ".tf": "hcl",
+    ".hcl": "hcl",
+    ".md": "markdown",
+    ".markdown": "markdown",
+    ".dockerfile": "dockerfile",
+    ".svg": "svg",
+    "": "dockerfile", // Dockerfile without extension
   };
 
   // Handle Dockerfile specially
-  if (filePath.endsWith('Dockerfile') || filePath.includes('Dockerfile.')) {
-    return 'dockerfile';
+  if (filePath.endsWith("Dockerfile") || filePath.includes("Dockerfile.")) {
+    return "dockerfile";
   }
 
-  return langMap[ext] || 'plain';
+  return langMap[ext] || "plain";
 }
 
 function getCategory(filePath) {
   const parts = filePath.split(path.sep);
-  return parts[0] || 'root';
+  return parts[0] || "root";
 }
 
-function scanDirectory(dir, baseDir = '', maxSize = 1024 * 50) {
+function scanDirectory(dir, baseDir = "", maxSize = 1024 * 50) {
   const files = [];
 
   try {
@@ -113,46 +127,46 @@ function scanDirectory(dir, baseDir = '', maxSize = 1024 * 50) {
           if (BINARY_EXTENSIONS.includes(fileExt)) {
             // Binary file — record metadata only; file is served as a static asset
             files.push({
-              path: relPath.replace(/\\/g, '/'),
+              path: relPath.replace(/\\/g, "/"),
               category: getCategory(relPath),
-              language: 'pdf',
+              language: "pdf",
               size: stat.size,
-              content: '',
-              fileName: path.basename(relPath)
+              content: "",
+              fileName: path.basename(relPath),
             });
           } else if (stat.size < maxSize) {
             try {
-              const content = fs.readFileSync(fullPath, 'utf-8');
+              const content = fs.readFileSync(fullPath, "utf-8");
               files.push({
-                path: relPath.replace(/\\/g, '/'),
+                path: relPath.replace(/\\/g, "/"),
                 category: getCategory(relPath),
                 language: getLanguageFromPath(relPath),
                 size: stat.size,
                 content: content,
-                fileName: path.basename(relPath)
+                fileName: path.basename(relPath),
               });
-            } catch (e) {
+            } catch (_error) {
               console.warn(`Could not read file: ${relPath}`);
             }
           }
         }
-      } catch (e) {
+      } catch (_error) {
         console.warn(`Could not process: ${relPath}`);
       }
     }
-  } catch (e) {
-    console.error(`Error scanning directory ${dir}:`, e.message);
+  } catch (error) {
+    console.error(`Error scanning directory ${dir}:`, error.message);
   }
 
   return files;
 }
 
 function generateIndex() {
-  const websiteDir = path.join(__dirname, '..');
-  const repoRoot = path.join(websiteDir, '..');
-  const outputPath = path.join(websiteDir, 'public', 'index.json');
+  const websiteDir = path.join(__dirname, "..");
+  const repoRoot = path.join(websiteDir, "..");
+  const outputPath = path.join(websiteDir, "public", "index.json");
 
-  console.log('Generating index.json...');
+  console.log("Generating index.json...");
   console.log(`Scanning: ${repoRoot}`);
 
   const files = scanDirectory(repoRoot);
@@ -166,10 +180,10 @@ function generateIndex() {
   });
 
   // Copy binary files (PDFs) to public/ so Vite serves them as static assets
-  const binaryFiles = files.filter(f => f.language === 'pdf');
-  binaryFiles.forEach(bFile => {
-    const srcPath = path.join(repoRoot, ...bFile.path.split('/'));
-    const destPath = path.join(websiteDir, 'public', ...bFile.path.split('/'));
+  const binaryFiles = files.filter((f) => f.language === "pdf");
+  binaryFiles.forEach((bFile) => {
+    const srcPath = path.join(repoRoot, ...bFile.path.split("/"));
+    const destPath = path.join(websiteDir, "public", ...bFile.path.split("/"));
     const destDir = path.dirname(destPath);
     if (!fs.existsSync(destDir)) {
       fs.mkdirSync(destDir, { recursive: true });
@@ -177,7 +191,7 @@ function generateIndex() {
     try {
       fs.copyFileSync(srcPath, destPath);
       console.log(`✓ Copied: ${bFile.path}`);
-    } catch (e) {
+    } catch (_error) {
       console.warn(`Could not copy: ${bFile.path}`);
     }
   });
@@ -190,11 +204,11 @@ function generateIndex() {
 
   // Print summary by category
   const categorySummary = {};
-  files.forEach(f => {
+  files.forEach((f) => {
     categorySummary[f.category] = (categorySummary[f.category] || 0) + 1;
   });
 
-  console.log('\nCategory breakdown:');
+  console.log("\nCategory breakdown:");
   Object.entries(categorySummary)
     .sort()
     .forEach(([cat, count]) => {

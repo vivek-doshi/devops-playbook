@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Deploy to Red Hat OpenShift
 # WHEN TO USE: Deploying to OpenShift from GitLab CI/CD
 # PREREQUISITES: OpenShift cluster, service account credentials in GitLab variables

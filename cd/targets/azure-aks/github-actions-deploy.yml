@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to Azure AKS
 # WHEN TO USE: Deploying to Azure Kubernetes Service via OIDC
 # PREREQUISITES: AKS cluster, Azure AD credentials

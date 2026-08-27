@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Pulumi Stack Config — AWS Development
 # WHEN TO USE: Development configuration for AWS app-layer Pulumi deployment.
 # PREREQUISITES: Pulumi stack initialized and non-production secrets configured with pulumi config set --secret.

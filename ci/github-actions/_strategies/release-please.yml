@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Release Please (automated releases)
 # WHEN TO USE: Automating changelog, version bumps, and GitHub Releases
 # PREREQUISITES: Conventional Commits in your commit messages

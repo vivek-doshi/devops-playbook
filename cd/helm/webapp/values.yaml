@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Helm Values — Generic Web Application
 # WHEN TO USE: Default values for the webapp Helm chart
 # PREREQUISITES: Helm 3, Kubernetes 1.24+, and environment-specific overrides in values.<env>.yaml

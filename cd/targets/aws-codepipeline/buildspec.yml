@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: AWS CodePipeline — buildspec.yml for CodeBuild
 # WHEN TO USE: When using the codepipeline.yml CloudFormation template
 # PREREQUISITES: Dockerfile in the project root

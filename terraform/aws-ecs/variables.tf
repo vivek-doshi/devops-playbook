@@ -1,17 +1,15 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform Variables — AWS ECS Fargate
 # WHAT TO CHANGE: Update default values or create a terraform.tfvars
 # ============================================================
 
-# Note 1: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "project" {
   description = "Project name — used as a prefix for all resource names"
   type        = string
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "myapp" # <-- CHANGE THIS
 
   validation {
-    condition     = length(trim(var.project)) > 0
+    condition     = length(trimspace(var.project)) > 0
     error_message = "Project must be a non-empty string."
   }
 }
@@ -22,13 +20,12 @@ variable "cost_center" {
   default     = "engineering-shared" # <-- CHANGE THIS
 
   validation {
-    condition     = length(trim(var.cost_center)) > 0
+    condition     = length(trimspace(var.cost_center)) > 0
     error_message = "CostCenter must be a non-empty string."
   }
 }
 
 variable "environment" {
-  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Environment name (dev, staging, prod)"
   type        = string
   default     = "dev" # <-- CHANGE THIS
@@ -37,7 +34,6 @@ variable "environment" {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be one of: dev, staging, prod."
   }
-# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "owner" {
@@ -53,68 +49,95 @@ variable "owner" {
 
 variable "aws_region" {
   description = "AWS region for all resources"
-  # Note 5: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "us-east-1" # <-- CHANGE THIS
 }
 
-# Note 6: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "availability_zones" {
   description = "List of AZs to deploy across"
   type        = list(string)
-  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = ["us-east-1a", "us-east-1b"] # <-- CHANGE THIS: match your region
 }
 
 variable "vpc_cidr" {
-  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "CIDR block for the VPC"
   type        = string
   default     = "10.0.0.0/16"
-# Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "container_port" {
   description = "Port the container listens on"
-  # Note 10: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = number
   default     = 8080 # <-- CHANGE THIS: match your application
 }
 
-# Note 11: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "task_cpu" {
   description = "CPU units for the Fargate task (256, 512, 1024, 2048, 4096)"
   type        = string
-  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "512" # <-- CHANGE THIS: size to your workload
 }
 
 variable "task_memory" {
-  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Memory (MB) for the Fargate task — must be compatible with CPU. See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html"
   type        = string
   default     = "1024" # <-- CHANGE THIS: size to your workload
-# Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "desired_count" {
   description = "Desired number of running tasks"
-  # Note 15: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = number
   default     = 2
 }
 
-# Note 16: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "min_count" {
   description = "Minimum number of tasks (for autoscaling)"
   type        = number
-  # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = 1
 }
 
 variable "max_count" {
-  # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Maximum number of tasks (for autoscaling)"
   type        = number
   default     = 10
+}
+
+# ---------------------------------------------
+# Feature toggles — used only by the orchestrator (main.tf) to select
+# which modules to run. Disabling "network"/"ecr"/"security_groups" breaks
+# dependent modules unless you also disable everything that depends on them.
+# ---------------------------------------------
+variable "enable_network" {
+  description = "Provision the VPC, subnets, and networking (core dependency for other modules)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ecr" {
+  description = "Provision the ECR repository"
+  type        = bool
+  default     = true
+}
+
+variable "enable_security_groups" {
+  description = "Provision the ALB and ECS task security groups"
+  type        = bool
+  default     = true
+}
+
+variable "enable_alb" {
+  description = "Provision the Application Load Balancer"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ecs" {
+  description = "Provision the ECS cluster, task definition, and service"
+  type        = bool
+  default     = true
+}
+
+variable "enable_autoscaling" {
+  description = "Provision ECS service autoscaling (target tracking on CPU)"
+  type        = bool
+  default     = true
 }

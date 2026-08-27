@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Pulumi Preview / Deploy
 # WHEN TO USE: Automating Pulumi infrastructure deployments with PR review
 # PREREQUISITES: Pulumi project with Pulumi.yaml, cloud credentials via OIDC

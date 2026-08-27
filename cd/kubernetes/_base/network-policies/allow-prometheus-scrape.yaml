@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Allow ingress from Prometheus for metrics scraping
 # WHEN TO USE: Apply this in every namespace where application pods

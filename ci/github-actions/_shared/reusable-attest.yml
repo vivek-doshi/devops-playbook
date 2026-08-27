@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — Reusable Artifact Attestation
 #   Provides SLSA provenance + SBOM + cosign image signing

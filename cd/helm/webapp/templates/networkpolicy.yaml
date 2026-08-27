@@ -1,8 +1,9 @@
+---
 # TEMPLATE: Helm Template — Webapp NetworkPolicy
 # WHEN TO USE: Restricts ingress/egress for the webapp workload under zero-trust defaults.
 # PREREQUISITES: CNI with NetworkPolicy enforcement and networkPolicy.* values configured.
 # MATURITY: Stable
-{{- if .Values.networkPolicy.enabled -}}
+{{- if .Values.networkPolicy.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

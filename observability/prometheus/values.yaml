@@ -1,3 +1,4 @@
+---
 # kube-prometheus-stack values for chart 55.x
 # Production teams should layer environment-specific overrides on top of this file
 # instead of editing shared defaults directly.
@@ -135,7 +136,7 @@ alertmanager:
       - name: slack-warnings
         slack_configs:
           - api_url: ${SLACK_WEBHOOK_URL}
-            channel: '#platform-alerts' # <-- CHANGE THIS
+            channel: "#platform-alerts" # <-- CHANGE THIS
             send_resolved: true
             title: >-
               [{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} in {{ .CommonLabels.namespace }}
@@ -150,16 +151,16 @@ alertmanager:
         pagerduty_configs:
           - routing_key: ${PAGERDUTY_KEY}
             send_resolved: true
-            severity: '{{ .CommonLabels.severity }}'
+            severity: "{{ .CommonLabels.severity }}"
             description: >-
               {{ .CommonLabels.alertname }} in {{ .CommonLabels.namespace }}
             client: Alertmanager
             client_url: http://alertmanager-operated.monitoring.svc:9093 # <-- CHANGE THIS
             details:
-              summary: '{{ .CommonAnnotations.summary }}'
-              description: '{{ .CommonAnnotations.description }}'
-              namespace: '{{ .CommonLabels.namespace }}'
-              alertname: '{{ .CommonLabels.alertname }}'
+              summary: "{{ .CommonAnnotations.summary }}"
+              description: "{{ .CommonAnnotations.description }}"
+              namespace: "{{ .CommonLabels.namespace }}"
+              alertname: "{{ .CommonLabels.alertname }}"
 
 grafana:
   enabled: true

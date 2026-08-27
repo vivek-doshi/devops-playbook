@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Reusable Docker Build (Kaniko)
 # WHEN TO USE: Building Docker images in GitLab CI (works in rootless runners)
 # PREREQUISITES: Dockerfile in the repository

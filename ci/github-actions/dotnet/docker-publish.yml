@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — .NET Docker Build & Publish
 # WHEN TO USE: Publishing .NET container images to GHCR or ACR
 # PREREQUISITES: Dockerfile in the repository

@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Kubernetes RBAC — ServiceAccounts, Roles, RoleBindings
 # WHEN TO USE: Grant least-privilege access to users, groups, and

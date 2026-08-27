@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Trivy Container Scan
 # WHEN TO USE: Scanning Docker images for OS and app-level CVEs
 # PREREQUISITES: Dockerfile in the repository

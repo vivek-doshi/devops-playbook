@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Reusable Slack Notification
 # WHEN TO USE: Call from any workflow to send Slack alerts
 # PREREQUISITES: Slack Incoming Webhook URL configured

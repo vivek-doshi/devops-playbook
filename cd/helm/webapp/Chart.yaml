@@ -1,4 +1,5 @@
-﻿# TEMPLATE: Helm Chart Metadata — Webapp
+---
+# TEMPLATE: Helm Chart Metadata — Webapp
 # WHEN TO USE: Defines chart identity, versioning, and maintainers for the webapp chart.
 # PREREQUISITES: Helm 3 and semantic versioning policy for release tags.
 # MATURITY: Stable

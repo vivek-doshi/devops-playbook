@@ -1,3 +1,4 @@
+---
 # finops/policies/enforce-resource-limits.yaml
 # Kyverno ClusterPolicy: enforce maximum resource limits per namespace based on
 # team budget. Blocks Pods that request resources exceeding configured limits.

@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Kubernetes - Supply Chain Compliance Status Reporter
 # WHEN TO USE: Weekly compliance summary from Kyverno PolicyReport results

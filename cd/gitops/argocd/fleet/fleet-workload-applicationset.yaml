@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ArgoCD Fleet - Workload ApplicationSet
 # WHEN TO USE: Deploy workloads across selected fleet clusters by environment

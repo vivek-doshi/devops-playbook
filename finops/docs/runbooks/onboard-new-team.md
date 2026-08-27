@@ -1,7 +1,7 @@
 # FinOps Runbook: Onboard a New Team
 
-> **Audience**: Platform team, FinOps practitioners  
-> **Use case**: Adding a new team/cost center to the FinOps system  
+> **Audience**: Platform team, FinOps practitioners
+> **Use case**: Adding a new team/cost center to the FinOps system
 > **Time required**: 30–45 minutes
 
 ---

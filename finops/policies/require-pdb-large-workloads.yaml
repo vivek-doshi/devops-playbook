@@ -1,3 +1,4 @@
+---
 # finops/policies/require-pdb-large-workloads.yaml
 # Kyverno ClusterPolicy: require a PodDisruptionBudget for workloads that
 # request more than 4 CPU cores OR more than 8Gi of memory.

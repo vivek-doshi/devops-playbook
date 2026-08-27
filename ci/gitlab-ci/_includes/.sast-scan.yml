@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Reusable SAST Scan (Semgrep)
 # WHEN TO USE: Static analysis on any codebase
 # PREREQUISITES: None

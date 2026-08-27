@@ -1,4 +1,12 @@
+<<<<<<< HEAD
+pytest>=8.0,<9
+PyYAML>=6.0,<7
+yamllint>=1.35.1,<2
+requests>=2.31,<3
+kubernetes>=29,<34
+=======
 pytest>=9.1.1,<10
 PyYAML>=6.0.3,<7
 requests>=2.34.2,<3
 kubernetes>=36.0.2,<37
+>>>>>>> 665c376b733da176db4e954474db0ab4df817f89

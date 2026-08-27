@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — PagerDuty Alert (Reusable)
 # WHEN TO USE: Triggering incidents on production pipeline failures
 # PREREQUISITES: PagerDuty service with Events API v2 integration

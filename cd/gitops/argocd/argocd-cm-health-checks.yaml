@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ArgoCD ConfigMap Patch — Custom Resource Health
 # WHEN TO USE: Add health checks for CRDs so ArgoCD reports sync status accurately

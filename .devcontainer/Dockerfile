@@ -25,6 +25,7 @@ ARG JQ_VERSION=jq-1.8.1
 ARG YQ_VERSION=v4.53.2
 ARG KUBECTX_VERSION=v0.11.0
 ARG STERN_VERSION=v1.33.1
+ARG TASK_VERSION=v3.52.0
 ARG AWS_CLI_VERSION=2.34.35
 ARG AZURE_CLI_VERSION=2.85.0-1~jammy
 ARG GCLOUD_VERSION=565.0.0-0
@@ -139,6 +140,9 @@ RUN set -eux; \
     # Stern tails logs from many pods at once, which is useful for local Kubernetes debugging.
     curl -fsSL "https://github.com/stern/stern/releases/download/${STERN_VERSION}/stern_${STERN_VERSION#v}_linux_${BIN_ARCH}.tar.gz" | tar -xz stern; \
     install -m 0755 stern /usr/local/bin/stern; \
+    # Task provides a consistent task runner for Taskfile.yml in local and CI workflows.
+    curl -fsSL "https://github.com/go-task/task/releases/download/${TASK_VERSION}/task_linux_${BIN_ARCH}.tar.gz" | tar -xz task; \
+    install -m 0755 task /usr/local/bin/task; \
     # AWS CLI v2 supports the AWS deployment targets and Terraform modules in this repository.
     curl -fsSLo awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}-${AWS_CLI_VERSION}.zip"; \
     unzip -q awscliv2.zip; \

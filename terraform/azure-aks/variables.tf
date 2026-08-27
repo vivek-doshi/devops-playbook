@@ -1,17 +1,15 @@
-﻿# ============================================================
+# ============================================================
 # TEMPLATE: Terraform Variables — Azure AKS
 # WHAT TO CHANGE: Update default values or create a terraform.tfvars
 # ============================================================
 
-# Note 1: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "project" {
   description = "Project name — used as a prefix for all resource names"
   type        = string
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "myapp" # <-- CHANGE THIS
 
   validation {
-    condition     = length(trim(var.project)) > 0
+    condition     = length(trimspace(var.project)) > 0
     error_message = "Project must be a non-empty string."
   }
 }
@@ -22,13 +20,12 @@ variable "cost_center" {
   default     = "engineering-shared" # <-- CHANGE THIS
 
   validation {
-    condition     = length(trim(var.cost_center)) > 0
+    condition     = length(trimspace(var.cost_center)) > 0
     error_message = "CostCenter must be a non-empty string."
   }
 }
 
 variable "environment" {
-  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Environment name (dev, staging, prod)"
   type        = string
   default     = "dev" # <-- CHANGE THIS
@@ -37,7 +34,6 @@ variable "environment" {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be one of: dev, staging, prod."
   }
-# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "owner" {
@@ -53,76 +49,60 @@ variable "owner" {
 
 variable "location" {
   description = "Azure region for all resources"
-  # Note 5: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "australiaeast" # <-- CHANGE THIS
 }
 
-# Note 6: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "vnet_address_space" {
   description = "Address space for the virtual network"
   type        = string
-  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = "10.1.0.0/16"
 }
 
 variable "aks_subnet_prefix" {
-  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Subnet address prefix for the AKS nodes"
   type        = string
   default     = "10.1.0.0/20"
-# Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "kubernetes_version" {
   description = "Kubernetes version for AKS — run `az aks get-versions -l <region>` to see available versions"
-  # Note 10: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "1.29" # <-- CHANGE THIS: use latest stable
 }
 
-# Note 11: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "node_count" {
   description = "Number of nodes in the default node pool (ignored if autoscaling is enabled)"
   type        = number
-  # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = 3
 }
 
 variable "node_vm_size" {
-  # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "VM size for AKS nodes — see https://learn.microsoft.com/en-us/azure/virtual-machines/sizes"
   type        = string
   default     = "Standard_D4s_v5" # <-- CHANGE THIS: size to your workload
-# Note 14: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "enable_autoscaling" {
   description = "Enable cluster autoscaler on the default node pool"
-  # Note 15: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = bool
   default     = true
 }
 
-# Note 16: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 variable "node_min_count" {
   description = "Minimum node count when autoscaling is enabled"
   type        = number
-  # Note 17: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   default     = 2
 }
 
 variable "node_max_count" {
-  # Note 18: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   description = "Maximum node count when autoscaling is enabled"
   type        = number
   default     = 10
-# Note 19: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 variable "acr_sku" {
   description = "SKU for Azure Container Registry (Basic, Standard, Premium)"
-  # Note 20: This declaration defines a reusable unit, which supports composition and makes behavior easier to test.
   type        = string
   default     = "Standard"
 }
@@ -193,4 +173,95 @@ variable "gpu_node_labels" {
     accelerator = "nvidia-gpu"
     workload    = "ml"
   }
+}
+
+# ---------------------------------------------
+# Feature toggles — used only by the orchestrator (main.tf) to select
+# which modules to run. Disabling "network" breaks dependent modules
+# unless you also disable everything that depends on it.
+# ---------------------------------------------
+variable "enable_network" {
+  description = "Provision the VNet and AKS subnet (core dependency for other modules)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_acr" {
+  description = "Provision the Azure Container Registry"
+  type        = bool
+  default     = true
+}
+
+variable "enable_monitoring" {
+  description = "Provision the Log Analytics workspace for Container Insights"
+  type        = bool
+  default     = true
+}
+
+variable "enable_aks" {
+  description = "Provision the AKS cluster and node pools"
+  type        = bool
+  default     = true
+}
+
+variable "enable_backup" {
+  description = "Provision the PostgreSQL Flexible Server backup/DR stack (modules/backup)"
+  type        = bool
+  default     = false
+}
+
+# ---------------------------------------------
+# Backup / DR (modules/backup) — only used when enable_backup = true
+# ---------------------------------------------
+variable "db_admin_username" {
+  description = "PostgreSQL administrator login"
+  type        = string
+  default     = "dbadmin" # <-- CHANGE THIS
+}
+
+variable "db_sku" {
+  description = "Flexible Server SKU (tier_name)"
+  type        = string
+  default     = "GP_Standard_D2s_v3" # <-- CHANGE THIS: B for dev, GP for prod
+}
+
+variable "db_storage_mb" {
+  type    = number
+  default = 32768 # 32 GB  # <-- CHANGE THIS
+}
+
+variable "db_version" {
+  type    = string
+  default = "16" # <-- CHANGE THIS
+}
+
+variable "backup_retention_days" {
+  description = "Backup retention period in days (7-35)"
+  type        = number
+  default     = 14 # <-- CHANGE THIS
+}
+
+variable "geo_redundant_backup" {
+  description = "Enable geo-redundant backup (required for cross-region restore)"
+  type        = bool
+  default     = true # always true in production
+}
+
+variable "dr_location" {
+  description = "Secondary Azure region for the geo-replica"
+  type        = string
+  default     = "westus2" # <-- CHANGE THIS
+}
+
+variable "key_vault_id" {
+  description = "Optional Key Vault resource ID for storing the generated database password"
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "alert_action_group_id" {
+  description = "Azure Monitor action group ID for backup failure alerts"
+  type        = string
+  default     = "" # <-- CHANGE THIS
 }

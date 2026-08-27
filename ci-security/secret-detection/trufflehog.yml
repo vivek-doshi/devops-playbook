@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — TruffleHog Verified Secret Detection
 # WHEN TO USE: Deep pull request secret scanning with live credential verification

@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — .NET SonarQube/SonarCloud Scan
 # WHEN TO USE: .NET projects needing code quality gates and PR decoration
 # PREREQUISITES: SonarQube or SonarCloud project configured

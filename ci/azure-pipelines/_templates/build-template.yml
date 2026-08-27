@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Reusable Build Template
 # WHEN TO USE: Standardise .NET build steps across pipelines
 # PREREQUISITES: None

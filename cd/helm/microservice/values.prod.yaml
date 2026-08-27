@@ -1,3 +1,4 @@
+---
 # TEMPLATE: Helm Values Override — Microservice Production
 # WHEN TO USE: Production-only overrides for the microservice chart.
 # PREREQUISITES: Base values in values.yaml and production environment approvals.

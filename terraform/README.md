@@ -13,6 +13,11 @@ Use `terraform/` to provision repeatable infrastructure foundations for applicat
 - `_bootstrap/`: backend/state bootstrapping guidance.
 - `tests/`: validation support files.
 
+Each module directory is split into small, single-purpose files instead of one
+large `main.tf` (e.g. `versions.tf`, `network.tf`, `iam.tf`, the compute/cluster
+resource file, `locals.tf`). File names are consistent across modules and every
+module's top file (`versions.tf`) documents the layout in a header comment.
+
 ## Use This Component Alone
 
 - Provision one environment for one cloud target.

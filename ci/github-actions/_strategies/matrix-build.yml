@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Matrix Build Strategy
 # WHEN TO USE: Testing across multiple OS / runtime versions
 # PREREQUISITES: Node.js project (adapt for other runtimes)

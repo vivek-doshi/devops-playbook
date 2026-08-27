@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — pip-audit Dependency Audit
 # WHEN TO USE: Python projects to scan for vulnerable dependencies
 # PREREQUISITES: requirements.txt in the repository

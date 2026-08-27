@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: ArgoCD App of Apps — Multi-Application Management
 # WHEN TO USE: Managing multiple ArgoCD Applications from one parent
 # PREREQUISITES: ArgoCD installed, Application manifests in Git

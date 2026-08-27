@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy AWS Lambda (Serverless Framework)
 # WHEN TO USE: Deploying serverless functions via Serverless Framework or SAM
 # PREREQUISITES: serverless.yml in project root, IAM role for OIDC

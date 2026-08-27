@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Deployment Gates & Approvals
 # WHEN TO USE: Production deployments requiring manual approval or health checks
 # PREREQUISITES: Azure DevOps environment with approval policies

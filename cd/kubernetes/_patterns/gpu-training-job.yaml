@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GPU Training Job (Kubernetes)
 # WHEN TO USE: Run a batch ML training workload on a GPU node pool.

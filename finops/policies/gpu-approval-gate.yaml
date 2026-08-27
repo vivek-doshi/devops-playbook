@@ -1,3 +1,4 @@
+---
 # finops/policies/gpu-approval-gate.yaml
 # Kyverno ClusterPolicy: require explicit cost-center approval annotation
 # for any workload that requests GPU resources (nvidia.com/gpu or amd.com/gpu).

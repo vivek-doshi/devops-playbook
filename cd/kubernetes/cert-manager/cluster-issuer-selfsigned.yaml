@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ClusterIssuer — Self-Signed (local dev / internal services)
 # WHEN TO USE: Local development clusters (kind, minikube), internal

@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ClusterIssuer — Let's Encrypt Staging
 # WHEN TO USE: Use this issuer during initial setup and testing.

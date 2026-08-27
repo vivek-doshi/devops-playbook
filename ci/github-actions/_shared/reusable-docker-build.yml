@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Reusable Docker Build & Push
 # WHEN TO USE: Call from any workflow that needs to build and push images
 # PREREQUISITES: Container registry accessible from GitHub Actions

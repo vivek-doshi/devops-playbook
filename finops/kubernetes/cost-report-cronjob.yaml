@@ -1,3 +1,4 @@
+---
 # finops/kubernetes/cost-report-cronjob.yaml
 # CronJob that generates and exports monthly FinOps cost reports.
 # Runs on the 1st of each month at 02:00 UTC.
