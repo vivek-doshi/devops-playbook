@@ -16,7 +16,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.78.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 5.2.0" # <-- CHANGE THIS: pin to latest stable
     }
   }
 
