@@ -22,11 +22,10 @@ resource "azurerm_private_dns_zone" "postgres" {
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
-  name                  = "dns-link-postgres"
-  private_dns_zone_name = azurerm_private_dns_zone.postgres.name
-  virtual_network_id    = var.vnet_id
-  resource_group_name   = var.rg_name
-  registration_enabled  = false
+  name                 = "dns-link-postgres"
+  private_dns_zone_id  = azurerm_private_dns_zone.postgres.id
+  virtual_network_id   = var.vnet_id
+  registration_enabled = false
 }
 
 # ---------------------------------------------

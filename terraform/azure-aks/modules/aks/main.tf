@@ -35,6 +35,10 @@ resource "azurerm_kubernetes_cluster" "main" {
     dns_service_ip    = "10.0.0.10"
   }
 
+  node_provisioning_profile {
+    mode = "Manual"
+  }
+
   oms_agent {
     log_analytics_workspace_id = var.log_analytics_workspace_id
   }
