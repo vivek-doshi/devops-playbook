@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Velero Backup Schedule
 # WHEN TO USE: After Velero is installed. Creates a recurring

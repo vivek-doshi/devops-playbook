@@ -1,0 +1,51 @@
+---
+# ============================================================
+# TEMPLATE: ArgoCD ConfigMap Patch — Custom Resource Health
+# WHEN TO USE: Add health checks for CRDs so ArgoCD reports sync status accurately
+# PREREQUISITES: ArgoCD installed and configured to merge this ConfigMap data
+# MATURITY: Stable
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  resource.customizations.health.external-secrets.io_ExternalSecret: |
+    hs = {}
+    if obj.status ~= nil and obj.status.conditions ~= nil then
+      for _, condition in ipairs(obj.status.conditions) do
+        if condition.type == "Ready" and condition.status == "True" then
+          hs.status = "Healthy"
+          hs.message = condition.message or "ExternalSecret is ready"
+          return hs
+        end
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for ExternalSecret readiness"
+    return hs
+  resource.customizations.health.cert-manager.io_Certificate: |
+    hs = {}
+    if obj.status ~= nil and obj.status.conditions ~= nil then
+      for _, condition in ipairs(obj.status.conditions) do
+        if condition.type == "Ready" and condition.status == "True" then
+          hs.status = "Healthy"
+          hs.message = condition.message or "Certificate is ready"
+          return hs
+        end
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for certificate issuance"
+    return hs
+  resource.customizations.health.kyverno.io_Policy: |
+    hs = {}
+    hs.status = "Healthy"
+    hs.message = "Kyverno Policy applied"
+    return hs
+  resource.customizations.health.kyverno.io_ClusterPolicy: |
+    hs = {}
+    hs.status = "Healthy"
+    hs.message = "Kyverno ClusterPolicy applied"
+    return hs

@@ -65,7 +65,7 @@ This script:
 3. Installs ingress-nginx
 4. Creates a `dev` namespace and applies the dev Kustomize overlay
 
-Config: [`local-dev/kind/kind-config.yaml`](../../local-dev/kind/kind-config.yaml)  
+Config: [`local-dev/kind/kind-config.yaml`](../../local-dev/kind/kind-config.yaml)
 Script: [`local-dev/kind/setup.sh`](../../local-dev/kind/setup.sh)
 
 To tear down:
@@ -95,7 +95,7 @@ Hooks run on every `git commit` and `git push`. What they check:
 | Secret scan | Gitleaks | Credentials committed to Git |
 | IaC format | terraform fmt | Malformatted Terraform |
 
-Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)  
+Config: [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml)
 Full details: [docs/guides/pre-commit-setup.md](../guides/pre-commit-setup.md)
 
 ---
@@ -239,7 +239,7 @@ Store the JWKS endpoint URL and client credentials in the secrets store — neve
 | Azure | [`secrets/external-secrets/azure-secret-store.yaml`](../../secrets/external-secrets/azure-secret-store.yaml) |
 | GCP | [`secrets/external-secrets/gcp-secret-store.yaml`](../../secrets/external-secrets/gcp-secret-store.yaml) |
 
-Reference: [`secrets/external-secrets/example-external-secret.yaml`](../../secrets/external-secrets/example-external-secret.yaml)  
+Reference: [`secrets/external-secrets/example-external-secret.yaml`](../../secrets/external-secrets/example-external-secret.yaml)
 Full guide: [docs/guides/secrets-management.md](../guides/secrets-management.md)
 
 ### Supported identity providers
@@ -312,7 +312,7 @@ spec:
         property: fcm_server_key
 ```
 
-Reference: [`secrets/external-secrets/`](../../secrets/external-secrets/)  
+Reference: [`secrets/external-secrets/`](../../secrets/external-secrets/)
 Full guide: [docs/guides/secrets-management.md](../guides/secrets-management.md)
 
 ---

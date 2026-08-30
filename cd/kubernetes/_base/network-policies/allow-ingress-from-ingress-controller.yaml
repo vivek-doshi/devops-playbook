@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Allow ingress from the ingress controller
 # WHEN TO USE: Apply this after default-deny to permit HTTP/HTTPS

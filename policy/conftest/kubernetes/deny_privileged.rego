@@ -23,6 +23,23 @@ _all_containers(input_obj) := containers if {
 	)
 }
 
+# A workload can set runAsNonRoot either for an individual container or at
+# pod scope. Pod-level settings are inherited by containers that do not
+# override them, so both configurations satisfy the Restricted PSS intent.
+_pod_security_context(input_obj) := security_context if {
+	input_obj.kind == "Deployment"
+	security_context := object.get(input_obj.spec.template.spec, "securityContext", {})
+} else := security_context if {
+	input_obj.kind == "Pod"
+	security_context := object.get(input_obj.spec, "securityContext", {})
+}
+
+_runs_as_non_root(container, pod_security_context) if {
+	object.get(object.get(container, "securityContext", {}), "runAsNonRoot", false) == true
+} else if {
+	object.get(pod_security_context, "runAsNonRoot", false) == true
+}
+
 _all_containers(input_obj) := containers if {
 	input_obj.kind == "Pod"
 	containers := array.concat(
@@ -58,7 +75,7 @@ deny contains msg if {
 # 3. runAsNonRoot must be explicitly set to true (i.e. runAsRoot must be false).
 deny contains msg if {
 	some container in _all_containers(input)
-	not container.securityContext.runAsNonRoot == true
+	not _runs_as_non_root(container, _pod_security_context(input))
 	msg := sprintf(
 		"%s/%s: container %q does not set securityContext.runAsNonRoot=true — add it to prevent running as root",
 		[input.kind, input.metadata.name, container.name],

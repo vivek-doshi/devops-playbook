@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Prometheus SLO — Latency
 # WHEN TO USE: You want multi-window burn-rate alerting for

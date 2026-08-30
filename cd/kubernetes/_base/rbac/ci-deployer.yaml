@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: RBAC — CI/CD Deployer (namespace-scoped Role)
 # WHEN TO USE: Grant the CI/CD pipeline service account just enough

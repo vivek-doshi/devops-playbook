@@ -111,7 +111,7 @@ When it completes, two endpoints are available:
 - Kustomize overlay: `http://localhost/`
 - Helm chart: `http://localhost/helm`
 
-Config: [`local-dev/kind/kind-config.yaml`](../../local-dev/kind/kind-config.yaml)  
+Config: [`local-dev/kind/kind-config.yaml`](../../local-dev/kind/kind-config.yaml)
 Script: [`local-dev/kind/setup.sh`](../../local-dev/kind/setup.sh)
 
 To load a locally built image into the cluster:
@@ -440,7 +440,7 @@ cp docs/runbooks/template.md \
 # Fill in: symptoms, diagnosis steps, remediation options, escalation path
 ```
 
-Template: [`docs/runbooks/template.md`](../runbooks/template.md)  
+Template: [`docs/runbooks/template.md`](../runbooks/template.md)
 Example: [`docs/runbooks/podcrashloobackoff.md`](../runbooks/podcrashloobackoff.md)
 
 Link the runbook from your alert annotation so it surfaces automatically when the alert fires:

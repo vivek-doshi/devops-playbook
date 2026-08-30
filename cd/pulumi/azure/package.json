@@ -1,0 +1,18 @@
+{
+  "name": "pulumi-azure-aks",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "preview": "pulumi preview",
+    "deploy": "pulumi up"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/node": "^26.4.0"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.140.0",
+    "@pulumi/azure-native": "^3.26.0"
+  }
+}

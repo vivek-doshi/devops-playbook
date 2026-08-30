@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Microsoft Teams Notification (Reusable)
 # WHEN TO USE: Any pipeline needing Teams success/failure alerts
 # PREREQUISITES: Teams Incoming Webhook URL (Workflows connector)

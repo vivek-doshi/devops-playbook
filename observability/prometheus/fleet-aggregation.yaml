@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Prometheus - Fleet Aggregation Recording Rules
 # WHEN TO USE: Aggregate per-cluster metrics into fleet-level views

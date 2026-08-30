@@ -1,3 +1,10 @@
+---
+# TEMPLATE: Pulumi Project — AWS ECS Fargate
+# WHEN TO USE: Pulumi project metadata and remote backend settings for AWS app-layer resources.
+# PREREQUISITES: Provisioned backend bucket from terraform/_bootstrap/aws and Pulumi CLI login.
+# MATURITY: Stable
 name: aws-ecs-fargate
 description: ECS Fargate cluster with ALB and service deployment
 runtime: nodejs
+backend:
+  url: s3://pulumi-state-aws                   # <-- CHANGE THIS: remote state bucket from terraform/_bootstrap/aws

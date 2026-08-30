@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Gitleaks Secret Detection
 # WHEN TO USE: Every repository to prevent secret leaks in commits
 # PREREQUISITES: None

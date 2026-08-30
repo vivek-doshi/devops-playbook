@@ -1,3 +1,4 @@
+---
 # Disallows the :latest image tag (or images with no tag) in production namespaces.
 #
 # Production namespaces are identified by the label:  environment: production

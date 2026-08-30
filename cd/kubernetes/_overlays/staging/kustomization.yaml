@@ -1,4 +1,5 @@
-﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+---
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -11,4 +12,4 @@ namespace: staging
 
 images:
   - name: my-registry/my-app
-    newTag: staging-latest
+    newTag: v1.0.0-staging

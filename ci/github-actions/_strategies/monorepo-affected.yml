@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Monorepo Affected Services
 # WHEN TO USE: Monorepos with multiple services in subdirectories
 # PREREQUISITES: dorny/paths-filter action, per-service workflows

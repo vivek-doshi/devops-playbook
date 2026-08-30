@@ -7,6 +7,9 @@
 // RELATED FILES: cd/pulumi/deploy.yml, terraform/gcp-gke/
 // MATURITY: Stable
 // ============================================================
+// OWNERSHIP BOUNDARY: Terraform is the source of truth for shared infra in this repo.
+// Use this Pulumi program only for app-layer resources or in isolated environments
+// where matching terraform modules are not applied.
 
 // Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 import * as pulumi from "@pulumi/pulumi";

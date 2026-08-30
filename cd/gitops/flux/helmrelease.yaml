@@ -1,0 +1,31 @@
+---
+# ============================================================
+# TEMPLATE: Flux HelmRelease — Chart Reconciliation
+# WHEN TO USE: Deploy a service from a Helm chart using Flux
+# PREREQUISITES: Flux installed and Helm chart path available in GitRepository
+# MATURITY: Stable
+# ============================================================
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: my-app
+  namespace: flux-system
+spec:
+  interval: 5m
+  targetNamespace: production
+  chart:
+    spec:
+      chart: ./cd/helm/webapp                                  # <-- CHANGE THIS
+      sourceRef:
+        kind: GitRepository
+        name: my-app-repo
+        namespace: flux-system
+      interval: 1m
+  values:
+    image:
+      repository: ghcr.io/my-org/my-app                        # <-- CHANGE THIS
+      tag: "1.0.0"                                            # <-- CHANGE THIS
+    finops:
+      labels:
+        costCenter: engineering
+        environment: production

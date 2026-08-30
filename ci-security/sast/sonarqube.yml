@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — SonarQube / SonarCloud Scan
 # WHEN TO USE: Code quality and security scanning on any codebase
 # PREREQUISITES: SonarQube/SonarCloud project configured

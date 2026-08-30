@@ -71,7 +71,10 @@ def fetch_workload_ages() -> dict[tuple[str, str], float]:
             age_months = max(0.0, (now - created_dt).days / 30.0)
             ages[(ns, name)] = age_months
     except Exception as exc:  # noqa: BLE001
-        print(f"WARNING: could not fetch deployment ages ({exc}); defaulting to 6 months.", file=sys.stderr)
+        print(
+            f"WARNING: could not fetch deployment ages ({exc}); defaulting to 6 months.",
+            file=sys.stderr,
+        )
     return ages
 
 
@@ -215,11 +218,24 @@ def markdown_proposal(recommendations: list[dict[str, Any]], cloud: str) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate reserved capacity commitment proposals with risk scoring")
-    parser.add_argument("--min-savings", type=float, default=500.0, help="Minimum annual savings (USD) required")
-    parser.add_argument("--max-risk", choices=["low", "medium", "high"], default="medium", help="Maximum allowed risk level")
-    parser.add_argument("--term", choices=["1yr", "3yr"], default="1yr", help="Preferred commitment term")
-    parser.add_argument("--cloud-provider", choices=["aws", "azure", "gcp"], default="aws", help="Cloud provider")
+    parser = argparse.ArgumentParser(
+        description="Generate reserved capacity commitment proposals with risk scoring"
+    )
+    parser.add_argument(
+        "--min-savings", type=float, default=500.0, help="Minimum annual savings (USD) required"
+    )
+    parser.add_argument(
+        "--max-risk",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Maximum allowed risk level",
+    )
+    parser.add_argument(
+        "--term", choices=["1yr", "3yr"], default="1yr", help="Preferred commitment term"
+    )
+    parser.add_argument(
+        "--cloud-provider", choices=["aws", "azure", "gcp"], default="aws", help="Cloud provider"
+    )
     parser.add_argument("--output-proposal", help="Write markdown proposal to this path")
     parser.add_argument("--output-json", help="Write machine-readable recommendations to this path")
     args = parser.parse_args()

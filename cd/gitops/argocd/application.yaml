@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: ArgoCD Application — Single Application
 # WHEN TO USE: Deploying one service via ArgoCD GitOps
 # PREREQUISITES: ArgoCD installed, Git repo accessible from cluster
@@ -22,12 +23,12 @@ metadata:
     - resources-finalizer.argocd.argoproj.io  # Cascade delete on app removal
 spec:
   # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  project: default
+  project: platform-apps
 
   source:
     # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     repoURL: https://github.com/my-org/my-app.git
-    targetRevision: HEAD
+    targetRevision: v1.0.0
     # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     path: cd/kubernetes/_overlays/prod
 
@@ -47,6 +48,7 @@ spec:
     syncOptions:
       # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
       - PrunePropagationPolicy=foreground
     # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     retry:

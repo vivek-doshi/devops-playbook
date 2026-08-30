@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: RBAC — Read-Only Developer Access (ClusterRole)
 # WHEN TO USE: Grant developers view-only access to inspect

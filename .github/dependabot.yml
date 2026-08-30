@@ -1,3 +1,4 @@
+---
 # ============================================================
 # Dependabot configuration
 # Keeps dependencies up to date across the full DevOps monorepo
@@ -72,6 +73,7 @@ updates:
       - "platform-team"
     commit-message:
       prefix: "build(deps)"
+
     groups:
       docker-all:
         patterns:

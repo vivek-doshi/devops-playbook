@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to AWS ECS
 # WHEN TO USE: Deploying containerised apps to ECS Fargate/EC2
 # PREREQUISITES: ECR repository, ECS cluster & service, task definition

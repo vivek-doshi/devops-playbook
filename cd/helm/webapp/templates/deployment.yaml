@@ -1,10 +1,17 @@
-﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+---
+# TEMPLATE: Helm Template — Webapp Deployment
+# WHEN TO USE: Renders the application Deployment including security, probes, and scaling gates.
+# PREREQUISITES: values.yaml configured with image, resources, probes, and FinOps labels.
+# MATURITY: Stable
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   # Note 2: Resource identity and metadata drive automation, selectors, and operational traceability.
   name: {{ include "webapp.fullname" . }}
   labels:
+    app: {{ include "webapp.name" . }}
+    version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
     {{- include "webapp.labels" . | nindent 4 }}
 # Note 3: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 spec:
@@ -20,6 +27,10 @@ spec:
     metadata:
       # Note 6: Resource identity and metadata drive automation, selectors, and operational traceability.
       labels:
+        app: {{ include "webapp.name" . }}
+        version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+        finops.org/costcenter: {{ .Values.finops.labels.costCenter | quote }}
+        finops.org/environment: {{ .Values.finops.labels.environment | quote }}
         {{- include "webapp.selectorLabels" . | nindent 8 }}
     spec:
       # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -33,6 +44,7 @@ spec:
         # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         runAsUser: 1000
         fsGroup: 2000
+      serviceAccountName: {{ include "webapp.serviceAccountName" . }}
       containers:
         # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: {{ .Chart.Name }}

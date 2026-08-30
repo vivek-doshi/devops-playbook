@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: PrometheusRule - Compliance Alerts
 # WHEN TO USE: Alerting on compliance score regressions and stale evidence

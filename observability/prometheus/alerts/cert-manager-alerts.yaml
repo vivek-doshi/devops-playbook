@@ -1,3 +1,4 @@
+---
 # cert-manager-alerts.yaml
 #
 # PrometheusRule for monitoring TLS certificate lifecycle events exposed by cert-manager.

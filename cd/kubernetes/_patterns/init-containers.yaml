@@ -1,4 +1,5 @@
-﻿# Init Containers Pattern
+---
+# Init Containers Pattern
 # Run setup tasks before the main container starts
 # Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: apps/v1
@@ -29,7 +30,7 @@ spec:
         # Run database migrations
         # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
         - name: db-migrate
-          image: my-registry/my-app:latest
+          image: my-registry/my-app:v1.0.0
           command: ['dotnet', 'ef', 'database', 'update']
           # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           env:
@@ -43,6 +44,6 @@ spec:
       # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       containers:
         - name: app
-          image: my-registry/my-app:latest
+          image: my-registry/my-app:v1.0.0
           ports:
             - containerPort: 8080

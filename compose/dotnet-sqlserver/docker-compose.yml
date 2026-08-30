@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Docker Compose — .NET API + SQL Server + Seq
 # WHEN TO USE: Local development for .NET applications with SQL Server
 # PREREQUISITES: Docker and Docker Compose v2+

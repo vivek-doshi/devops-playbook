@@ -1,72 +1,16 @@
 # ============================================================
 # TEMPLATE: Terraform — AWS RDS Backup & DR Policies
-# WHEN TO USE: Add alongside terraform/aws-eks/main.tf to ensure RDS
-#              instances have automated backups, PITR, and cross-region
-#              replicas configured before an incident forces your hand.
-# PREREQUISITES: An existing RDS instance or create one here.
+# WHEN TO USE: Add alongside terraform/aws-eks/ to ensure RDS instances have
+#              automated backups, PITR, and cross-region replicas configured
+#              before an incident forces your hand.
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: terraform/aws-eks/main.tf
-#                cd/kubernetes/_patterns/velero-backup.yaml
+# RELATED FILES: cd/kubernetes/_patterns/velero-backup.yaml
 # MATURITY: Stable
 # ============================================================
 
-# ---------------------------------------------
-# Variables
-# ---------------------------------------------
-variable "db_instance_class" {
-  description = "RDS instance class"
-  type        = string
-  default     = "db.t3.medium"             # <-- CHANGE THIS
-}
-
-variable "db_engine" {
-  description = "Database engine"
-  type        = string
-  default     = "postgres"                 # <-- CHANGE THIS: postgres | mysql | mariadb
-}
-
-variable "db_engine_version" {
-  type    = string
-  default = "16.1"                         # <-- CHANGE THIS: use latest stable
-}
-
-variable "db_name" {
-  type    = string
-  default = "appdb"                        # <-- CHANGE THIS
-}
-
-variable "backup_retention_days" {
-  description = "Days to retain automated backups (1–35)"
-  type        = number
-  default     = 14                         # <-- CHANGE THIS: 30 for compliance-sensitive workloads
-}
-
-variable "backup_window" {
-  description = "UTC window for automated backups — must not overlap maintenance_window"
-  type        = string
-  default     = "02:00-03:00"              # <-- CHANGE THIS: pick off-peak for your region
-}
-
-variable "maintenance_window" {
-  type    = string
-  default = "Mon:04:00-Mon:05:00"          # <-- CHANGE THIS
-}
-
-variable "dr_region" {
-  description = "Region for the cross-region read replica (DR target)"
-  type        = string
-  default     = "us-west-2"               # <-- CHANGE THIS
-}
-
-variable "snapshot_s3_bucket" {
-  description = "S3 bucket for exported snapshots (DR archive)"
-  type        = string
-  default     = ""                         # <-- CHANGE THIS: leave empty to skip export
-}
-
 locals {
   name_prefix = "${var.project}-${var.environment}"
-  db_tags     = merge(local.common_tags, { Component = "database" })
+  db_tags     = merge(var.common_tags, { Component = "database" })
 }
 
 # ---------------------------------------------
@@ -75,8 +19,33 @@ locals {
 resource "aws_db_subnet_group" "main" {
   name        = "dbsng-${local.name_prefix}"
   description = "Private subnets for RDS"
-  subnet_ids  = aws_subnet.private[*].id   # references subnets from main.tf
+  subnet_ids  = var.private_subnet_ids
   tags        = local.db_tags
+}
+
+# Permit database traffic only from within the EKS VPC. Workloads can then be
+# narrowed further with their own security-group rules as the platform evolves.
+resource "aws_security_group" "rds" {
+  name_prefix = "sg-rds-${local.name_prefix}-"
+  description = "Database access from the EKS VPC"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "PostgreSQL from VPC workloads"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.db_tags
 }
 
 # ---------------------------------------------
@@ -110,30 +79,30 @@ resource "aws_db_instance" "primary" {
 
   # Credentials — pulled from Secrets Manager after rotation is set up
   # Use manage_master_user_password instead of hardcoding a password
-  manage_master_user_password = true       # stores password in Secrets Manager automatically
-  master_username             = "dbadmin" # <-- CHANGE THIS
+  manage_master_user_password = true      # stores password in Secrets Manager automatically
+  username                    = "dbadmin" # <-- CHANGE THIS
 
   # Storage
-  allocated_storage     = 20              # GB  # <-- CHANGE THIS
-  max_allocated_storage = 200             # enables autoscaling  # <-- CHANGE THIS
+  allocated_storage     = 20  # GB  # <-- CHANGE THIS
+  max_allocated_storage = 200 # enables autoscaling  # <-- CHANGE THIS
   storage_type          = "gp3"
   storage_encrypted     = true
-  kms_key_id            = null            # <-- CHANGE THIS: set to a CMK ARN for compliance
+  kms_key_id            = null # <-- CHANGE THIS: set to a CMK ARN for compliance
 
   # High Availability
-  multi_az = true                         # always true in production
+  multi_az = true # always true in production
 
   # Networking
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
-  publicly_accessible    = false          # never expose RDS to the internet
+  publicly_accessible    = false # never expose RDS to the internet
 
   # ── Backup configuration ──────────────────────────────────────────────
-  backup_retention_period   = var.backup_retention_days  # PITR window
+  backup_retention_period   = var.backup_retention_days # PITR window
   backup_window             = var.backup_window
   copy_tags_to_snapshot     = true
-  delete_automated_backups  = false       # keep backups even if instance is deleted
-  skip_final_snapshot       = false       # always take a final snapshot on destroy
+  delete_automated_backups  = false # keep backups even if instance is deleted
+  skip_final_snapshot       = false # always take a final snapshot on destroy
   final_snapshot_identifier = "final-${local.name_prefix}-${formatdate("YYYYMMDDHHmm", timestamp())}"
   # ─────────────────────────────────────────────────────────────────────
 
@@ -149,7 +118,6 @@ resource "aws_db_instance" "primary" {
   enabled_cloudwatch_logs_exports = ["postgresql"] # <-- CHANGE THIS: depends on engine
 
   parameter_group_name = aws_db_parameter_group.main.name
-  db_subnet_group_name = aws_db_subnet_group.main.name
 
   tags = local.db_tags
 }
@@ -179,9 +147,9 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 # Creates a replica in a secondary region — promotes it manually during DR
 # ---------------------------------------------
 resource "aws_db_instance" "dr_replica" {
-  count = var.environment == "prod" ? 1 : 0  # only in production  # <-- CHANGE THIS
+  count = var.environment == "prod" ? 1 : 0 # only in production  # <-- CHANGE THIS
 
-  provider   = aws.dr_region                  # configure a second provider alias
+  provider   = aws.dr_region
   identifier = "rds-${local.name_prefix}-dr"
 
   # Read replica config
@@ -189,13 +157,13 @@ resource "aws_db_instance" "dr_replica" {
   instance_class      = var.db_instance_class
 
   # Backup: replicas inherit retention from primary but set it explicitly
-  backup_retention_period = var.backup_retention_days
-  backup_window           = var.backup_window
-  skip_final_snapshot     = false
+  backup_retention_period   = var.backup_retention_days
+  backup_window             = var.backup_window
+  skip_final_snapshot       = false
   final_snapshot_identifier = "final-dr-${local.name_prefix}"
 
-  storage_encrypted = true
-  multi_az          = false           # promote to multi-AZ only after DR failover if needed
+  storage_encrypted   = true
+  multi_az            = false # promote to multi-AZ only after DR failover if needed
   publicly_accessible = false
 
   auto_minor_version_upgrade = true
@@ -207,14 +175,14 @@ resource "aws_db_instance" "dr_replica" {
 # Exports the latest daily snapshot to S3 in Parquet format.
 # Useful for compliance archiving and analytics.
 # ---------------------------------------------
-resource "aws_db_snapshot_export_task" "archive" {
+resource "aws_rds_export_task" "archive" {
   count = var.snapshot_s3_bucket != "" ? 1 : 0
 
   export_task_identifier = "export-${local.name_prefix}"
   source_arn             = aws_db_instance.primary.arn
   s3_bucket_name         = var.snapshot_s3_bucket # <-- CHANGE THIS
   s3_prefix              = "rds-exports/${local.name_prefix}/"
-  iam_role_arn           = aws_iam_role.rds_export.arn
+  iam_role_arn           = aws_iam_role.rds_export[0].arn
   kms_key_id             = aws_db_instance.primary.kms_key_id
 }
 
@@ -240,29 +208,15 @@ resource "aws_cloudwatch_metric_alarm" "rds_backup_missing" {
   evaluation_periods  = 1
   metric_name         = "BackupRetentionPeriodStorageUsed"
   namespace           = "AWS/RDS"
-  period              = 86400   # 24 hours
+  period              = 86400 # 24 hours
   statistic           = "Sum"
-  threshold           = 1       # alert if no backup storage is being used
+  threshold           = 1 # alert if no backup storage is being used
   alarm_description   = "RDS automated backups appear to have stopped"
 
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.primary.id
   }
 
-  alarm_actions = []  # <-- CHANGE THIS: add your SNS topic ARN
+  alarm_actions = [] # <-- CHANGE THIS: add your SNS topic ARN
   ok_actions    = []
-}
-
-# ---------------------------------------------
-# Outputs
-# ---------------------------------------------
-output "rds_endpoint" {
-  description = "RDS primary endpoint"
-  value       = aws_db_instance.primary.endpoint
-  sensitive   = true
-}
-
-output "rds_master_secret_arn" {
-  description = "ARN of the Secrets Manager secret holding the master password"
-  value       = aws_db_instance.primary.master_user_secret[0].secret_arn
 }

@@ -18,10 +18,10 @@ terraform {
       # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/azurerm"
       version = "~> 3.85.0" # <-- CHANGE THIS: pin to latest stable
-    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
-# Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "azurerm" {
@@ -103,11 +103,11 @@ output "container_name" {
 # Locals
 # ---------------------------------------------
 locals {
-  project              = "devops-playbook"     # <-- CHANGE THIS: replace with your organisation or platform project name
+  project              = "devops-playbook" # <-- CHANGE THIS: replace with your organisation or platform project name
   environment          = "shared"
-  location             = "westeurope"          # <-- CHANGE THIS: choose the Azure region that will host shared Terraform state
-  resource_group_name  = "rg-tfstate-shared"   # <-- CHANGE THIS: align with your Azure naming standard
-  storage_account_name = "tfstateshared001"    # <-- CHANGE THIS: must be globally unique, lowercase, and 3-24 characters
+  location             = "westeurope"        # <-- CHANGE THIS: choose the Azure region that will host shared Terraform state
+  resource_group_name  = "rg-tfstate-shared" # <-- CHANGE THIS: align with your Azure naming standard
+  storage_account_name = "tfstateshared001"  # <-- CHANGE THIS: must be globally unique, lowercase, and 3-24 characters
 
   common_tags = {
     Project     = local.project

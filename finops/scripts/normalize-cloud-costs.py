@@ -106,7 +106,15 @@ def query_kubecost(kubecost_url: str, period_days: int, group_by: str) -> list[d
                 grouped[key] = {"aws": 0.0, "azure": 0.0, "gcp": 0.0, "total": 0.0}
 
             cloud = str(props.get("provider", "")).lower()
-            provider = "aws" if "aws" in cloud else "azure" if "azure" in cloud else "gcp" if "gcp" in cloud else "aws"
+            provider = (
+                "aws"
+                if "aws" in cloud
+                else "azure"
+                if "azure" in cloud
+                else "gcp"
+                if "gcp" in cloud
+                else "aws"
+            )
 
             cpu_cores = parse_cpu(str(value.get("cpuCoreRequestAverage", 0.0)))
             mem_gib = parse_memory_gib(str(value.get("ramByteRequestAverage", 0.0)))
@@ -126,14 +134,22 @@ def query_kubecost(kubecost_url: str, period_days: int, group_by: str) -> list[d
         ]
 
 
-def maybe_enrich_with_cloud_apis(rows: list[dict[str, Any]], use_aws: bool, use_azure: bool, use_gcp: bool) -> list[dict[str, Any]]:
+def maybe_enrich_with_cloud_apis(
+    rows: list[dict[str, Any]], use_aws: bool, use_azure: bool, use_gcp: bool
+) -> list[dict[str, Any]]:
     # Optional enrichment stub. Kubecost remains primary data source.
     if use_aws:
-        print(f"INFO: AWS enrichment requested. Configure endpoint/auth as documented: {AWS_COST_API_HINT}")
+        print(
+            f"INFO: AWS enrichment requested. Configure endpoint/auth as documented: {AWS_COST_API_HINT}"
+        )
     if use_azure:
-        print(f"INFO: Azure enrichment requested. Configure endpoint/auth as documented: {AZURE_COST_API_HINT}")
+        print(
+            f"INFO: Azure enrichment requested. Configure endpoint/auth as documented: {AZURE_COST_API_HINT}"
+        )
     if use_gcp:
-        print(f"INFO: GCP enrichment requested. Configure billing export query target: {GCP_BILLING_EXPORT_HINT}")
+        print(
+            f"INFO: GCP enrichment requested. Configure billing export query target: {GCP_BILLING_EXPORT_HINT}"
+        )
     return rows
 
 
@@ -166,7 +182,13 @@ def load_opportunities() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                 )
     except Exception:
         optimization = [
-            {"workload": "api-gateway", "cloud": "AWS/EKS", "current": 340.0, "recommended": 228.0, "savings": 112.0}
+            {
+                "workload": "api-gateway",
+                "cloud": "AWS/EKS",
+                "current": 340.0,
+                "recommended": 228.0,
+                "savings": 112.0,
+            }
         ]
 
     try:
@@ -184,7 +206,13 @@ def load_opportunities() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                 )
     except Exception:
         reserved = [
-            {"resource": "us-east-1 r6i.large", "cloud": "AWS", "current": 180.0, "committed": 108.0, "annual_savings": 864.0}
+            {
+                "resource": "us-east-1 r6i.large",
+                "cloud": "AWS",
+                "current": 180.0,
+                "committed": 108.0,
+                "annual_savings": 864.0,
+            }
         ]
 
     return optimization, reserved
@@ -208,13 +236,29 @@ def report_markdown(rows: list[dict[str, Any]], group_by: str, start: date, end:
             f"| {row['group']} | ${row['aws']:.0f} | ${row['azure']:.0f} | ${row['gcp']:.0f} | ${row['total']:.0f} | {mom_text} |"
         )
 
-    lines.extend(["", "## Optimization Opportunities", "", "| Workload | Cloud | Current | Recommended | Savings |", "|---|---|---:|---:|---:|"])
+    lines.extend(
+        [
+            "",
+            "## Optimization Opportunities",
+            "",
+            "| Workload | Cloud | Current | Recommended | Savings |",
+            "|---|---|---:|---:|---:|",
+        ]
+    )
     for row in optimization:
         lines.append(
             f"| {row['workload']} | {row['cloud']} | ${row['current']:.0f}/mo | ${row['recommended']:.0f}/mo | ${row['savings']:.0f}/mo |"
         )
 
-    lines.extend(["", "## Reserved Capacity Opportunities", "", "| Resource | Cloud | Current spend | Committed rate | Annual savings |", "|---|---|---:|---:|---:|"])
+    lines.extend(
+        [
+            "",
+            "## Reserved Capacity Opportunities",
+            "",
+            "| Resource | Cloud | Current spend | Committed rate | Annual savings |",
+            "|---|---|---:|---:|---:|",
+        ]
+    )
     for row in reserved:
         lines.append(
             f"| {row['resource']} | {row['cloud']} | ${row['current']:.0f}/mo | ${row['committed']:.0f}/mo | ${row['annual_savings']:.0f}/yr |"
@@ -228,7 +272,16 @@ def report_csv(rows: list[dict[str, Any]]) -> str:
     writer = csv.writer(out)
     writer.writerow(["group", "aws", "azure", "gcp", "total", "mom_change_pct"])
     for row in rows:
-        writer.writerow([row["group"], round(row["aws"], 2), round(row["azure"], 2), round(row["gcp"], 2), round(row["total"], 2), row.get("mom_change_pct", 0.0)])
+        writer.writerow(
+            [
+                row["group"],
+                round(row["aws"], 2),
+                round(row["azure"], 2),
+                round(row["gcp"], 2),
+                round(row["total"], 2),
+                row.get("mom_change_pct", 0.0),
+            ]
+        )
     return out.getvalue()
 
 
@@ -244,21 +297,49 @@ def write_configmap(rows: list[dict[str, Any]], group_by: str, period_days: int)
             "report": json.dumps(rows),
         },
     }
-    proc = subprocess.run(["kubectl", "apply", "-f", "-"], input=json.dumps(payload), text=True, capture_output=True)
+    proc = subprocess.run(
+        ["kubectl", "apply", "-f", "-"], input=json.dumps(payload), text=True, capture_output=True
+    )
     if proc.returncode != 0:
-        print(f"WARNING: failed to update ConfigMap finops-normalized-costs: {proc.stderr.strip()}", file=sys.stderr)
+        print(
+            f"WARNING: failed to update ConfigMap finops-normalized-costs: {proc.stderr.strip()}",
+            file=sys.stderr,
+        )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Normalize multi-cloud compute costs into a single comparison model")
-    parser.add_argument("--aws", action="store_true", help="Optionally enrich with AWS Cost Explorer data")
-    parser.add_argument("--azure", action="store_true", help="Optionally enrich with Azure Cost Management data")
-    parser.add_argument("--gcp", action="store_true", help="Optionally enrich with GCP Billing Export data")
-    parser.add_argument("--kubecost", default=DEFAULT_KUBECOST_URL, help="Kubecost/OpenCost base URL")
-    parser.add_argument("--period", type=int, default=30, help="Look-back period in days (default: 30)")
-    parser.add_argument("--output", choices=["json", "csv", "markdown"], default="markdown", help="Output format")
-    parser.add_argument("--by", choices=["service", "team", "environment", "namespace"], default="team", help="Grouping dimension")
-    parser.add_argument("--write-configmap", action="store_true", help="Write normalized report to ConfigMap finops-normalized-costs")
+    parser = argparse.ArgumentParser(
+        description="Normalize multi-cloud compute costs into a single comparison model"
+    )
+    parser.add_argument(
+        "--aws", action="store_true", help="Optionally enrich with AWS Cost Explorer data"
+    )
+    parser.add_argument(
+        "--azure", action="store_true", help="Optionally enrich with Azure Cost Management data"
+    )
+    parser.add_argument(
+        "--gcp", action="store_true", help="Optionally enrich with GCP Billing Export data"
+    )
+    parser.add_argument(
+        "--kubecost", default=DEFAULT_KUBECOST_URL, help="Kubecost/OpenCost base URL"
+    )
+    parser.add_argument(
+        "--period", type=int, default=30, help="Look-back period in days (default: 30)"
+    )
+    parser.add_argument(
+        "--output", choices=["json", "csv", "markdown"], default="markdown", help="Output format"
+    )
+    parser.add_argument(
+        "--by",
+        choices=["service", "team", "environment", "namespace"],
+        default="team",
+        help="Grouping dimension",
+    )
+    parser.add_argument(
+        "--write-configmap",
+        action="store_true",
+        help="Write normalized report to ConfigMap finops-normalized-costs",
+    )
     parser.add_argument("--out-file", help="Optional output file path (default: stdout)")
     args = parser.parse_args()
 

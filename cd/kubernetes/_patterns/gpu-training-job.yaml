@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GPU Training Job (Kubernetes)
 # WHEN TO USE: Run a batch ML training workload on a GPU node pool.
@@ -54,10 +55,6 @@ spec:
   # Hard upper bound: kill the Job if it runs longer than 6 hours.
   # Adjust to your expected training duration + a safety margin.
   activeDeadlineSeconds: 21600             # <-- CHANGE THIS
-
-  # Keep history for post-mortem inspection.
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
 
   template:
     metadata:

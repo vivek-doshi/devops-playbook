@@ -113,7 +113,9 @@ def fetch_pricing(kubecost_url: str) -> dict[str, float]:
         if not nodes:
             raise ValueError("no node pricing in response")
         cpu_rates = [float(n.get("cpuHourlyCost", DEFAULT_CPU_HOURLY_RATE_USD)) for n in nodes]
-        mem_rates = [float(n.get("ramGBHourlyCost", DEFAULT_MEMORY_GIB_HOURLY_RATE_USD)) for n in nodes]
+        mem_rates = [
+            float(n.get("ramGBHourlyCost", DEFAULT_MEMORY_GIB_HOURLY_RATE_USD)) for n in nodes
+        ]
         return {
             "cpu": sum(cpu_rates) / len(cpu_rates),
             "memory": sum(mem_rates) / len(mem_rates),
@@ -121,7 +123,11 @@ def fetch_pricing(kubecost_url: str) -> dict[str, float]:
         }
     except Exception as exc:  # noqa: BLE001
         print(f"WARNING: falling back to default pricing: {exc}", file=sys.stderr)
-        return {"cpu": DEFAULT_CPU_HOURLY_RATE_USD, "memory": DEFAULT_MEMORY_GIB_HOURLY_RATE_USD, "source": "defaults"}
+        return {
+            "cpu": DEFAULT_CPU_HOURLY_RATE_USD,
+            "memory": DEFAULT_MEMORY_GIB_HOURLY_RATE_USD,
+            "source": "defaults",
+        }
 
 
 def monthly_cost(cpu_cores: float, memory_gib: float, pricing: dict[str, float]) -> float:
@@ -153,16 +159,23 @@ def read_cost_by_workload(kubecost_url: str, namespace: str) -> dict[str, float]
             result[controller_name] = float(value.get("totalCost", 0.0))
         return result
     except Exception as exc:  # noqa: BLE001
-        print(f"WARNING: workload-level Kubecost data unavailable ({exc}); using request-based estimate only.", file=sys.stderr)
+        print(
+            f"WARNING: workload-level Kubecost data unavailable ({exc}); using request-based estimate only.",
+            file=sys.stderr,
+        )
         return {}
 
 
-def pdb_single_replica_warning(pdbs: list[dict[str, Any]], deployment: dict[str, Any]) -> str | None:
+def pdb_single_replica_warning(
+    pdbs: list[dict[str, Any]], deployment: dict[str, Any]
+) -> str | None:
     replicas = int(deployment.get("spec", {}).get("replicas", 1) or 1)
     if replicas != 1:
         return None
     dep_name = deployment.get("metadata", {}).get("name", "")
-    pod_labels = deployment.get("spec", {}).get("template", {}).get("metadata", {}).get("labels", {})
+    pod_labels = (
+        deployment.get("spec", {}).get("template", {}).get("metadata", {}).get("labels", {})
+    )
     for pdb in pdbs:
         min_available = pdb.get("spec", {}).get("minAvailable")
         if str(min_available) != "1":
@@ -196,11 +209,7 @@ def build_candidate(
     dep_name = deployment["metadata"]["name"]
     containers = deployment["spec"]["template"]["spec"].get("containers", [])
     by_name = {c["name"]: c for c in containers}
-    recs = (
-        vpa.get("status", {})
-        .get("recommendation", {})
-        .get("containerRecommendations", [])
-    )
+    recs = vpa.get("status", {}).get("recommendation", {}).get("containerRecommendations", [])
 
     for rec in recs:
         cname = rec.get("containerName")
@@ -233,14 +242,20 @@ def build_candidate(
             continue
 
         # Keep existing ratio whenever possible, defaulting to 2x requests.
-        cpu_ratio = (current_limit_cpu / current_cpu) if current_cpu > 0 and current_limit_cpu > 0 else 2.0
-        mem_ratio = (current_limit_mem / current_mem) if current_mem > 0 and current_limit_mem > 0 else 2.0
+        cpu_ratio = (
+            (current_limit_cpu / current_cpu) if current_cpu > 0 and current_limit_cpu > 0 else 2.0
+        )
+        mem_ratio = (
+            (current_limit_mem / current_mem) if current_mem > 0 and current_limit_mem > 0 else 2.0
+        )
         rec_limit_cpu = max(target_cpu, target_cpu * cpu_ratio)
         rec_limit_mem = max(target_mem, target_mem * mem_ratio)
 
         # Safety rule: limits must not be lower than requests.
         if rec_limit_cpu < target_cpu or rec_limit_mem < target_mem:
-            raise ValueError(f"invalid recommendation: limits below requests for {dep_name}/{cname}")
+            raise ValueError(
+                f"invalid recommendation: limits below requests for {dep_name}/{cname}"
+            )
 
         mem_limit_reduction = 0.0
         if current_limit_mem > 0:
@@ -266,7 +281,9 @@ def build_candidate(
         workload_monthly = workload_costs.get(dep_name, req_current_cost)
         reduction_factor = req_savings / req_current_cost if req_current_cost > 0 else 0.0
         estimated_monthly_savings = workload_monthly * reduction_factor
-        savings_pct = (estimated_monthly_savings / workload_monthly * 100.0) if workload_monthly > 0 else 0.0
+        savings_pct = (
+            (estimated_monthly_savings / workload_monthly * 100.0) if workload_monthly > 0 else 0.0
+        )
 
         candidates.append(
             {
@@ -338,10 +355,14 @@ def write_kustomization(namespace_dir: Path, patch_files: list[str]) -> None:
         "patchesStrategicMerge:",
     ]
     lines.extend([f"  - {name}" for name in patch_files])
-    namespace_dir.joinpath("kustomization.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    namespace_dir.joinpath("kustomization.yaml").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
 
 
-def build_pr_description(items: list[dict[str, Any]], checklist_text: str, namespace: str, output_dir: Path) -> str:
+def build_pr_description(
+    items: list[dict[str, Any]], checklist_text: str, namespace: str, output_dir: Path
+) -> str:
     total = round(sum(i["expected_monthly_savings_usd"] for i in items), 2)
     avg_pct = round(sum(i["savings_pct"] for i in items) / len(items), 1) if items else 0.0
     lines = [
@@ -381,8 +402,12 @@ def build_pr_description(items: list[dict[str, Any]], checklist_text: str, names
         lines.append(f"### {i['deployment']} / {i['container']}")
         lines.append(f"- Evidence: `{i['evidence']}`")
         lines.append("- Current vs Recommended:")
-        lines.append(f"  - Requests: CPU {i['current']['cpu_request']} -> {i['recommended']['cpu_request']}, Memory {i['current']['memory_request']} -> {i['recommended']['memory_request']}")
-        lines.append(f"  - Limits: CPU {i['current']['cpu_limit']} -> {i['recommended']['cpu_limit']}, Memory {i['current']['memory_limit']} -> {i['recommended']['memory_limit']}")
+        lines.append(
+            f"  - Requests: CPU {i['current']['cpu_request']} -> {i['recommended']['cpu_request']}, Memory {i['current']['memory_request']} -> {i['recommended']['memory_request']}"
+        )
+        lines.append(
+            f"  - Limits: CPU {i['current']['cpu_limit']} -> {i['recommended']['cpu_limit']}, Memory {i['current']['memory_limit']} -> {i['recommended']['memory_limit']}"
+        )
         lines.append(f"  - Expected monthly savings: ${i['expected_monthly_savings_usd']:.2f}")
         if i["warnings"]:
             lines.append("- Warnings:")
@@ -421,19 +446,43 @@ def write_savings_configmap(namespace: str, items: list[dict[str, Any]], dry_run
         print("DRY RUN: would update finops-optimization-savings ConfigMap with:")
         print(json.dumps(payload, indent=2))
         return
-    proc = subprocess.run(["kubectl", "apply", "-f", "-"], input=json.dumps(payload), text=True, capture_output=True)
+    proc = subprocess.run(
+        ["kubectl", "apply", "-f", "-"], input=json.dumps(payload), text=True, capture_output=True
+    )
     if proc.returncode != 0:
-        print(f"WARNING: could not update optimization savings ConfigMap: {proc.stderr.strip()}", file=sys.stderr)
+        print(
+            f"WARNING: could not update optimization savings ConfigMap: {proc.stderr.strip()}",
+            file=sys.stderr,
+        )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate optimization patches and PR text from VPA recommendations")
+    parser = argparse.ArgumentParser(
+        description="Generate optimization patches and PR text from VPA recommendations"
+    )
     parser.add_argument("--namespace", required=True, help="Namespace to analyze")
-    parser.add_argument("--min-savings", type=float, default=20.0, help="Minimum savings percentage required (default: 20%%)")
-    parser.add_argument("--dry-run", action="store_true", help="Preview output without writing files")
-    parser.add_argument("--output-dir", default="./optimization-patches", help="Output directory (default: ./optimization-patches)")
-    parser.add_argument("--allow-aggressive", action="store_true", help="Allow memory limit reductions >50%% for a single change")
-    parser.add_argument("--kubecost-url", default=DEFAULT_KUBECOST_URL, help="Kubecost/OpenCost API URL")
+    parser.add_argument(
+        "--min-savings",
+        type=float,
+        default=20.0,
+        help="Minimum savings percentage required (default: 20%%)",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview output without writing files"
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="./optimization-patches",
+        help="Output directory (default: ./optimization-patches)",
+    )
+    parser.add_argument(
+        "--allow-aggressive",
+        action="store_true",
+        help="Allow memory limit reductions >50%% for a single change",
+    )
+    parser.add_argument(
+        "--kubecost-url", default=DEFAULT_KUBECOST_URL, help="Kubecost/OpenCost API URL"
+    )
     args = parser.parse_args()
 
     try:
@@ -485,7 +534,9 @@ def main() -> None:
     if args.dry_run:
         print(f"DRY RUN: would generate {len(selected)} patch files under {namespace_dir}")
         for item in selected:
-            print(f"- {item['deployment']}-{item['container']}: ${item['expected_monthly_savings_usd']:.2f}/mo ({item['savings_pct']}%)")
+            print(
+                f"- {item['deployment']}-{item['container']}: ${item['expected_monthly_savings_usd']:.2f}/mo ({item['savings_pct']}%)"
+            )
             if item["warnings"]:
                 for warning in item["warnings"]:
                     print(f"  WARNING: {warning}")

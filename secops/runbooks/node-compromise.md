@@ -311,7 +311,7 @@ echo "     | json | tags=~\"escape|namespace|privilege_escalation\""
 # Incident Report: Node Compromise
 
 **Incident ID:** INC-YYYYMMDD-HHMMSS
-**Date:** YYYY-MM-DD  
+**Date:** YYYY-MM-DD
 **Severity:** CRITICAL
 **Status:** Resolved
 

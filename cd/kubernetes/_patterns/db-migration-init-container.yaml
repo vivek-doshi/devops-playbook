@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Database Migration via Init Container
 # WHEN TO USE: Short migrations (< 5 minutes) where you want migrations
@@ -115,7 +116,7 @@ spec:
         # longest expected migration. This prevents a stuck migration from blocking
         # the rollout indefinitely and holding a PodDisruptionBudget slot.
         - name: db-migrate
-          image: my-registry/my-app:latest   # <-- CHANGE THIS: same tag as main container
+          image: my-registry/my-app:v1.0.0   # <-- CHANGE THIS: same tag as main container
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true
@@ -194,7 +195,7 @@ spec:
 
       containers:
         - name: app
-          image: my-registry/my-app:latest  # <-- CHANGE THIS
+          image: my-registry/my-app:v1.0.0  # <-- CHANGE THIS
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

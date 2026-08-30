@@ -152,7 +152,7 @@ kubectl apply -f cd/kubernetes/_base/network-policies/allow-egress-to-dns.yaml -
 kubectl apply -f cd/kubernetes/_base/network-policies/allow-ingress-from-ingress-controller.yaml -n tenant-acme
 ```
 
-RBAC files: [`cd/kubernetes/_base/rbac/`](../../cd/kubernetes/_base/rbac/)  
+RBAC files: [`cd/kubernetes/_base/rbac/`](../../cd/kubernetes/_base/rbac/)
 NetworkPolicy files: [`cd/kubernetes/_base/network-policies/`](../../cd/kubernetes/_base/network-policies/)
 
 ---
@@ -187,7 +187,7 @@ spec:
         property: password
 ```
 
-Secret store configs: [`secrets/external-secrets/`](../../secrets/external-secrets/)  
+Secret store configs: [`secrets/external-secrets/`](../../secrets/external-secrets/)
 Full guide: [docs/guides/secrets-management.md](../guides/secrets-management.md)
 
 > **Isolation guarantee:** Each tenant's ExternalSecret is scoped to its own namespace. RBAC prevents workloads in `tenant-acme` from reading secrets in `tenant-globex`.

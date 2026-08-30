@@ -29,24 +29,24 @@ import logging
 import os
 import secrets
 import string
-import psycopg2          # pip install psycopg2-binary  # <-- CHANGE THIS: use pymysql for MySQL
+import psycopg2  # pip install psycopg2-binary  # <-- CHANGE THIS: use pymysql for MySQL
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # --- Configuration -------------------------------------------------------
-DB_ENGINE    = "postgresql"   # <-- CHANGE THIS: "mysql" | "postgresql" | "mariadb"
-PASSWORD_LEN = 32             # <-- CHANGE THIS: minimum 20 recommended
+DB_ENGINE = "postgresql"  # <-- CHANGE THIS: "mysql" | "postgresql" | "mariadb"
+PASSWORD_LEN = 32  # <-- CHANGE THIS: minimum 20 recommended
 # Exclude characters that break DSN strings or shell quoting
-EXCLUDED     = '"\'@/\\'
+EXCLUDED = "\"'@/\\"
 # -------------------------------------------------------------------------
 
 
 def lambda_handler(event, context):
     """Entry point called by Secrets Manager at each rotation step."""
-    arn   = event["SecretId"]
+    arn = event["SecretId"]
     token = event["ClientRequestToken"]
-    step  = event["Step"]
+    step = event["Step"]
 
     client = boto3.client("secretsmanager", region_name=os.environ["AWS_REGION"])
 
@@ -66,8 +66,8 @@ def lambda_handler(event, context):
 
     dispatch = {
         "createSecret": _create_secret,
-        "setSecret":    _set_secret,
-        "testSecret":   _test_secret,
+        "setSecret": _set_secret,
+        "testSecret": _test_secret,
         "finishSecret": _finish_secret,
     }
     if step not in dispatch:
@@ -79,8 +79,7 @@ def lambda_handler(event, context):
 # ── Step 1: generate and store a new password in AWSPENDING ──────────────
 def _create_secret(client, arn, token):
     try:
-        client.get_secret_value(SecretId=arn, VersionStage="AWSPENDING",
-                                VersionId=token)
+        client.get_secret_value(SecretId=arn, VersionStage="AWSPENDING", VersionId=token)
         logger.info("createSecret: AWSPENDING already exists — skipping")
         return
     except client.exceptions.ResourceNotFoundException:
@@ -139,8 +138,7 @@ def _test_secret(client, arn, token):
 def _finish_secret(client, arn, token):
     metadata = client.describe_secret(SecretId=arn)
     current_version = next(
-        (v for v, stages in metadata["VersionIdsToStages"].items()
-         if "AWSCURRENT" in stages),
+        (v for v, stages in metadata["VersionIdsToStages"].items() if "AWSCURRENT" in stages),
         None,
     )
     if current_version == token:
@@ -189,10 +187,11 @@ def _db_connect(secret: dict):
             user=secret["username"],
             password=secret["password"],
             connect_timeout=5,
-            sslmode="require",          # always require TLS in production
+            sslmode="require",  # always require TLS in production
         )
     # MySQL / MariaDB
     import pymysql  # noqa: PLC0415
+
     return pymysql.connect(
         host=secret["host"],
         port=secret.get("port", 3306),

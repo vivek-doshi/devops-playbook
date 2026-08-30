@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Deploy to AWS EKS
 # WHEN TO USE: Deploying to EKS from GitLab CI/CD
 # PREREQUISITES: AWS IAM credentials in GitLab variables

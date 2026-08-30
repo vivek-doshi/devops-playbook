@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Database Migration Job (Kubernetes)
 # WHEN TO USE: Run schema migrations safely before a new app version
@@ -50,10 +51,6 @@ spec:
   # Hard cap: if migrations take > 10 minutes something is wrong.
   activeDeadlineSeconds: 600              # <-- CHANGE THIS
 
-  # Keep the last 3 succeeded and 1 failed Job for post-mortem.
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 1
-
   template:
     metadata:
       labels:
@@ -98,7 +95,7 @@ spec:
 
       containers:
         - name: migrate
-          image: my-registry/my-app:latest  # <-- CHANGE THIS: same image as deployment
+          image: my-registry/my-app:v1.0.0  # <-- CHANGE THIS: same image as deployment
           imagePullPolicy: Always
 
           # ── Pick ONE of the command examples below ──────────────────────

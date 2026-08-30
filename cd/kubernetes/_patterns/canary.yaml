@@ -1,4 +1,5 @@
-﻿# Canary Deployment Pattern
+---
+# Canary Deployment Pattern
 # Route small percentage of traffic to new version
 # Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 ---

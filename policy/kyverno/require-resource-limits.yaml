@@ -1,3 +1,4 @@
+---
 # Enforces the resource requests and limits demonstrated in:
 #   cd/kubernetes/_base/deployment.yaml
 #

@@ -1,0 +1,16 @@
+# TEMPLATE: Helm Ignore Rules — Webapp
+# WHEN TO USE: Excludes non-chart files from helm package artifacts.
+# PREREQUISITES: Helm packaging workflow enabled in CI/CD.
+# MATURITY: Stable
+# Files excluded from Helm chart packages
+.git/
+.github/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.tmp
+*.log
+README.md
+.DS_Store
+node_modules/

@@ -1,3 +1,4 @@
+---
 # grafana/tempo chart values (grafana/tempo 1.9.x — monolithic / single-binary mode)
 #
 # Install:
@@ -26,9 +27,9 @@ tempo:
   reportingEnabled: false
 
   server:
-    http_listen_port: 3200   # Query API and Grafana datasource target.
-    grpc_listen_port: 9095   # Used by intra-component communication when running distributed.
-    log_level: warn          # warn keeps logs quiet in production; change to info when debugging.
+    http_listen_port: 3200 # Query API and Grafana datasource target.
+    grpc_listen_port: 9095 # Used by intra-component communication when running distributed.
+    log_level: warn # warn keeps logs quiet in production; change to info when debugging.
 
   # ─── Storage ──────────────────────────────────────────────────────────────
   storage:
@@ -57,7 +58,7 @@ tempo:
       block_retention: 72h
       # Compact blocks smaller than 100 MiB into larger ones to reduce object-store operations
       # and improve query fan-out performance.
-      max_block_bytes: 104857600   # 100 MiB
+      max_block_bytes: 104857600 # 100 MiB
       max_compaction_objects: 6000000
 
   # ─── Ingester ─────────────────────────────────────────────────────────────
@@ -66,11 +67,11 @@ tempo:
     # in memory indefinitely. Shorter values use less memory but increase write amplification.
     trace_idle_period: 10s
     max_block_duration: 5m
-    max_block_bytes: 104857600   # 100 MiB — flush early if a block grows to 100 MiB
+    max_block_bytes: 104857600 # 100 MiB — flush early if a block grows to 100 MiB
 
   # ─── Querier ──────────────────────────────────────────────────────────────
   querier:
-    max_concurrent_queries: 20   # Limit parallel backend reads to prevent storage saturation.
+    max_concurrent_queries: 20 # Limit parallel backend reads to prevent storage saturation.
     frontend_worker:
       # Single-binary: the frontend and querier live in the same process, so point at localhost.
       frontend_address: tempo:9095
@@ -79,9 +80,9 @@ tempo:
   query_frontend:
     search:
       # 0 = no duration cap on search queries. Apply a cap in multi-tenant setups to bound cost.
-      max_duration: 0             # <-- CHANGE THIS: set e.g. 168h in shared tenancy deployments
-      default_result_limit: 20   # Default page size for trace-search API calls.
-      max_result_limit: 0        # 0 = no cap; the frontend enforces pagination client-side.
+      max_duration: 0 # <-- CHANGE THIS: set e.g. 168h in shared tenancy deployments
+      default_result_limit: 20 # Default page size for trace-search API calls.
+      max_result_limit: 0 # 0 = no cap; the frontend enforces pagination client-side.
 
   # ─── Distributor / Receivers ──────────────────────────────────────────────
   # Configure the protocols Tempo accepts. OTLP gRPC (4317) and HTTP (4318) are the
@@ -111,9 +112,8 @@ tempo:
   #
   # Enabling requires a remote_write target (Prometheus or Thanos).
   metricsGenerator:
-    enabled: false    # <-- CHANGE THIS to true to activate span-derived metrics
-    remoteWrite:
-      []
+    enabled: false # <-- CHANGE THIS to true to activate span-derived metrics
+    remoteWrite: []
       # - url: http://kube-prometheus-stack-prometheus:9090/api/v1/write  # <-- CHANGE THIS
 
 # =============================================================================
@@ -124,7 +124,7 @@ tempo:
 # In production on object storage, this can be sized smaller (WAL only ~ 2 Gi).
 persistence:
   enabled: true
-  size: 10Gi   # <-- CHANGE THIS: increase to 50+ Gi if retention is >3 days on filesystem
+  size: 10Gi # <-- CHANGE THIS: increase to 50+ Gi if retention is >3 days on filesystem
   # storageClassName: ""  # <-- CHANGE THIS to an SSD-backed class in production
 
 resources:
@@ -133,7 +133,7 @@ resources:
     memory: 512Mi
   limits:
     cpu: "1"
-    memory: 2Gi   # Raise to 4+ Gi for high-cardinality trace workloads (>5 000 spans/s)
+    memory: 2Gi # Raise to 4+ Gi for high-cardinality trace workloads (>5 000 spans/s)
 
 # Label this pod so the additionalScrapeConfigs job in prometheus/values.yaml picks it up.
 podLabels:
@@ -151,7 +151,8 @@ serviceMonitor:
 # The gateway exposes a single entry-point for both reads and writes over HTTPS
 # with basic auth. Disable in dev/test where mTLS is not required.
 gateway:
-  enabled: false   # <-- CHANGE THIS to true if you want multi-tenant basic-auth ingress
+  enabled: false # <-- CHANGE THIS to true if you want multi-tenant basic-auth ingress
+
 
 # ─── Multi-tenancy ────────────────────────────────────────────────────────────
 # Disabled here for single-tenant operation (no X-Scope-OrgID header required).

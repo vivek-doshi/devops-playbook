@@ -2,6 +2,8 @@
 
 This folder captures major technical and operational decisions for this repository.
 
+For organization-scale rollout guidance, see `docs/adoption/`. Adoption decisions that are specific to your organization should be captured as ADRs in this folder and linked from `docs/adoption/30-60-90-plan.md`.
+
 ## Current ADRs
 
 - `ADR-001-folder-structure.md`: Concern-first repository structure and navigation model.

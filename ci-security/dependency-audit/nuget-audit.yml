@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — NuGet Dependency Audit
 # WHEN TO USE: .NET projects to scan for vulnerable NuGet packages
 # PREREQUISITES: .NET solution in the repository

@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: cert-manager Bootstrap — ClusterIssuer + Let's Encrypt
 # WHEN TO USE: First-time cert-manager setup on any Kubernetes cluster.

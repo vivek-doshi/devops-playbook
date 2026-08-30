@@ -27,6 +27,7 @@ DEFAULT_MEMORY_HOURLY_RATE_USD = _mod.DEFAULT_MEMORY_HOURLY_RATE_USD
 
 # ─── parse_cpu ────────────────────────────────────────────────────────────────
 
+
 class TestParseCpu:
     def test_cores(self):
         assert parse_cpu("2") == 2.0
@@ -45,6 +46,7 @@ class TestParseCpu:
 
 
 # ─── parse_memory ─────────────────────────────────────────────────────────────
+
 
 class TestParseMemory:
     def test_gi(self):
@@ -69,6 +71,7 @@ class TestParseMemory:
 
 
 # ─── calculate_monthly_cost ───────────────────────────────────────────────────
+
 
 class TestCalculateMonthlyCost:
     CPU_RATE = 0.048
@@ -100,6 +103,7 @@ class TestCalculateMonthlyCost:
 
 # ─── classify_priority ────────────────────────────────────────────────────────
 
+
 class TestClassifyPriority:
     def test_high_at_20(self):
         assert classify_priority(20.0) == "high"
@@ -124,6 +128,7 @@ class TestClassifyPriority:
 
 
 # ─── build_report ─────────────────────────────────────────────────────────────
+
 
 class TestBuildReport:
     PRICING = {
@@ -205,6 +210,7 @@ class TestBuildReport:
 
 
 # ─── fetch_pricing fallback ───────────────────────────────────────────────────
+
 
 class TestFetchPricingFallback:
     def test_returns_defaults_on_failure(self):

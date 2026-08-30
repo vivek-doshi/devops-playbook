@@ -1009,4 +1009,3 @@ Follow this order if you are learning the platform end to end:
 3. [docs/golden-paths/slo-driven-development.md](../golden-paths/slo-driven-development.md)
 4. [docs/golden-paths/service-catalog.md](../golden-paths/service-catalog.md)
 5. [docs/golden-paths/finops-optimization.md](../golden-paths/finops-optimization.md)
-

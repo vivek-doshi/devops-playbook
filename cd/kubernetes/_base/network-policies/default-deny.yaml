@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Default Deny — all ingress and egress
 # WHEN TO USE: Apply this first in every namespace before any

@@ -1,4 +1,9 @@
-﻿# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
+---
+# TEMPLATE: Pulumi Stack Config — AWS Production
+# WHEN TO USE: Production configuration for AWS app-layer Pulumi deployment.
+# PREREQUISITES: Pulumi stack initialized and production secrets configured with pulumi config set --secret.
+# MATURITY: Stable
+# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 config:
   aws:region: us-east-1
   aws-ecs-fargate:containerPort: "3000"
@@ -6,4 +11,4 @@ config:
   aws-ecs-fargate:cpu: "256"
   aws-ecs-fargate:memory: "512"
   aws-ecs-fargate:desiredCount: "2"
-  aws-ecs-fargate:imageName: "my-org/my-app:latest"
+  aws-ecs-fargate:imageName: "my-org/my-app:1.0.0"

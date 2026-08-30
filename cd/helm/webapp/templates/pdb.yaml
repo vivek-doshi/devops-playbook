@@ -1,0 +1,18 @@
+---
+# TEMPLATE: Helm Template — Webapp PodDisruptionBudget
+# WHEN TO USE: Protects minimum pod availability during voluntary disruptions.
+# PREREQUISITES: deployment replica strategy and pdb.* values configured.
+# MATURITY: Stable
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "webapp.fullname" . }}-pdb
+  labels:
+    {{- include "webapp.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "webapp.selectorLabels" . | nindent 6 }}
+{{- end }}

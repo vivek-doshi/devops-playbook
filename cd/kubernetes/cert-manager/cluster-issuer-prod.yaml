@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: ClusterIssuer — Let's Encrypt Production
 # WHEN TO USE: Use this issuer for real workloads once the staging

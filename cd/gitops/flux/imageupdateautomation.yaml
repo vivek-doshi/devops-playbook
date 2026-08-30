@@ -1,0 +1,52 @@
+---
+# ============================================================
+# TEMPLATE: Flux ImageUpdateAutomation — Tag Promotion
+# WHEN TO USE: Automatically promote image tags to Git after new image policy matches
+# PREREQUISITES: Flux image-reflector and image-automation controllers installed
+# MATURITY: Stable
+# ============================================================
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: my-app
+  namespace: flux-system
+spec:
+  image: ghcr.io/my-org/my-app                                  # <-- CHANGE THIS
+  interval: 1m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: my-app
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: my-app
+  policy:
+    semver:
+      range: ">=1.0.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: my-app
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: my-app-repo
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: flux-bot
+        email: flux-bot@my-org.example                           # <-- CHANGE THIS
+      messageTemplate: "chore(flux): update images"
+    push:
+      branch: main
+  update:
+    strategy: Setters
+    path: ./cd/kubernetes/_overlays/prod                         # <-- CHANGE THIS

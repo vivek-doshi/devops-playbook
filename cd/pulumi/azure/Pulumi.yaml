@@ -1,3 +1,10 @@
+---
+# TEMPLATE: Pulumi Project — Azure AKS
+# WHEN TO USE: Pulumi project metadata and remote backend settings for Azure app-layer resources.
+# PREREQUISITES: Provisioned backend container from terraform/_bootstrap/azure and Pulumi CLI login.
+# MATURITY: Stable
 name: azure-aks
 description: Azure AKS cluster with Container Registry integration
 runtime: nodejs
+backend:
+  url: azblob://pulumi-state-azure              # <-- CHANGE THIS: remote state container from terraform/_bootstrap/azure

@@ -1,3 +1,4 @@
+---
 name: Bug Report
 description: Report broken CI/CD template, Dockerfile, Kubernetes manifest, or Terraform module
 labels: ["bug", "triage"]

@@ -1,4 +1,9 @@
-﻿# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
+---
+# TEMPLATE: Helm Chart Metadata — Webapp
+# WHEN TO USE: Defines chart identity, versioning, and maintainers for the webapp chart.
+# PREREQUISITES: Helm 3 and semantic versioning policy for release tags.
+# MATURITY: Stable
+# Note 1: This Kubernetes style field captures a contract; keeping schema keys stable improves portability across environments.
 apiVersion: v2
 name: webapp
 description: Generic Web Application Helm Chart

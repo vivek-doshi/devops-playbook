@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — npm Dependency Audit
 # WHEN TO USE: Node.js projects to scan for vulnerable dependencies
 # PREREQUISITES: package-lock.json in the repository

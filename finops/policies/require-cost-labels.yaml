@@ -1,3 +1,4 @@
+---
 # finops/policies/require-cost-labels.yaml
 # Kyverno ClusterPolicy: require finops.org/costcenter and finops.org/environment
 # labels on all Pods. Violations block pod creation with a descriptive error.

@@ -1,3 +1,10 @@
+---
+# TEMPLATE: Pulumi Project — GCP GKE
+# WHEN TO USE: Pulumi project metadata and remote backend settings for GCP app-layer resources.
+# PREREQUISITES: Provisioned backend bucket from terraform/_bootstrap/gcp and Pulumi CLI login.
+# MATURITY: Stable
 name: gcp-gke
 description: GKE Autopilot cluster with Artifact Registry
 runtime: nodejs
+backend:
+  url: gs://pulumi-state-gcp                    # <-- CHANGE THIS: remote state bucket from terraform/_bootstrap/gcp

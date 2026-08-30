@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: cert-manager Namespace
 # WHEN TO USE: Always apply this first — it creates the cert-manager

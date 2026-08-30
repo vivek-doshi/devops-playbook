@@ -29,10 +29,12 @@ REQUIRED_LABELS = [
 
 # ─── Kubernetes client ────────────────────────────────────────────────────────
 
+
 def fetch_pods(namespace: str | None) -> list[dict[str, Any]]:
     """Fetch pods from Kubernetes. Falls back to mock data if unavailable."""
     try:
         from kubernetes import client, config  # noqa: PLC0415
+
         config.load_kube_config()
         v1 = client.CoreV1Api()
         if namespace:
@@ -87,6 +89,7 @@ def _mock_pods(namespace: str | None) -> list[dict[str, Any]]:
 
 
 # ─── Validation logic ─────────────────────────────────────────────────────────
+
 
 def validate_pod(pod: dict[str, Any]) -> dict[str, Any]:
     """Check a pod for required labels. Return compliance result."""
@@ -165,9 +168,7 @@ def print_report_text(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Validate finops.org cost labels on all pods"
-    )
+    parser = argparse.ArgumentParser(description="Validate finops.org cost labels on all pods")
     parser.add_argument("--namespace", "-n")
     parser.add_argument("--all-namespaces", "-A", action="store_true")
     parser.add_argument("--format", choices=["text", "json"], default="text")
@@ -182,6 +183,7 @@ def main() -> None:
         output = json.dumps(report, indent=2)
     else:
         import io
+
         buf = io.StringIO()
         sys.stdout = buf
         print_report_text(report)

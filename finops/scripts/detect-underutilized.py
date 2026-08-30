@@ -20,11 +20,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 DEFAULT_UTILIZATION_THRESHOLD = 20.0  # percent
-DEFAULT_CPU_HOURLY_RATE = 0.048       # $/vCPU-hour
-DEFAULT_MEMORY_HOURLY_RATE = 0.006    # $/GiB-hour
+DEFAULT_CPU_HOURLY_RATE = 0.048  # $/vCPU-hour
+DEFAULT_MEMORY_HOURLY_RATE = 0.006  # $/GiB-hour
 
 
-def fetch_utilization(prometheus_url: str, namespace: str | None, lookback: str = "7d") -> list[dict[str, Any]]:
+def fetch_utilization(
+    prometheus_url: str, namespace: str | None, lookback: str = "7d"
+) -> list[dict[str, Any]]:
     """
     Query Prometheus for CPU and memory utilization per workload.
     Returns list of workload utilization dicts.
@@ -36,19 +38,19 @@ def fetch_utilization(prometheus_url: str, namespace: str | None, lookback: str 
 
         # CPU utilization: avg over lookback period
         cpu_query = (
-            f'avg by (namespace, pod, container) ('
+            f"avg by (namespace, pod, container) ("
             f'  rate(container_cpu_usage_seconds_total{{container!=""{ns_filter}}}[{lookback}])'
-            f') / avg by (namespace, pod, container) ('
+            f") / avg by (namespace, pod, container) ("
             f'  kube_pod_container_resource_requests{{resource="cpu",container!=""{ns_filter}}}'
-            f') * 100'
+            f") * 100"
         )
         # Memory utilization
         mem_query = (
-            f'avg by (namespace, pod, container) ('
+            f"avg by (namespace, pod, container) ("
             f'  container_memory_working_set_bytes{{container!=""{ns_filter}}}'
-            f') / avg by (namespace, pod, container) ('
+            f") / avg by (namespace, pod, container) ("
             f'  kube_pod_container_resource_requests{{resource="memory",container!=""{ns_filter}}}'
-            f') * 100'
+            f") * 100"
         )
 
         def run_query(q):
@@ -66,10 +68,18 @@ def fetch_utilization(prometheus_url: str, namespace: str | None, lookback: str 
         # Merge by (namespace, pod, container)
         data: dict[tuple, dict] = {}
         for r in cpu_results:
-            key = (r["metric"].get("namespace"), r["metric"].get("pod"), r["metric"].get("container"))
+            key = (
+                r["metric"].get("namespace"),
+                r["metric"].get("pod"),
+                r["metric"].get("container"),
+            )
             data[key] = {"cpu_utilization_pct": float(r["value"][1])}
         for r in mem_results:
-            key = (r["metric"].get("namespace"), r["metric"].get("pod"), r["metric"].get("container"))
+            key = (
+                r["metric"].get("namespace"),
+                r["metric"].get("pod"),
+                r["metric"].get("container"),
+            )
             data.setdefault(key, {})["memory_utilization_pct"] = float(r["value"][1])
 
         return [
@@ -90,14 +100,34 @@ def fetch_utilization(prometheus_url: str, namespace: str | None, lookback: str 
 def _mock_utilization(namespace: str | None) -> list[dict[str, Any]]:
     ns = namespace or "team-a"
     return [
-        {"namespace": ns, "pod": "api-pod-1", "container": "app",
-         "cpu_utilization_pct": 8.5, "memory_utilization_pct": 12.0},
-        {"namespace": ns, "pod": "worker-pod-1", "container": "worker",
-         "cpu_utilization_pct": 45.0, "memory_utilization_pct": 60.0},
-        {"namespace": ns, "pod": "cache-pod-1", "container": "redis",
-         "cpu_utilization_pct": 5.0, "memory_utilization_pct": 80.0},
-        {"namespace": ns, "pod": "batch-pod-1", "container": "batch",
-         "cpu_utilization_pct": 3.0, "memory_utilization_pct": 7.0},
+        {
+            "namespace": ns,
+            "pod": "api-pod-1",
+            "container": "app",
+            "cpu_utilization_pct": 8.5,
+            "memory_utilization_pct": 12.0,
+        },
+        {
+            "namespace": ns,
+            "pod": "worker-pod-1",
+            "container": "worker",
+            "cpu_utilization_pct": 45.0,
+            "memory_utilization_pct": 60.0,
+        },
+        {
+            "namespace": ns,
+            "pod": "cache-pod-1",
+            "container": "redis",
+            "cpu_utilization_pct": 5.0,
+            "memory_utilization_pct": 80.0,
+        },
+        {
+            "namespace": ns,
+            "pod": "batch-pod-1",
+            "container": "batch",
+            "cpu_utilization_pct": 3.0,
+            "memory_utilization_pct": 7.0,
+        },
     ]
 
 
@@ -117,8 +147,8 @@ def build_report(workloads: list[dict[str, Any]], threshold: float) -> dict[str,
         cpu_waste_fraction = max(0, (threshold - cpu_pct) / 100) if is_cpu_under else 0
         mem_waste_fraction = max(0, (threshold - mem_pct) / 100) if is_mem_under else 0
         monthly_waste = (
-            cpu_waste_fraction * DEFAULT_CPU_HOURLY_RATE * 730 +
-            mem_waste_fraction * DEFAULT_MEMORY_HOURLY_RATE * 730
+            cpu_waste_fraction * DEFAULT_CPU_HOURLY_RATE * 730
+            + mem_waste_fraction * DEFAULT_MEMORY_HOURLY_RATE * 730
         )
 
         recommended_action = []
@@ -129,14 +159,20 @@ def build_report(workloads: list[dict[str, Any]], threshold: float) -> dict[str,
         if cpu_pct < 5 and mem_pct < 5:
             recommended_action.append("Consider removing this workload entirely")
 
-        underutilized.append({
-            **w,
-            "cpu_underutilized": is_cpu_under,
-            "memory_underutilized": is_mem_under,
-            "estimated_monthly_waste_usd": round(monthly_waste, 2),
-            "recommended_action": "; ".join(recommended_action),
-            "priority": "high" if monthly_waste > 50 else "medium" if monthly_waste > 20 else "low",
-        })
+        underutilized.append(
+            {
+                **w,
+                "cpu_underutilized": is_cpu_under,
+                "memory_underutilized": is_mem_under,
+                "estimated_monthly_waste_usd": round(monthly_waste, 2),
+                "recommended_action": "; ".join(recommended_action),
+                "priority": "high"
+                if monthly_waste > 50
+                else "medium"
+                if monthly_waste > 20
+                else "low",
+            }
+        )
 
     underutilized.sort(key=lambda x: x["estimated_monthly_waste_usd"], reverse=True)
     total_waste = sum(w["estimated_monthly_waste_usd"] for w in underutilized)
@@ -159,7 +195,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Detect underutilized workloads")
     parser.add_argument("--namespace", "-n")
     parser.add_argument("--all-namespaces", "-A", action="store_true")
-    parser.add_argument("--prometheus-url", default="http://prometheus-operated.monitoring.svc.cluster.local:9090")
+    parser.add_argument(
+        "--prometheus-url", default="http://prometheus-operated.monitoring.svc.cluster.local:9090"
+    )
     parser.add_argument("--threshold", type=float, default=DEFAULT_UTILIZATION_THRESHOLD)
     parser.add_argument("--format", choices=["text", "json"], default="text")
     parser.add_argument("--output", "-o")
@@ -196,7 +234,9 @@ def _text(report: dict[str, Any]) -> str:
     ]
     for w in report["underutilized"][:20]:
         lines.append(f"\n  {w['pod']}/{w['container']} ({w['namespace']})")
-        lines.append(f"    CPU util: {w['cpu_utilization_pct']:.1f}%  MEM util: {w['memory_utilization_pct']:.1f}%")
+        lines.append(
+            f"    CPU util: {w['cpu_utilization_pct']:.1f}%  MEM util: {w['memory_utilization_pct']:.1f}%"
+        )
         lines.append(f"    Waste   : ${w['estimated_monthly_waste_usd']:.2f}/month")
         lines.append(f"    Action  : {w['recommended_action']}")
     return "\n".join(lines)

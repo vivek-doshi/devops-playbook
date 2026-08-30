@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GitHub Actions — Terraform Drift Detection
 # WHEN TO USE: Detect when live infrastructure diverges from the

@@ -1,0 +1,32 @@
+---
+# TEMPLATE: Helm Template — Webapp Ingress
+# WHEN TO USE: Publishes HTTP/S routes for webapp traffic.
+# PREREQUISITES: ingress controller installed and ingress.* values configured.
+# MATURITY: Stable
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "webapp.fullname" . }}
+  labels:
+    {{- include "webapp.labels" . | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "webapp.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ include "webapp.fullname" . }}-tls
+  {{- end }}
+{{- end }}

@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitLab CI — Terraform Plan / Apply
 # WHEN TO USE: Automating Terraform workflows with MR-based plan review
 # PREREQUISITES: Cloud credentials configured as CI/CD variables

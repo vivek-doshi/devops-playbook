@@ -1,4 +1,5 @@
-﻿# Blue-Green Deployment Pattern
+---
+# Blue-Green Deployment Pattern
 # Two identical environments; switch traffic between them
 # Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 ---

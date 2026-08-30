@@ -1,3 +1,4 @@
+---
 # =============================================================================
 # SLO Burn-Rate Alerts — api-gateway example
 # Extends observability/prometheus/alerts/slo-rules.yaml using a separate file.

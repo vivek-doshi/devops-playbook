@@ -1,0 +1,42 @@
+---
+apiVersion: catalog/v1
+kind: Service
+metadata:
+  name: microservice
+  owner: platform-team
+  display_name: "Microservice"
+  description: "Helm-based microservice template with sidecar slot, messaging contract, and service mesh settings."
+  lifecycle: stable
+
+spec:
+  contact: platform-team@example.com
+  oncall:
+    pagerduty_service: PPLAT01
+    slack_channel: "#platform-alerts"
+
+  namespaces:
+    - production/microservice
+    - staging/microservice
+    - dev/microservice
+
+  image: ghcr.io/example-org/microservice
+
+  dependencies:
+    - type: service
+      name: api-gateway
+
+  slo:
+    availability_target: 99.9
+    latency_target_ms: 500
+    definition_file: observability/prometheus/slos/my-service-availability-slo.yaml
+
+  runbook_url: https://kubernetes.io/docs/concepts/overview/
+  docs_url: https://confluence.example.com/platform/microservice
+
+  cost_center: engineering
+  environment: production
+
+  data_classification: confidential
+  compliance_frameworks:
+    - SOC2
+    - ISO27001

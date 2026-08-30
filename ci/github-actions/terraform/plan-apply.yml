@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Terraform Plan / Apply
 # WHEN TO USE: Automating Terraform workflows with PR-based plan review
 # PREREQUISITES: Cloud credentials configured via OIDC or secrets

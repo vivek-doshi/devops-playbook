@@ -1,3 +1,4 @@
+---
 apiVersion: catalog/v1
 kind: Team
 metadata:

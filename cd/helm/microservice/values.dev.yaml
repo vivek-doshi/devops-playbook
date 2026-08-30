@@ -1,0 +1,30 @@
+---
+# TEMPLATE: Helm Values Override — Microservice Development
+# WHEN TO USE: Development-only overrides for the microservice chart.
+# PREREQUISITES: Base values in values.yaml and a dev namespace.
+# MATURITY: Stable
+replicaCount: 1
+
+image:
+  tag: v1.0.0-dev
+
+ingress:
+  host: dev.service.example.com
+  tls: false
+
+resources:
+  limits:
+    memory: "256Mi"
+
+autoscaling:
+  enabled: false
+
+finops:
+  labels:
+    environment: dev
+
+serviceMesh:
+  enabled: false
+
+messaging:
+  enabled: false

@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
@@ -34,7 +35,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} -m pip install -r requirements-dev.txt'
+      - "{{.PYTHON}} -m pip install -r requirements-dev.txt"
 
   # ---------------------------------------------------------------------------
   # DOCKER
@@ -62,18 +63,14 @@ tasks:
     cmds:
       - trivy image --exit-code 1 --severity HIGH,CRITICAL "{{.IMAGE}}"
 
-  # What: Lints every Dockerfile in the repo using hadolint.
+  # What: Lints every Dockerfile in the repo using the pre-commit hadolint hook.
   # Run: task docker:lint-dockerfiles
   docker:lint-dockerfiles:
-    desc: "Run hadolint against every Dockerfile in the repository"
+    desc: "Lint every Dockerfile in the repository via pre-commit (hadolint)"
     deps:
-      - _require:docker
+      - _require:pre-commit
     cmds:
-      - |
-        find . -name "Dockerfile" -not -path "*/.git/*" | sort | while read -r f; do
-          echo "  linting $f"
-          hadolint "$f"
-        done
+      - pre-commit run hadolint --all-files
 
   # ---------------------------------------------------------------------------
   # KUBERNETES
@@ -182,14 +179,25 @@ tasks:
     cmds:
       - terraform test
 
-  # What: Checks Terraform formatting recursively in terraform/.
+  # What: Checks Terraform formatting recursively in terraform/ via the pre-commit hook.
   # Run: task tf:fmt-check
   tf:fmt-check:
-    desc: "Check Terraform formatting recursively across terraform/"
+    desc: "Check Terraform formatting recursively across terraform/ (pre-commit terraform_fmt)"
     deps:
       - _require:terraform
+      - _require:pre-commit
     cmds:
-      - terraform fmt -check -recursive {{.TERRAFORM_DIR}}
+      - pre-commit run terraform_fmt --all-files
+
+  # What: Lints every Terraform module with tflint via the pre-commit hook.
+  # Run: task tf:lint
+  tf:lint:
+    desc: "Lint terraform/ with tflint (pre-commit terraform_tflint)"
+    deps:
+      - _require:terraform
+      - _require:pre-commit
+    cmds:
+      - pre-commit run terraform_tflint --all-files
 
   # ---------------------------------------------------------------------------
   # HELM
@@ -292,28 +300,78 @@ tasks:
     cmds:
       - pre-commit run --all-files
 
-  # What: Executes Python, JavaScript, and Go linters in parallel via deps.
+  # What: Executes Python, JavaScript, Go, markdown, YAML, and Terraform linters in parallel via deps.
   # Run: task quality:lint-all
   quality:lint-all:
-    desc: "Run ruff, eslint, and golangci-lint in parallel"
+    desc: "Run ruff, eslint, golangci-lint, markdownlint, yamllint, and terraform lint in parallel"
     deps:
-      - quality:_lint-python
-      - quality:_lint-js
-      - quality:_lint-go
+      - quality:lint-python
+      - quality:lint-js
+      - quality:lint-go
+      - quality:lint-markdown
+      - quality:lint-yaml
+      - quality:lint-terraform
+
+  # What: Runs ruff checks across the repository.
+  # Run: task quality:lint-python
+  quality:lint-python:
+    desc: "Run ruff and mypy checks"
+    cmds:
+      - task: quality:_lint-python
+
+  # What: Runs ESLint for the website workspace.
+  # Run: task quality:lint-js
+  quality:lint-js:
+    desc: "Run ESLint for the website workspace"
+    cmds:
+      - task: quality:_lint-js
+
+  # What: Runs golangci-lint across Go packages.
+  # Run: task quality:lint-go
+  quality:lint-go:
+    desc: "Run golangci-lint across Go packages"
+    cmds:
+      - task: quality:_lint-go
+
+  # What: Runs markdownlint across the repo's Markdown files.
+  # Run: task quality:lint-markdown
+  quality:lint-markdown:
+    desc: "Lint Markdown files with markdownlint"
+    cmds:
+      - task: quality:_lint-markdown
+
+  # What: Runs yamllint against the repo config using the repository ruleset.
+  # Run: task quality:lint-yaml
+  quality:lint-yaml:
+    desc: "Lint YAML files with yamllint (pre-commit yamllint hook)"
+    deps:
+      - _require:pre-commit
+    cmds:
+      - task: quality:_lint-yaml
+
+  # What: Runs the Terraform fmt/validate/tflint hooks via pre-commit against every module.
+  # Run: task quality:lint-terraform
+  quality:lint-terraform:
+    desc: "Check Terraform fmt, validate, and tflint via pre-commit"
+    deps:
+      - _require:pre-commit
+    cmds:
+      - task: quality:_lint-terraform
 
   # What: Runs ruff checks across the repository (internal helper).
   # Run: task quality:_lint-python
   quality:_lint-python:
     internal: true
     cmds:
-      - ruff check .
+      - pre-commit run ruff-check --all-files
+      - pre-commit run mypy --all-files
 
-  # What: Runs eslint for JS/TS files across the repository (internal helper).
+  # What: Runs ESLint for the website workspace (internal helper).
   # Run: task quality:_lint-js
   quality:_lint-js:
     internal: true
     cmds:
-      - npx eslint . --ext .js,.ts,.jsx,.tsx
+      - npm --prefix website run lint
 
   # What: Runs golangci-lint across Go packages (internal helper).
   # Run: task quality:_lint-go
@@ -321,6 +379,29 @@ tasks:
     internal: true
     cmds:
       - golangci-lint run ./...
+
+  # What: Runs markdownlint across the repo's Markdown files (internal helper).
+  # Run: task quality:_lint-markdown
+  quality:_lint-markdown:
+    internal: true
+    cmds:
+      - npx --yes markdownlint-cli2 "**/*.md"
+
+  # What: Runs yamllint against the repo config using the repository ruleset (internal helper).
+  # Run: task quality:_lint-yaml
+  quality:_lint-yaml:
+    internal: true
+    cmds:
+      - pre-commit run yamllint --all-files
+
+  # What: Runs the Terraform fmt/validate/tflint pre-commit hooks (internal helper).
+  # Run: task quality:_lint-terraform
+  quality:_lint-terraform:
+    internal: true
+    cmds:
+      - pre-commit run terraform_fmt --all-files
+      - pre-commit run terraform_validate --all-files
+      - pre-commit run terraform_tflint --all-files
 
   # ---------------------------------------------------------------------------
   # SERVICE CATALOG
@@ -333,7 +414,7 @@ tasks:
     deps:
       - python:deps
     cmds:
-      - '{{.PYTHON}} catalog/scripts/validate-catalog.py --strict --skip-url-check'
+      - "{{.PYTHON}} catalog/scripts/validate-catalog.py --strict --skip-url-check"
 
   # What: Regenerates .github/CODEOWNERS from catalog team ownership metadata.
   # Run: task catalog:codeowners
@@ -342,7 +423,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS'
+      - "{{.PYTHON}} catalog/scripts/generate-codeowners.py --output .github/CODEOWNERS"
 
   # ---------------------------------------------------------------------------
   # FINOPS
@@ -356,7 +437,7 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/analyze-rightsizing.py --all-namespaces'
+      - "{{.PYTHON}} finops/scripts/analyze-rightsizing.py --all-namespaces"
 
   # What: Generates optimization patches/PR artifacts with safety checks.
   # Run: task finops:optimize-pr
@@ -366,7 +447,7 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/generate-optimization-pr.py --all-namespaces'
+      - "{{.PYTHON}} finops/scripts/generate-optimization-pr.py --all-namespaces"
 
   # What: Normalizes multi-cloud costs to a common unit for comparison.
   # Run: task finops:normalize-costs
@@ -375,7 +456,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/normalize-cloud-costs.py'
+      - "{{.PYTHON}} finops/scripts/normalize-cloud-costs.py"
 
   # What: Produces reserved-capacity recommendations with risk scoring.
   # Run: task finops:reserved-capacity
@@ -385,7 +466,7 @@ tasks:
       - _require:kubectl
       - _require:python
     cmds:
-      - '{{.PYTHON}} finops/scripts/reserved-capacity-advisor.py'
+      - "{{.PYTHON}} finops/scripts/reserved-capacity-advisor.py"
 
   # What: Runs FinOps unit tests.
   # Run: task finops:test
@@ -394,7 +475,7 @@ tasks:
     deps:
       - python:deps
     cmds:
-      - '{{.PYTHON}} -m pytest finops/scripts -q'
+      - "{{.PYTHON}} -m pytest finops/scripts -q"
 
   # What: Builds the website frontend and generated content index.
   # Run: task website:build
@@ -424,7 +505,7 @@ tasks:
     deps:
       - _require:python
     cmds:
-      - '{{.PYTHON}} secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json'
+      - "{{.PYTHON}} secops/compliance/scripts/generate-compliance-report.py --fail-below 80 --output compliance-report.json"
 
   # What: Validates SLO YAML parseability and recording-rule naming convention.
   # Run: task security:slo-validate
@@ -517,3 +598,11 @@ tasks:
     preconditions:
       - sh: command -v kind
         msg: "'kind' is not on PATH — install kind: https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
+
+  # What: Checks that pre-commit is installed and available on PATH (internal guard).
+  # Run: task _require:pre-commit
+  _require:pre-commit:
+    internal: true
+    preconditions:
+      - sh: command -v pre-commit
+        msg: "'pre-commit' is not on PATH — install it: pip install pre-commit (see docs/guides/pre-commit-setup.md)."

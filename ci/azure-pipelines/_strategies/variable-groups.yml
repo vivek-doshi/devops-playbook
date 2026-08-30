@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Variable Groups with Key Vault
 # WHEN TO USE: Linking pipeline variables to Azure Key Vault secrets
 # PREREQUISITES: Azure Key Vault and variable group configured

@@ -1,4 +1,8 @@
-﻿{{/*
+﻿# TEMPLATE: Helm Template Helpers — Webapp
+# WHEN TO USE: Shared naming and labeling helper functions for webapp templates.
+# PREREQUISITES: Helm 3 and consistent label conventions across all webapp manifests.
+# MATURITY: Stable
+{{/*
 Expand the name of the chart.
 */}}
 {{- define "webapp.name" -}}

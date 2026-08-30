@@ -648,34 +648,78 @@ Generated from current workspace structure.
 │   │   └── terratest
 │   │       └── aws_eks_test.go
 │   ├── aws-ecs
-│   │   ├── main.tf
+│   │   ├── modules
+│   │   │   ├── alb
+│   │   │   ├── autoscaling
+│   │   │   ├── ecr
+│   │   │   ├── ecs
+│   │   │   ├── network
+│   │   │   └── security-groups
+│   │   ├── locals.tf
+│   │   ├── main.tf (orchestrator: module calls only)
 │   │   ├── outputs.tf
-│   │   └── variables.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
 │   ├── aws-eks
+│   │   ├── modules
+│   │   │   ├── backup
+│   │   │   ├── ecr
+│   │   │   ├── eks
+│   │   │   ├── iam
+│   │   │   ├── network
+│   │   │   └── security-groups
 │   │   ├── tests
 │   │   │   └── unit.tftest.hcl
-│   │   ├── backup.tf
-│   │   ├── main.tf
+│   │   ├── locals.tf
+│   │   ├── main.tf (orchestrator: module calls only)
 │   │   ├── outputs.tf
-│   │   └── variables.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
 │   ├── aws-lambda
-│   │   ├── main.tf
+│   │   ├── modules
+│   │   │   ├── api-gateway
+│   │   │   ├── iam
+│   │   │   └── lambda
+│   │   ├── main.tf (orchestrator: module calls only)
 │   │   ├── outputs.tf
-│   │   └── variables.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
 │   ├── azure-aks
-│   │   ├── backup.tf
-│   │   ├── main.tf
+│   │   ├── modules
+│   │   │   ├── acr
+│   │   │   ├── acr-rbac
+│   │   │   ├── aks
+│   │   │   ├── backup
+│   │   │   ├── monitoring
+│   │   │   └── network
+│   │   ├── locals.tf
+│   │   ├── main.tf (orchestrator: module calls only)
 │   │   ├── outputs.tf
-│   │   └── variables.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
 │   ├── azure-app-service
-│   │   ├── main.tf
+│   │   ├── modules
+│   │   │   ├── app-service-plan
+│   │   │   ├── monitoring
+│   │   │   ├── staging-slot
+│   │   │   └── web-app
+│   │   ├── locals.tf
+│   │   ├── main.tf (orchestrator: module calls only)
 │   │   ├── outputs.tf
-│   │   └── variables.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
 │   ├── gcp-gke
-│   │   ├── backup.tf
-│   │   ├── main.tf
+│   │   ├── modules
+│   │   │   ├── artifact-registry
+│   │   │   ├── backup
+│   │   │   ├── gke
+│   │   │   ├── iam
+│   │   │   └── network
+│   │   ├── locals.tf
+│   │   ├── main.tf (orchestrator: module calls only)
 │   │   ├── outputs.tf
-│   │   └── variables.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
 │   ├── tests
 │   │   ├── aws-eks.tftest.hcl
 │   │   ├── azure-aks.tftest.hcl
@@ -683,6 +727,7 @@ Generated from current workspace structure.
 │   └── README.md
 ├── .gitignore
 ├── .pre-commit-config.yaml
+├── .tflint.hcl
 ├── GEMINI.md
 ├── GETTING_STARTED.md
 ├── Makefile

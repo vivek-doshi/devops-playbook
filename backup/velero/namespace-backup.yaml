@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Velero On-Demand Namespace Backup
 # WHEN TO USE: Before a risky change (major upgrade, data migration,

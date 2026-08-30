@@ -1,3 +1,4 @@
+---
 # Audit only — enforcing would break many legacy workloads. Review violations in the
 # Kyverno policy report before considering graduation to enforce mode.
 #

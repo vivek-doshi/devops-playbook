@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Pulumi Preview / Deploy
 # WHEN TO USE: Automating Pulumi infrastructure deployments with PR review
 # PREREQUISITES: Pulumi project with Pulumi.yaml, cloud credentials via OIDC
@@ -33,7 +34,7 @@ on:
 # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 concurrency:
   # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  group: pulumi-${{ github.ref }}
+  group: pulumi-${{ env.PULUMI_WORKING_DIR }}-${{ env.PULUMI_STACK }}
   # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   cancel-in-progress: false                    # Never cancel in-progress deploys
 

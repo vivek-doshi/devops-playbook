@@ -1,0 +1,16 @@
+---
+# TEMPLATE: Helm Chart Metadata — Microservice
+# WHEN TO USE: Defines chart identity, versioning, and maintainers for the microservice chart.
+# PREREQUISITES: Helm 3 and semantic versioning policy for release tags.
+# MATURITY: Stable
+apiVersion: v2
+name: microservice
+description: Generic Microservice Helm Chart with sidecar support
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - microservice
+  - api
+maintainers:
+  - name: Platform Team

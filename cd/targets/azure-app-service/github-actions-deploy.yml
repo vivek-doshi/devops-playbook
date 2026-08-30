@@ -1,8 +1,9 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: GitHub Actions — Deploy to Azure App Service
 # WHEN TO USE: Teams not yet on Kubernetes, using Azure PaaS
 # PREREQUISITES: Azure Container Registry, App Service plan
-# SECRETS NEEDED: AZURE_CREDENTIALS
+# SECRETS NEEDED: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
 # WHAT TO CHANGE: ACR name, App Service name, Dockerfile path
 # RELATED FILES: docker/dotnet/Dockerfile.api
 # MATURITY: Stable
@@ -16,11 +17,25 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-azure-app-service-production
+  cancel-in-progress: false
+
+env:
+  APP_RESOURCE_GROUP: my-resource-group                  # <-- CHANGE THIS
+  APP_HEALTHCHECK_URL: https://app.example.com/health   # <-- CHANGE THIS
+
 # Note 3: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
     # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    environment: production
+    outputs:
+      previous-image: ${{ steps.capture-current-image.outputs.image }}
 
     steps:
       # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
@@ -30,8 +45,20 @@ jobs:
         # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: azure/login@v2
         with:
-          # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Capture current App Service image
+        id: capture-current-image
+        run: |
+          current_image=$(az webapp config container show \
+            --name "${{ vars.APP_SERVICE_NAME }}" \
+            --resource-group "$APP_RESOURCE_GROUP" \
+            --query "linuxFxVersion" \
+            --output tsv)
+          current_image=${current_image#DOCKER|}
+          echo "image=$current_image" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
@@ -44,9 +71,83 @@ jobs:
             --file docker/dotnet/Dockerfile.api \
             .
 
-      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Deploy to App Service
-        uses: azure/webapps-deploy@v3
+        run: |
+          az webapp config container set \
+            --name "${{ vars.APP_SERVICE_NAME }}" \
+            --resource-group "$APP_RESOURCE_GROUP" \
+            --docker-custom-image-name "${{ vars.ACR_NAME }}.azurecr.io/my-app:${{ github.sha }}"
+          az webapp restart \
+            --name "${{ vars.APP_SERVICE_NAME }}" \
+            --resource-group "$APP_RESOURCE_GROUP"
+
+      - name: Smoke test
+        run: |
+          for i in {1..12}; do
+            if curl -fsS "$APP_HEALTHCHECK_URL" >/dev/null; then
+              echo "Smoke test passed"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Smoke test failed"
+          exit 1
+
+  rollback:
+    if: ${{ failure() && needs.deploy.outputs.previous-image != '' }}
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          app-name: ${{ vars.APP_SERVICE_NAME }}
-          images: "${{ vars.ACR_NAME }}.azurecr.io/my-app:${{ github.sha }}"
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Roll back to previous App Service image
+        run: |
+          az webapp config container set \
+            --name "${{ vars.APP_SERVICE_NAME }}" \
+            --resource-group "$APP_RESOURCE_GROUP" \
+            --docker-custom-image-name "${{ needs.deploy.outputs.previous-image }}"
+          az webapp restart \
+            --name "${{ vars.APP_SERVICE_NAME }}" \
+            --resource-group "$APP_RESOURCE_GROUP"
+
+  notify-failure:
+    if: ${{ failure() }}
+    needs: [deploy, rollback]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on deployment failure
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: *${{ github.repository }}* deployment *failed*\n*Target:* `azure-app-service`\n*Environment:* `production`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Run" },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

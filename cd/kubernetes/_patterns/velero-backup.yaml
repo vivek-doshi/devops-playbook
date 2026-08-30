@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: Velero — Cluster Backup & Disaster Recovery
 # WHEN TO USE: Take scheduled backups of Kubernetes workloads

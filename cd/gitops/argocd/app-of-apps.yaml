@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: ArgoCD App of Apps — Multi-Application Management
 # WHEN TO USE: Managing multiple ArgoCD Applications from one parent
 # PREREQUISITES: ArgoCD installed, Application manifests in Git
@@ -20,12 +21,12 @@ metadata:
   namespace: argocd
 spec:
   # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  project: default
+  project: platform-apps
 
   source:
     # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     repoURL: https://github.com/my-org/gitops-repo.git
-    targetRevision: HEAD
+    targetRevision: v1.0.0
     # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     path: argocd/apps   # Directory containing Application manifests
 

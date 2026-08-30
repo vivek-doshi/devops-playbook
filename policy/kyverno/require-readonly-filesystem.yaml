@@ -1,3 +1,4 @@
+---
 # Warns when containers do not use a read-only root filesystem.
 #
 # This policy uses 'warn' rather than 'enforce' because:

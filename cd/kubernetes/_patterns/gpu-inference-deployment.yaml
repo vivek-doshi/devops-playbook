@@ -1,3 +1,4 @@
+---
 # ============================================================
 # TEMPLATE: GPU Inference Deployment (Kubernetes)
 # WHEN TO USE: Serve a trained ML model on GPU nodes.

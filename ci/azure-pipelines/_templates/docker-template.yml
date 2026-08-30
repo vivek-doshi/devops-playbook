@@ -1,4 +1,5 @@
-﻿# ============================================================
+---
+# ============================================================
 # TEMPLATE: Azure Pipelines — Docker Build & Push Template
 # WHEN TO USE: Pushing Docker images to Azure Container Registry
 # PREREQUISITES: ACR service connection configured in Azure DevOps
