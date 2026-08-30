@@ -28,7 +28,7 @@ jobs:
 
       # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
           node-version: '20'
