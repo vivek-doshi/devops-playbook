@@ -29,6 +29,29 @@ output "network_name" {
   value       = try(module.network[0].network_name, null)
 }
 
+# ---------------------------------------------
+# Persistent Storage Outputs
+# ---------------------------------------------
+output "persistent_disk_id" {
+  description = "ID of the Persistent Disk"
+  value       = try(module.persistent_storage[0].persistent_disk_id, null)
+}
+
+output "cloud_storage_bucket_id" {
+  description = "ID of the Cloud Storage bucket"
+  value       = try(module.persistent_storage[0].cloud_storage_bucket_id, null)
+}
+
+output "memorystore_cluster_id" {
+  description = "ID of the Memorystore cluster"
+  value       = try(module.persistent_storage[0].memorystore_cluster_id, null)
+}
+
+output "storage_type" {
+  description = "Type of storage configured"
+  value       = try(module.persistent_storage[0].storage_type, null)
+}
+
 output "subnet_name" {
   description = "Name of the GKE subnet"
   value       = try(module.network[0].subnet_name, null)

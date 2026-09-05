@@ -72,3 +72,29 @@ module "backup" {
   pitr_enabled           = var.pitr_enabled
   dr_region              = var.dr_region
 }
+
+module "persistent_storage" {
+  count  = var.enable_persistent_storage ? 1 : 0
+  source = "./modules/persistent-storage"
+
+  project            = var.project
+  environment        = var.environment
+  gcp_project_id     = var.gcp_project_id
+  gcp_region         = var.gcp_region
+  network_id         = try(module.network[0].network_id, null)
+  common_labels      = local.common_labels
+
+  storage_type            = var.storage_type
+  storage_class_name      = var.storage_class_name
+  storage_size            = var.storage_size
+  storage_disk_type      = var.storage_disk_type
+  storage_zone            = var.storage_zone
+  storage_location        = var.storage_location
+  storage_tier            = var.storage_tier
+  storage_node_count      = var.storage_node_count
+  storage_node_memory_gb  = var.storage_node_memory_gb
+  storage_automatic_failover = var.storage_automatic_failover
+  storage_force_destroy   = var.storage_force_destroy
+  storage_uniform_access  = var.storage_uniform_access
+  storage_labels          = var.storage_labels
+}
