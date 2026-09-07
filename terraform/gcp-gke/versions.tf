@@ -17,7 +17,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.45.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 8.1.0" # <-- CHANGE THIS: pin to latest stable
     }
   }
 
