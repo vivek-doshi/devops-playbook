@@ -15,6 +15,7 @@ import 'prismjs/components/prism-hcl';
 import 'prismjs/components/prism-powershell';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { CanvasCodeBlock } from './CanvasCodeBlock';
 import './CodeViewer.css';
 
 interface FileItem {
@@ -296,11 +297,9 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file, files, onFileSelec
               />
             </div>
           ) : (
-            <pre>
-              <code className={`language-${file.language}`}>
-                {file.content}
-              </code>
-            </pre>
+            <div className="canvas-code-block-wrapper">
+              <CanvasCodeBlock content={file.content} />
+            </div>
           )}
         </div>
 
