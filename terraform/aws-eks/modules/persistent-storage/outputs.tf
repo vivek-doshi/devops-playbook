@@ -3,13 +3,8 @@
 # WHAT TO CHANGE: Update descriptions or add additional outputs
 # ============================================================
 
-output "storage_class_id" {
-  value = try(aws_storage_class.main[0].id, null)
-  description = "ID of the storage class for EBS"
-}
-
 output "efs_file_system_id" {
-  value = try(aws_ebs_file_system.main[0].id, null)
+  value = try(aws_efs_file_system.main[0].id)
   description = "ID of the EFS file system"
 }
 

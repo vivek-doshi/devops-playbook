@@ -134,3 +134,75 @@ variable "storage_force_destroy" {
     error_message = "storage_force_destroy must be a boolean."
   }
 }
+
+# ---------------------------------------------
+# Module Integration Variables
+# ---------------------------------------------
+variable "project" {
+  description = "Project name — used as a prefix for all resource names"
+  type        = string
+  default     = "myapp" # <-- CHANGE THIS
+
+  validation {
+    condition     = length(trimspace(var.project)) > 0
+    error_message = "Project must be a non-empty string."
+  }
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  default     = "dev" # <-- CHANGE THIS
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
+  }
+}
+
+variable "vpc_id" {
+  description = "VPC ID for storage resources"
+  type        = string
+  default     = null # <-- CHANGE THIS: match your VPC
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.vpc_id))
+    error_message = "vpc_id must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block for storage resources"
+  type        = string
+  default     = "10.0.0.0/16" # <-- CHANGE THIS: match your VPC
+
+  validation {
+    condition     = can(regex("^10\\.[0-9]+\\.[0-9]+\\.[0-9]+/16$", var.vpc_cidr))
+    error_message = "vpc_cidr must be a valid CIDR block."
+  }
+}
+
+variable "private_subnet_ids" {
+  description = "Private subnet IDs for storage resources"
+  type        = list(string)
+  default     = [] # <-- CHANGE THIS: match your subnets
+
+  validation {
+    condition     = length(var.private_subnet_ids) > 0
+    error_message = "private_subnet_ids must be a non-empty list."
+  }
+}
+
+variable "availability_zones" {
+  description = "Availability zones for EFS file system (if using EFS)"
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b"] # <-- CHANGE THIS: match your AZs
+}
+
+variable "common_tags" {
+  description = "Common tags to apply to all resources"
+  type        = map(string)
+  default = {
+    workload = "eks"
+  }
+}
