@@ -38,3 +38,31 @@ output "private_subnet_ids" {
   description = "IDs of the private subnets (where EKS nodes run)"
   value       = try(module.network[0].private_subnet_ids, [])
 }
+
+# ---------------------------------------------
+# Persistent Storage Outputs
+# ---------------------------------------------
+output "storage_class_id" {
+  description = "ID of the storage class for EBS"
+  value       = try(module.persistent_storage[0].storage_class_id, null)
+}
+
+output "efs_file_system_id" {
+  description = "ID of the EFS file system"
+  value       = try(module.persistent_storage[0].efs_file_system_id, null)
+}
+
+output "ebs_volume_id" {
+  description = "ID of the EBS volume"
+  value       = try(module.persistent_storage[0].ebs_volume_id, null)
+}
+
+output "s3_bucket_id" {
+  description = "ID of the S3 bucket"
+  value       = try(module.persistent_storage[0].s3_bucket_id, null)
+}
+
+output "storage_type" {
+  description = "Type of storage configured"
+  value       = try(module.persistent_storage[0].storage_type, null)
+}

@@ -99,3 +99,27 @@ module "backup" {
   dr_region             = var.dr_region
   snapshot_s3_bucket    = var.snapshot_s3_bucket
 }
+
+module "persistent_storage" {
+  count  = var.enable_persistent_storage ? 1 : 0
+  source = "./modules/persistent-storage"
+
+  project            = var.project
+  environment        = var.environment
+  vpc_id             = try(module.network[0].vpc_id, null)
+  vpc_cidr           = var.vpc_cidr
+  private_subnet_ids = try(module.network[0].private_subnet_ids, [])
+  common_tags        = local.common_tags
+
+  storage_type            = var.storage_type
+  storage_class_name      = var.storage_class_name
+  storage_size            = var.storage_size
+  storage_iops            = var.storage_iops
+  storage_throughput      = var.storage_throughput
+  storage_volume_type      = var.storage_volume_type
+  storage_performance_mode = var.storage_performance_mode
+  storage_throughput_mode  = var.storage_throughput_mode
+  storage_encryption      = var.storage_encryption
+  storage_multi_attached  = var.storage_multi_attached
+  storage_force_destroy   = var.storage_force_destroy
+}
