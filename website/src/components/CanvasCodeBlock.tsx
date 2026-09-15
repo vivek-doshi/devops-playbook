@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { debounce } from '../utils/debounce';
-import { ResizeObserver } from 'resize-observer';
 
 interface CanvasCodeBlockProps {
   content: string;
@@ -17,7 +16,7 @@ export const CanvasCodeBlock: React.FC<CanvasCodeBlockProps> = ({ content }) => 
   // Initialize worker
   useEffect(() => {
     const worker = new Worker(
-      new URL('./workers/yaml-renderer.worker.ts', import.meta.url),
+      new URL('../workers/yaml-renderer.worker.ts', import.meta.url),
       { type: 'module' }
     );
     workerRef.current = worker;

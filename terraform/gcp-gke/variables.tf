@@ -292,7 +292,7 @@ variable "storage_labels" {
   description = "Additional labels to apply to Persistent Disk (if using Persistent Disk)"
   type        = map(string)
   default = {
-    workload = "gke"
-    environment = var.environment
+    workload    = "gke"
+    environment = "dev" # <-- CHANGE THIS: match your environment
   }
 }
