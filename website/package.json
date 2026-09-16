@@ -13,7 +13,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.63.3",
     "@types/prismjs": "^1.26.6",
     "lucide-react": "^0.344.0",
     "prismjs": "^1.30.0",
