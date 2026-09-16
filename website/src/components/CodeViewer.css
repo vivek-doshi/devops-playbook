@@ -4,6 +4,7 @@
   flex-direction: column;
   background: linear-gradient(180deg, rgba(255, 250, 243, 0.92) 0%, rgba(247, 239, 228, 0.95) 100%);
   overflow: hidden;
+  font-size: calc(var(--font-scale) * 16px);
 }
 
 .code-viewer.empty {
@@ -691,7 +692,6 @@
 
 .copy-code-btn:active {
   background: #555;
-}
   border-radius: 0;
   font-size: 0.87em;
 }

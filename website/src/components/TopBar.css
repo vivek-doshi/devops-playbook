@@ -13,6 +13,7 @@
   z-index: 200;
   overflow: hidden;
   flex-shrink: 0;
+  font-size: calc(var(--font-scale) * 16px);
 }
 
 /* Animated gradient background */

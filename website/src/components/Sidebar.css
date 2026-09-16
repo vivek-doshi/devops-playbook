@@ -9,6 +9,7 @@
   flex-direction: column;
   box-shadow: 4px 0 24px rgba(96, 74, 56, 0.1);
   flex-shrink: 0;
+  font-size: calc(var(--font-scale) * 16px);
 }
 
 /* ---- Search + toolbar row ---- */
