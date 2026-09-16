@@ -39,7 +39,7 @@
 
 .empty-state p {
   margin: 0;
-  font-size: 13px;
+  font-size: calc(var(--font-scale) * 13px);
   color: #706271;
 }
 
@@ -63,7 +63,7 @@
 }
 
 .file-path {
-  font-size: 13px;
+  font-size: calc(var(--font-scale) * 13px);
   color: #2c252b;
   font-family: 'JetBrains Mono', 'Consolas', monospace;
   white-space: nowrap;
@@ -72,7 +72,7 @@
 }
 
 .file-size {
-  font-size: 12px;
+  font-size: calc(var(--font-scale) * 12px);
   color: #706271;
   white-space: nowrap;
 }
@@ -91,7 +91,7 @@
   background: #fffdf8;
   border: 1px solid #dbc7b7;
   color: #7b4b43;
-  font-size: 12px;
+  font-size: calc(var(--font-scale) * 12px);
   font-weight: 600;
   cursor: pointer;
   border-radius: 10px;
