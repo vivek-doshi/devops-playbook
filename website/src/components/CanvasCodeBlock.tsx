@@ -15,24 +15,28 @@ export const CanvasCodeBlock: React.FC<CanvasCodeBlockProps> = ({ content }) => 
 
   // Initialize worker
   useEffect(() => {
-    const worker = new Worker(
-      new URL('../workers/yaml-renderer.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
-    workerRef.current = worker;
+    try {
+      const worker = new Worker(
+        new URL('../workers/yaml-renderer.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
+      workerRef.current = worker;
 
-    // Handle worker response
-    worker.onmessage = (e: MessageEvent<{ success: boolean, error?: string }>) => {
-      if (e.data.success) {
-        console.log('Canvas rendering completed successfully');
-      } else {
-        console.error('Canvas rendering failed:', e.data.error);
-      }
-    };
+      // Handle worker response
+      worker.onmessage = (e: MessageEvent<{ success: boolean, error?: string }>) => {
+        if (e.data.success) {
+          console.log('Canvas rendering completed successfully');
+        } else {
+      console.error('Canvas rendering failed:', e.data.error);
+        }
+      };
 
-    return () => {
-      worker.terminate();
-    };
+      return () => {
+        worker.terminate();
+      };
+    } catch (error) {
+      console.error('Failed to initialize worker:', error);
+    }
   }, []);
 
   // Render content when dimensions are known
@@ -57,7 +61,7 @@ export const CanvasCodeBlock: React.FC<CanvasCodeBlockProps> = ({ content }) => 
     const worker = workerRef.current;
     if (worker) {
       worker.postMessage(
-        { canvas: offscreen, text: content, pixelRatio: dpr, width, height },
+        { type: 'INIT', canvas: offscreen, text: content, pixelRatio: dpr, width, height },
         [offscreen]
       );
     }

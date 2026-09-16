@@ -298,7 +298,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({ file, files, onFileSelec
             </div>
           ) : (
             <div className="canvas-code-block-wrapper">
-              <CanvasCodeBlock content={file.content} />
+              <CanvasCodeBlock key={file.path} content={file.content} />
             </div>
           )}
         </div>
