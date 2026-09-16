@@ -13,6 +13,7 @@
   height: auto;
   border: none;
   background: transparent;
+  min-height: 100px;
 }
 
 .copy-code-btn {
