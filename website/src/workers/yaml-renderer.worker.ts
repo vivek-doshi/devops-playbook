@@ -48,9 +48,9 @@ let state = {
   pixelRatio: 1,
   width: 0,
   height: 0,
-  fontSize: 14,
+  fontSize: 18,
   fontFamily: '"Courier New", monospace',
-  lineHeight: 20,
+  lineHeight: 26,
 };
 
 // Simple YAML tokenizer
