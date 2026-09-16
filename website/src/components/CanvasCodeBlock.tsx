@@ -36,6 +36,7 @@ export const CanvasCodeBlock: React.FC<CanvasCodeBlockProps> = ({ content }) => 
       };
     } catch (error) {
       console.error('Failed to initialize worker:', error);
+      return;
     }
   }, []);
 
