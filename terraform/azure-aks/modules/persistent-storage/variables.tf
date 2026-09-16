@@ -139,7 +139,7 @@ variable "storage_labels" {
   description = "Additional labels to apply to storage resources"
   type        = map(string)
   default = {
-    workload = "aks"
-    environment = var.environment
+    workload    = "aks"
+    environment = "dev" # <-- CHANGE THIS: match your environment
   }
 }

@@ -3,6 +3,38 @@
 # WHAT to CHANGE: Update default values or create a terraform.tfvars
 # ============================================================
 
+variable "project" {
+  description = "Project name — used as a prefix for all resource names"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+}
+
+variable "gcp_project_id" {
+  description = "GCP project ID (not the project name)"
+  type        = string
+}
+
+variable "gcp_region" {
+  description = "GCP region for all resources"
+  type        = string
+}
+
+variable "network_id" {
+  description = "VPC network ID to associate storage resources with, if applicable"
+  type        = string
+  default     = null
+}
+
+variable "common_labels" {
+  description = "Common labels to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
 variable "enable_persistent_storage" {
   description = "Enable persistent storage for GKE workloads"
   type        = bool
@@ -150,7 +182,7 @@ variable "storage_labels" {
   description = "Additional labels to apply to Persistent Disk (if using Persistent Disk)"
   type        = map(string)
   default = {
-    workload = "gke"
-    environment = var.environment
+    workload    = "gke"
+    environment = "dev" # <-- CHANGE THIS: match your environment
   }
 }
