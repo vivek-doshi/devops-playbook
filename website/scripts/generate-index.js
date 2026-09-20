@@ -24,6 +24,13 @@ const EXCLUDE_PATTERNS = [
   ".DS_Store",
   ".vscode",
   "gemini.md",
+  ".devcontainer",
+  ".lychee.toml",
+  ".pre-commit-config.yaml",
+  ".tflint.hcl",
+  ".yamllint.yml",
+  "Makefile",
+  "Taskfile.yml"
 ];
 
 const EXCLUDE_EXTENSIONS = [
