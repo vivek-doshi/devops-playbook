@@ -32,7 +32,8 @@
 13. [Backup and Recovery](#13-backup-and-recovery)
 14. [RBAC and Access Control](#14-rbac-and-access-control)
 15. [Cost and Scaling](#15-cost-and-scaling)
-16. [Template Maturity Reference](#16-template-maturity-reference)
+16. [Service Ownership and Cost Governance](#16-service-ownership-and-cost-governance)
+17. [Template Maturity Reference](#17-template-maturity-reference)
 
 ---
 
@@ -169,13 +170,20 @@ Do you need Kubernetes features?
 
 ```
 Does your team do GitOps (Git is the source of truth, cluster pulls state)?
-├── Yes → ArgoCD (cd/gitops/argocd/) or Flux (cd/gitops/flux/)
+├── Yes → Prefer Argo CD (cd/gitops/argocd/); use Flux (cd/gitops/flux/) when it is
+│         already your organizational standard
 │   ├── Single app → cd/gitops/argocd/application.yaml
 │   ├── Many apps from one repo → cd/gitops/argocd/app-of-apps.yaml
 │   └── Auto-generate apps per directory → cd/gitops/argocd/applicationset.yaml
 └── No → Push-based (GitHub Actions deploys directly to the cluster)
     └── cd/targets/<cloud>/github-actions-deploy.yml
 ```
+
+For multi-cluster delivery, use the fleet patterns in `cd/fleet-overlays/` and
+`cd/gitops/argocd/fleet/`. Keep the cluster registry human-maintained, cap each
+fleet ApplicationSet at 20 clusters, and retain retry backoff plus
+`ApplyOutOfSyncOnly: true` for fleet stability. See
+`docs/decisions/ADR-003-gitops-strategy.md` for the controller decision.
 
 ---
 
@@ -326,9 +334,9 @@ Never use local state in production. Never commit `terraform.tfstate` files to G
 
 ### Terraform workspace vs separate state files?
 
-This repo uses **separate state keys per module** (`eks/terraform.tfstate`, `aks/terraform.tfstate`) rather than Terraform workspaces. Workspaces share the same provider configuration, which makes it harder to use different cloud accounts per environment.
+This repo uses **separate state keys per module and environment** rather than Terraform workspaces. Workspaces share the same provider configuration, which makes it harder to use different cloud accounts per environment.
 
-**Pattern used here:** separate state key per module + environment in the key path (e.g., `prod/eks/terraform.tfstate`).
+**Pattern used here:** separate state key per module plus environment in the backend configuration.
 
 ---
 
@@ -372,6 +380,16 @@ Override `OTEL_TRACES_SAMPLER_ARG` in your Helm values or Kustomize overlay. See
 
 Change the routing in `observability/prometheus/values.yaml` under `alertmanager.config.route`.
 
+### SLOs and error budgets
+
+Production services should define an SLO, record the SLO windows in Prometheus,
+route burn-rate alerts to a runbook, and document the error-budget response.
+Use the four repository-standard burn-rate tiers: 14.4x/1h + 5m (critical),
+6x/6h + 30m (high), 3x/24h + 2h (warning), and 1x/72h + 6h (info). Start with
+`observability/prometheus/slos/` and
+`docs/golden-paths/slo-driven-development.md`; see
+`docs/decisions/ADR-005-slo-driven-operations-standard.md` for the decision.
+
 ---
 
 ## 9. Security Scanning
@@ -380,17 +398,17 @@ Change the routing in `observability/prometheus/values.yaml` under `alertmanager
 
 | Purpose | Tool | When it runs | Template |
 |---|---|---|---|
-| Secrets in Git history | Gitleaks | Every push + pre-commit | `security/secret-detection/gitleaks.yml` |
-| Verified live secrets in PRs | TruffleHog | PR only (expensive) | `security/secret-detection/trufflehog.yml` |
-| Container image CVEs | Trivy | After every image build | `security/container-scanning/trivy-scan.yml` |
-| Container image CVEs (alternative) | Grype | After every image build | `security/container-scanning/grype-scan.yml` |
-| Terraform misconfigurations (broad) | Checkov | Push + PR on terraform/** | `security/iac-scanning/checkov.yml` |
-| Terraform cloud-specific checks | tfsec | Push + PR on terraform/** | `security/iac-scanning/tfsec.yml` |
-| SAST (code quality + security) | SonarQube/SonarCloud | Push + PR | `security/sast/sonarqube.yml` |
-| SAST (fast, no account needed) | Semgrep | Push + PR | `security/sast/semgrep.yml` |
-| npm vulnerabilities | npm audit | Weekly schedule | `security/dependency-audit/npm-audit.yml` |
-| Python vulnerabilities | pip-audit | Weekly schedule | `security/dependency-audit/pip-audit.yml` |
-| .NET NuGet vulnerabilities | dotnet list --vulnerable | Weekly schedule | `security/dependency-audit/nuget-audit.yml` |
+| Secrets in Git history | Gitleaks | Every push + pre-commit | `ci-security/secret-detection/gitleaks.yml` |
+| Verified live secrets in PRs | TruffleHog | PR only (expensive) | `ci-security/secret-detection/trufflehog.yml` |
+| Container image CVEs | Trivy | After every image build | `ci-security/container-scanning/trivy-scan.yml` |
+| Container image CVEs (alternative) | Grype | After every image build | `ci-security/container-scanning/grype-scan.yml` |
+| Terraform misconfigurations (broad) | Checkov | Push + PR on terraform/** | `ci-security/iac-scanning/checkov.yml` |
+| Terraform cloud-specific checks | tfsec | Push + PR on terraform/** | `ci-security/iac-scanning/tfsec.yml` |
+| SAST (code quality + security) | SonarQube/SonarCloud | Push + PR | `ci-security/sast/sonarqube.yml` |
+| SAST (fast, no account needed) | Semgrep | Push + PR | `ci-security/sast/semgrep.yml` |
+| npm vulnerabilities | npm audit | Weekly schedule | `ci-security/dependency-audit/npm-audit.yml` |
+| Python vulnerabilities | pip-audit | Weekly schedule | `ci-security/dependency-audit/pip-audit.yml` |
+| .NET NuGet vulnerabilities | dotnet list --vulnerable | Weekly schedule | `ci-security/dependency-audit/nuget-audit.yml` |
 
 ### Gitleaks vs TruffleHog: use both
 
@@ -424,7 +442,7 @@ These are not alternatives — they're complements at different lifecycle stages
 
 | Stage | Tool | Template location |
 |---|---|---|
-| Pull request (before merge) | Checkov, tfsec | `security/iac-scanning/` |
+| Pull request (before merge) | Checkov, tfsec | `ci-security/iac-scanning/` |
 | `kubectl apply` (before cluster admission) | Kyverno | `policy/kyverno/` |
 | Existing resources in cluster (background scan) | Kyverno (`background: true`) | `policy/kyverno/` |
 
@@ -616,7 +634,36 @@ The drift detection workflow includes Infracost for Terraform cost estimation on
 
 ---
 
-## 16. Template Maturity Reference
+## 16. Service Ownership and Cost Governance
+
+### When should a service be registered?
+
+Register every deployed service in `catalog/services/` with an owning team,
+on-call route, lifecycle, and cost center. Validate catalog changes in CI with:
+
+```bash
+python catalog/scripts/validate-catalog.py --strict
+```
+
+When ownership changes, regenerate CODEOWNERS with:
+
+```bash
+python catalog/scripts/generate-codeowners.py
+```
+
+Use `docs/golden-paths/service-catalog.md` for the full workflow. A stable
+service must also link its runbook, SLO definition, and cost center.
+
+### How should cost controls fit the delivery path?
+
+Use `finops/` with `terraform/` and `ci/` to estimate cost changes before
+merge, `finops/policies/` to enforce cost labels and resource governance, and
+`finops/dashboards/` plus `finops/prometheus/` for ongoing visibility. Every
+optimization run should cover rightsizing, reserved capacity, anomaly
+investigation, and label compliance. Verify savings in the dashboard within 48
+hours.
+
+## 17. Template Maturity Reference
 
 Every template in this repo carries a maturity badge. Here's what each means:
 
