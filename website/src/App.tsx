@@ -16,6 +16,8 @@ interface FileItem {
   fileName: string;
 }
 
+const DEFAULT_FILE_PATH = 'docs/ARCHITECTURE_DECISION_GUIDE.md';
+
 function App() {
   const mobileMediaQuery = '(max-width: 768px)';
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -81,10 +83,11 @@ function App() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    const urlFile = params.get('file');
+    const urlFile = params.get('file') ?? DEFAULT_FILE_PATH;
 
-    if (!urlFile) {
-      return;
+    if (!params.has('file')) {
+      params.set('file', DEFAULT_FILE_PATH);
+      window.history.replaceState({ file: DEFAULT_FILE_PATH }, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
     }
 
     const matched = files.find((item) => item.path === urlFile);
