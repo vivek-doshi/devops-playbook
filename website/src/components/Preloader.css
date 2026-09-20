@@ -14,7 +14,6 @@
   padding: calc(env(safe-area-inset-top, 0px) + 14px) 12px calc(env(safe-area-inset-bottom, 0px) + 14px);
   background: radial-gradient(ellipse at 40% 30%, #fff9f3 0%, #f5ede3 45%, #ecdbd0 100%);
   font-family: 'Sora', 'Segoe UI', sans-serif;
-  font-size: calc(var(--font-scale) * 16px);
   overflow: hidden;
   animation: pl-fadeIn 0.3s ease;
 }

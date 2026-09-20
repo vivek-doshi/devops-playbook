@@ -13,7 +13,6 @@
   --line: #e0d0c3;
   --line-strong: #c9b2a0;
   --topbar-height: 56px;
-  --font-scale: 1.12;
 }
 
 .app {
@@ -26,7 +25,6 @@
   background: radial-gradient(circle at 18% 10%, #fffdf8 0%, var(--bg) 38%, var(--bg-soft) 100%);
   color: var(--ink);
   font-family: 'Sora', 'Segoe UI', Tahoma, sans-serif;
-  font-size: calc(var(--font-scale) * 16px);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.35s ease;
@@ -238,66 +236,5 @@ body {
 
   .app[data-theme='terminal-dusk'] .sidebar-backdrop {
     background: rgba(3, 6, 10, 0.62);
-  }
-}
-
-/* ============================================
-   Resolution-aware font scaling
-   Scales the base font-size up on high-resolution /
-   wide screens so text stays readable. The `--font-scale`
-   custom property multiplies every font-size in the app.
-   ============================================ */
-@media (min-width: 1536px) {
-  :root {
-    --font-scale: 1.06;
-  }
-}
-
-@media (min-width: 1778px) {
-  :root {
-    --font-scale: 1.12;
-  }
-}
-
-@media (min-width: 2048px) {
-  :root {
-    --font-scale: 1.18;
-  }
-}
-
-@media (min-width: 2352px) {
-  :root {
-    --font-scale: 1.24;
-  }
-}
-
-@media (min-width: 2688px) {
-  :root {
-    --font-scale: 1.3;
-  }
-}
-
-/* High-DPI / retina displays: scale by device pixel ratio */
-@media (min-resolution: 2dppx) {
-  :root {
-    --font-scale: 1.08;
-  }
-}
-
-@media (min-resolution: 3dppx) {
-  :root {
-    --font-scale: 1.16;
-  }
-}
-
-@media (min-resolution: 4dppx) {
-  :root {
-    --font-scale: 1.24;
-  }
-}
-
-@media (min-resolution: 5dppx) {
-  :root {
-    --font-scale: 1.32;
   }
 }
