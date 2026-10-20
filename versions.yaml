@@ -1,0 +1,20 @@
+# Canonical dependency baselines. Changes require compatibility testing and a
+# matching update to the consuming template.
+kubernetes: "1.31"
+kind: "0.24"
+cert_manager: "1.14"
+kyverno: "3.1.4"
+external_secrets: "0.9"
+velero: "1.13"
+kube_prometheus_stack: "62.7"
+opentelemetry_collector: "0.106.1"
+trivy_action: "0.28"
+argocd_cli: "2.12.3"
+semgrep: "1.142.0"
+snyk_action: "1.0.0"
+environments:
+  - dev
+  - staging
+  - production
+image_tags: "sha-or-semver"
+coverage_threshold: 80

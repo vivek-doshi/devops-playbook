@@ -1,7 +1,7 @@
 ---
 # ============================================================
 # TEMPLATE: GitHub Actions — Semgrep SAST Scan
-# WHEN TO USE: Fast, customisable static analysis on any codebase
+# WHEN TO USE: Required static analysis on any codebase
 # PREREQUISITES: None
 # SECRETS NEEDED: None (optional: SEMGREP_APP_TOKEN for Semgrep Cloud)
 # WHAT TO CHANGE: Semgrep config if using custom rules
@@ -9,35 +9,26 @@
 # MATURITY: Stable
 # ============================================================
 
-# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Semgrep SAST
 
 on:
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
-  # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   pull_request:
 
 jobs:
-  # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   semgrep:
     runs-on: ubuntu-latest
-    # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     container:
-      image: semgrep/semgrep:latest
-    # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
+      image: semgrep/semgrep:1.142.0
     steps:
       - uses: actions/checkout@v4
 
-      # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Run Semgrep
-        run: semgrep --config auto --sarif --output semgrep.sarif || true
+        run: semgrep --config auto --error --sarif --output semgrep.sarif
 
-      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
-        # Note 9: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
         if: always()
         with:
           sarif_file: semgrep.sarif
