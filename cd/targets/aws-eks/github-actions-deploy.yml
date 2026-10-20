@@ -9,22 +9,16 @@
 # MATURITY: Stable
 # ============================================================
 
-# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to AWS EKS
 
 on:
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_run:
     workflows: ["CI"]
-    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     types: [completed]
     branches: [main]
 
-# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
-  AWS_REGION: us-east-1
-  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  EKS_CLUSTER: my-eks-cluster
+  ARGOCD_APP_NAME: my-app
   HEALTHCHECK_URL: https://app.example.com/health/ready
 
 concurrency:
@@ -32,41 +26,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     permissions:
-      # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       id-token: write
       contents: read
     environment: production
 
-    # Note 9: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
-      # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Update kubeconfig
-        # Note 13: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
-        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
-
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Deploy with Kustomize
-        run: |
-          kubectl apply -k cd/kubernetes/_overlays/prod
-          kubectl rollout status deployment/app -n production --timeout=5m
+      - name: Wait for Argo CD reconciliation
+        run: ./cd/gitops/argocd/wait-for-sync.sh
+        env:
+          ARGOCD_SERVER: ${{ vars.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_READ_TOKEN }}
 
       - name: Smoke test
         run: |
@@ -80,33 +55,9 @@ jobs:
           echo "Smoke test failed"
           exit 1
 
-  rollback:
-    if: ${{ failure() }}
-    needs: deploy
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Update kubeconfig
-        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
-
-      - name: Roll back failed deployment
-        run: |
-          kubectl rollout undo deployment/app -n production
-          kubectl rollout status deployment/app -n production --timeout=5m
-
   notify-failure:
     if: ${{ failure() }}
-    needs: [deploy, rollback]
+    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on deployment failure

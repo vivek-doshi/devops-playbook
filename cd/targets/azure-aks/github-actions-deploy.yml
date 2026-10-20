@@ -9,33 +9,24 @@
 # MATURITY: Stable
 # ============================================================
 
-# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to Azure AKS
 
 on:
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   workflow_run:
     workflows: [".NET Docker Build & Publish"]
-    # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     types: [completed]
     branches: [main]
 
-# Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 env:
-  CLUSTER_NAME: my-aks-cluster
-  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-  RESOURCE_GROUP: my-resource-group
-  NAMESPACE: production
+  ARGOCD_APP_NAME: my-app
   HEALTHCHECK_URL: https://app.example.com/health/ready
 
 concurrency:
   group: deploy-azure-aks-production
   cancel-in-progress: false
 
-# Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
-    # Note 7: Control flow should stay readable; predictable branches reduce defects and simplify troubleshooting.
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
@@ -43,32 +34,14 @@ jobs:
       contents: read
     environment: production
 
-    # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
     steps:
       - uses: actions/checkout@v4
 
-      # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      - name: Azure Login
-        uses: azure/login@v2
-        # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      # Note 11: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-      - name: Set AKS context
-        uses: azure/aks-set-context@v3
-        # Note 12: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-        with:
-          resource-group: ${{ env.RESOURCE_GROUP }}
-          # Note 13: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
-          cluster-name: ${{ env.CLUSTER_NAME }}
-
-      - name: Deploy with Kustomize
-        run: |
-          kubectl apply -k cd/kubernetes/_overlays/prod
-          kubectl rollout status deployment/app -n ${{ env.NAMESPACE }} --timeout=5m
+      - name: Wait for Argo CD reconciliation
+        run: ./cd/gitops/argocd/wait-for-sync.sh
+        env:
+          ARGOCD_SERVER: ${{ vars.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_READ_TOKEN }}
 
       - name: Smoke test
         run: |
@@ -82,37 +55,9 @@ jobs:
           echo "Smoke test failed"
           exit 1
 
-  rollback:
-    if: ${{ failure() }}
-    needs: deploy
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v3
-        with:
-          resource-group: ${{ env.RESOURCE_GROUP }}
-          cluster-name: ${{ env.CLUSTER_NAME }}
-
-      - name: Roll back failed deployment
-        run: |
-          kubectl rollout undo deployment/app -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/app -n ${{ env.NAMESPACE }} --timeout=5m
-
   notify-failure:
     if: ${{ failure() }}
-    needs: [deploy, rollback]
+    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on deployment failure

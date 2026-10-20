@@ -23,22 +23,29 @@ spec:
   generators:
     - matrix:
         generators:
-          - list:
-              elementsYaml: |
-                {{- /* Source from cluster-registry ConfigMap data.clusters via your rendering pipeline */ -}}
-                {{ .clusters | default "[]" }}
+          # This ApplicationSet owns staging overlays only. A production or
+          # development fleet gets its own ApplicationSet with both the path
+          # and cluster selector changed together; this prevents cross-env
+          # deployment by construction.
+          - clusters:
+              selector:
+                matchLabels:
+                  fleet.argocd.io/enabled: "true"
+                  fleet.argocd.io/environment: staging
+              values:
+                environment: staging
           - git:
               repoURL: https://github.com/your-org/cicd-reference.git # <-- CHANGE THIS: set to your GitOps repository so ApplicationSet can discover fleet overlay directories.
-              revision: HEAD
+              revision: staging
               directories:
-                - path: cd/fleet-overlays/*/*
+                - path: cd/fleet-overlays/staging/*
 
   template:
     metadata:
       name: '{{ .name }}-{{ index (splitList "/" .path.path) 3 }}'
       labels:
         fleet.argocd.io/cluster: "{{ .name }}"
-        fleet.argocd.io/environment: "{{ .environment }}"
+        fleet.argocd.io/environment: "{{ .values.environment }}"
         fleet.argocd.io/app: '{{ index (splitList "/" .path.path) 3 }}'
       finalizers:
         - resources-finalizer.argocd.argoproj.io
@@ -46,7 +53,7 @@ spec:
       project: fleet-platform
       source:
         repoURL: https://github.com/your-org/cicd-reference.git # <-- CHANGE THIS: use the same GitOps repo URL used by your overlays and ApplicationSets.
-        targetRevision: HEAD
+        targetRevision: staging
         path: "{{ .path.path }}"
       destination:
         server: "{{ .server }}"

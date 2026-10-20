@@ -22,16 +22,21 @@ spec:
   generators:
     - matrix:
         generators:
-          - list:
-              elementsYaml: |
-                {{- /* Source from cluster-registry ConfigMap data.clusters via your rendering pipeline */ -}}
-                {{ .clusters | default "[]" }}
+          - clusters:
+              selector:
+                matchLabels:
+                  fleet.argocd.io/enabled: "true"
+              values:
+                environment: '{{index .metadata.labels "fleet.argocd.io/environment"}}'
           - list:
               elements:
                 - component: kyverno
                   appNamespace: kyverno
-                  sourceType: kustomize
-                  sourcePath: policy/kyverno
+                  sourceType: helm
+                  chartRepo: https://kyverno.github.io/kyverno/
+                  chartName: kyverno
+                  chartVersion: 3.1.4
+                  valueFiles: []
                 - component: external-secrets-operator
                   appNamespace: external-secrets-system
                   sourceType: helm
@@ -62,7 +67,7 @@ spec:
       labels:
         fleet.argocd.io/cluster: "{{ .name }}"
         fleet.argocd.io/component: "{{ .component }}"
-        fleet.argocd.io/environment: "{{ .environment }}"
+        fleet.argocd.io/environment: "{{ .values.environment }}"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
@@ -72,7 +77,7 @@ spec:
         namespace: "{{ .appNamespace }}"
       source:
         repoURL: https://github.com/your-org/cicd-reference.git # <-- CHANGE THIS: set your GitOps repository URL so generated Applications point at your actual source-of-truth repo.
-        targetRevision: HEAD
+        targetRevision: production
         path: "{{ .sourcePath }}"
       syncPolicy:
         automated:
