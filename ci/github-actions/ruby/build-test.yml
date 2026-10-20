@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None / CODECOV_TOKEN for coverage upload
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: docker/ruby/Dockerfile.rails
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Rails Build & Test

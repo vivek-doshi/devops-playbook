@@ -9,8 +9,8 @@ including immediate rotation, impact assessment, and recurrence prevention.
 - secops/runbooks/compromised-pod.md (if a pod was compromised to access the secret)
 
 **Related Tools:**
-- security/secret-rotation/ (credential rotation procedures)
-- security/secret-detection/ (detection rules)
+- secrets/rotation/ (credential rotation procedures)
+- ci-security/secret-detection/ (detection rules)
 - secops/runtime/audit-logging/audit-policy.yaml (audit logs in Loki)
 
 ---
@@ -82,10 +82,10 @@ SECRET_NAME="<SECRET_NAME>"
 NAMESPACE="<NAMESPACE>"
 
 # Identify credential type and follow appropriate rotation procedure
-# See security/secret-rotation/ for type-specific rotation scripts
+# See secrets/rotation/ for type-specific rotation workflows
 
 # For database credentials:
-# security/secret-rotation/rotate-db-credentials.sh ${SECRET_NAME} ${NAMESPACE}
+# Follow the provider workflow in secrets/rotation/ for ${SECRET_NAME}.
 
 # For API keys (GitHub, AWS, GCP, etc.):
 # 1. Log into the service console
@@ -255,7 +255,7 @@ kubectl rollout status deployment/<DEPLOYMENT_NAME> -n ${NAMESPACE} --timeout=30
 
 ```bash
 # If the secret was committed to git:
-# 1. Add pattern to security/secret-detection/rules/
+# 1. Add a detection rule under ci-security/secret-detection/
 # 2. Update pre-commit hooks in .pre-commit-config.yaml
 # 3. Run retroactive scan:
 #    gitleaks detect --source . --report-format json > secret-scan-results.json
@@ -266,7 +266,7 @@ kubectl rollout status deployment/<DEPLOYMENT_NAME> -n ${NAMESPACE} --timeout=30
 
 # If the secret was accessed via Kubernetes API:
 # Review RBAC permissions for the accessing service account
-echo "Update security/secret-detection/ patterns and re-run pipeline scans"
+echo "Update ci-security/secret-detection/ patterns and re-run pipeline scans"
 ```
 
 ---

@@ -3,7 +3,8 @@
 # TEMPLATE: Flux HelmRelease — Chart Reconciliation
 # WHEN TO USE: Deploy a service from a Helm chart using Flux
 # PREREQUISITES: Flux installed and Helm chart path available in GitRepository
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease

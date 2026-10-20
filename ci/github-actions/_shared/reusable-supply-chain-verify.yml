@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None
 # WHAT TO CHANGE: Inputs passed from caller pipeline
 # RELATED FILES: secops/supply-chain/cosign-verify-policy.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Reusable Supply Chain Verify

@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None
 # WHAT TO CHANGE: repoURL, path to Application manifests directory
 # RELATED FILES: cd/gitops/argocd/application.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # ArgoCD App of Apps pattern

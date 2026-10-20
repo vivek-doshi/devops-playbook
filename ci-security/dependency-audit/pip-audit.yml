@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None
 # WHAT TO CHANGE: Requirements file path if different
 # RELATED FILES: ci/github-actions/python/security-scan.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: pip-audit Dependency Audit

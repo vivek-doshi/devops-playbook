@@ -4,7 +4,7 @@ This directory contains Grafana dashboard definitions in JSON format for visuali
 
 ## Contents
 
-This directory will include:
+This directory contains:
 
 ### Core Dashboards
 - **cost-overview.json** - Total cluster cost, cost by namespace/team, 7/30/90-day trends

@@ -13,7 +13,8 @@
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: ci/github-actions/terraform/plan-apply.yml
 #                terraform/aws-eks/, terraform/azure-aks/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Terraform Cost Estimation
@@ -25,13 +26,11 @@ on:
     paths:
       - "terraform/**"   # <-- CHANGE THIS: adjust to your Terraform root
 
-# Note 1: Read access to contents and write access to pull-requests are the minimum
 # permissions needed: read code + post the cost comment on the PR.
 permissions:
   contents: read
   pull-requests: write
 
-# Note 2: One concurrent cost estimation job per branch avoids comment spam on
 # rapidly-updated PRs. If a new push arrives while the previous run is in progress,
 # the in-progress run is cancelled and the new one starts fresh.
 concurrency:
@@ -48,7 +47,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Note 3: Infracost is a free, open-source CLI that reads a Terraform plan (or
       # HCL directly with --path) and prices each resource using cloud provider APIs.
       # The API key is used to pull up-to-date pricing data from infracost.io.
       # Without a key the job runs in degraded mode: known prices are used but
@@ -58,7 +56,6 @@ jobs:
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}   # <-- CHANGE THIS: add to GitHub secrets
 
-      # Note 4: We run Infracost against the base branch first so we can compute
       # the DIFF (cost change introduced by this PR) rather than the total cost.
       # This is far more useful in reviews: "this PR adds $12/month" is actionable;
       # "the infrastructure costs $3,400/month" is just noise.
@@ -72,7 +69,6 @@ jobs:
         env:
           TF_WORKING_DIR: terraform/aws-eks    # <-- CHANGE THIS: path to your Terraform module
           TF_VAR_FILE: environments/production.tfvars   # <-- CHANGE THIS: or remove if unused
-          # Note 5: Cloud credentials for Infracost to call pricing APIs.
           # For AWS: provide AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY or use OIDC.
           # For Azure: provide ARM_CLIENT_ID + ARM_CLIENT_SECRET + ARM_TENANT_ID + ARM_SUBSCRIPTION_ID.
           # For GCP: provide GOOGLE_APPLICATION_CREDENTIALS pointing to a service account key file.
@@ -99,7 +95,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1                  # <-- CHANGE THIS
 
-      # Note 6: `infracost diff` computes the delta between base and PR estimates.
       # It outputs a markdown table with:
       #   - Resources that will be added (green +)
       #   - Resources that will be removed (red -)
@@ -113,7 +108,6 @@ jobs:
             --format=json \
             --out-file=/tmp/infracost-diff.json
 
-      # Note 7: Post the diff as a PR comment. Infracost will update the comment
       # if the workflow runs again on the same PR (identified by the comment header).
       # The `--policy-path` flag lets you enforce cost gates (e.g., fail if diff > $500/month);
       # see infracost.io/docs/features/cost_policies for details.
@@ -123,7 +117,6 @@ jobs:
           path: /tmp/infracost-diff.json
           behavior: update    # Note 8: 'update' replaces the previous comment; 'new' posts a new one each time
 
-      # Note 9: soft_fail: true means a missing API key or pricing error does NOT
       # fail the PR. Cost estimation is advisory; teams should not block deploys
       # purely on cost failures. If you want to enforce a budget gate, remove this
       # line and add --policy-path to the infracost diff command above.

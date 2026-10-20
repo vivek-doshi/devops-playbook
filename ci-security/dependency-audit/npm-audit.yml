@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None
 # WHAT TO CHANGE: audit-level threshold if needed
 # RELATED FILES: security/sast/snyk.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: npm Dependency Audit

@@ -4,7 +4,7 @@ This directory contains Kyverno ClusterPolicy resources that enforce cost-relate
 
 ## Contents
 
-This directory will include:
+This directory contains:
 
 ### Cost Label Policies
 - **require-cost-labels.yaml** - Validates presence of `finops.org/costcenter` and `finops.org/environment` labels on all Pods

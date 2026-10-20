@@ -8,7 +8,8 @@
 #
 # PREREQUISITES: kubectl
 # RELATED FILES: cd/kubernetes/cert-manager/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: v1
@@ -16,7 +17,6 @@ kind: Namespace
 metadata:
   name: cert-manager
   labels:
-    # Note 1: This label tells cert-manager's own webhook to skip validation
     # of resources in this namespace, preventing a chicken-and-egg problem
     # where the webhook itself cannot start because certs don't exist yet.
     cert-manager.io/disable-validation: "true"

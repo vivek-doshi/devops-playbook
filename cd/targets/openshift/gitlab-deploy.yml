@@ -6,7 +6,8 @@
 # SECRETS NEEDED: ARGOCD_SERVER, ARGOCD_READ_TOKEN
 # WHAT TO CHANGE: Project/namespace, app name, overlay path
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # GitLab CI — Deploy to Red Hat OpenShift

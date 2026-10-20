@@ -308,7 +308,7 @@ This repo provides both. The choice depends on your team:
 | Preference | Use |
 |---|---|
 | Declarative HCL, strong ecosystem, most common | Terraform (`terraform/`) |
-| TypeScript/Python/Go infrastructure code, type safety | Pulumi (`cd/pulumi/`) |
+| Cloud infrastructure | Terraform (`terraform/`) |
 
 Both produce equivalent infrastructure. Don't use both for the same resource — pick one per team/environment.
 
@@ -556,7 +556,7 @@ Yes, if your CNI supports it (Calico, Cilium, Azure CNI with policy, GKE with ne
 | Data criticality | Backup frequency | Retention | Template |
 |---|---|---|---|
 | Production cluster config | Daily | 30 snapshots | `backup/velero/schedule.yaml` |
-| Production database | Daily + point-in-time | 30 days | `backup/terraform/aws-rds-backup.tf` etc. |
+| Production database | Daily + point-in-time | 30 days | `terraform/<platform>/modules/backup/` |
 | Staging cluster | Weekly | 7 snapshots | Modify `backup/velero/namespace-backup.yaml` |
 | Dev cluster | On-demand only | — | Don't automate dev backups |
 

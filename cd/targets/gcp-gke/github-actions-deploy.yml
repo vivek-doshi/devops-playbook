@@ -6,7 +6,8 @@
 # SECRETS NEEDED: WIF_PROVIDER, WIF_SERVICE_ACCOUNT
 # WHAT TO CHANGE: Project ID, cluster name, zone
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Deploy to GCP GKE

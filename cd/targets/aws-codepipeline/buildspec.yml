@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None (injected via CodeBuild environment)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: cd/targets/aws-codepipeline/codepipeline.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 #
 # Place this file in your project root if you prefer an external

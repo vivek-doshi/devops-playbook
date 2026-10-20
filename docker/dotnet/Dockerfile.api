@@ -10,24 +10,18 @@
 # ============================================================
 
 # ── Stage 1: Build ──────────────────────────────────────────────────────────
-# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
-# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /src
 
-# Restore dependencies first (better layer caching)
-# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
-# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
-# <-- CHANGE THIS: your .csproj path
+COPY ["MyApp/MyApp.csproj", "MyApp/"]
+# Restore dependencies first (better layer caching). Update the project path
+# above for your service.
 RUN dotnet restore "MyApp/MyApp.csproj"
 
 # Copy source and publish
-# Note 5: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY . .
-# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 # <-- CHANGE THIS: your project folder
 WORKDIR "/src/MyApp"
-# Note 7: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 # <-- CHANGE THIS: your .csproj name
 RUN dotnet publish "MyApp.csproj" \
     -c Release \
@@ -36,9 +30,7 @@ RUN dotnet publish "MyApp.csproj" \
     --no-restore
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
-# Note 12: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
-# Note 13: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
 # Security: run as non-root user

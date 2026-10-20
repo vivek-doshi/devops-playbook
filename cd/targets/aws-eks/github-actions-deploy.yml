@@ -6,7 +6,8 @@
 # SECRETS NEEDED: AWS_DEPLOY_ROLE_ARN
 # WHAT TO CHANGE: Cluster name, region, and Kustomize overlay path
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Deploy to AWS EKS

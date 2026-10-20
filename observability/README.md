@@ -11,7 +11,7 @@ Use `observability/` to establish production telemetry and actionable alerting.
 - `prometheus/`: metrics collection, recording rules, and alerts.
 - `loki/`: centralized log aggregation patterns.
 - `tempo/`: trace storage and query patterns.
-- `otel/` and `opentelemetry/`: collector and instrumentation guidance.
+- `opentelemetry/`: collector and instrumentation guidance.
 
 ## Use This Component Alone
 

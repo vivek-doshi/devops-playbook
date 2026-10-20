@@ -6,7 +6,8 @@
 # SECRETS NEEDED: ARGOCD_SERVER, ARGOCD_READ_TOKEN
 # WHAT TO CHANGE: Pipeline resource, environment name, namespace
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # Azure Pipelines — Deploy to AKS

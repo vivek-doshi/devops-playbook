@@ -6,7 +6,8 @@
 # SECRETS NEEDED: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
 # WHAT TO CHANGE: Cluster name, resource group, namespace, image
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Deploy to Azure AKS

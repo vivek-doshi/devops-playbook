@@ -6,7 +6,8 @@
 # SECRETS NEEDED: OPENSHIFT_SERVER, OPENSHIFT_TOKEN
 # WHAT TO CHANGE: Server URL, project/namespace, image, app name
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Deploy to OpenShift

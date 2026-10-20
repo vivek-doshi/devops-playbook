@@ -14,13 +14,11 @@
 # MATURITY: Stable
 # ============================================================
 
-# Note 1: mock_provider replaces the real AWS provider with an in-process mock.
 # No AWS credentials needed; no API calls are made. Tests run in seconds.
 # Remove mock_provider and add a real provider block for integration tests
 # that create actual cloud resources (see the commented block at the bottom).
 mock_provider "aws" {}
 
-# Note 2: Variables defined here are shared by all run blocks below.
 # They mirror the required variables in variables.tf — keep them in sync.
 variables {
   project     = "test"
@@ -44,7 +42,6 @@ run "vpc_cidr_matches_input_variable" {
 run "vpc_dns_settings_required_for_eks" {
   command = plan
 
-  # Note 3: EKS requires both DNS settings. Nodes register their hostnames
   # via Route53 private zones. The API server resolves them this way.
   assert {
     condition     = aws_vpc.main.enable_dns_hostnames == true
@@ -62,7 +59,6 @@ run "vpc_dns_settings_required_for_eks" {
 run "required_tags_present_on_all_resources" {
   command = plan
 
-  # Note 4: These tags flow from the AWS provider's default_tags block in main.tf.
   # All resources in the module inherit them automatically without explicit tagging.
   # The can() function returns true if the expression is valid (key exists).
   assert {
@@ -87,7 +83,6 @@ run "resource_name_tag_includes_project_and_environment" {
 
 # ── Test group: Security hardening ───────────────────────────────────────
 
-# Note 5: Uncomment this test if your module has an endpoint_public_access variable.
 # The EKS API server should not be publicly accessible in production.
 #
 # run "eks_api_endpoint_is_private" {

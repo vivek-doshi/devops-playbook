@@ -12,7 +12,7 @@ container images detected by Kyverno supply chain policies.
 - secops/supply-chain/cosign-verify-policy.yaml
 - secops/supply-chain/sbom-policy.yaml
 - secops/supply-chain/slsa-verify.yaml
-- security/container-scanning/
+- ci-security/container-scanning/
 
 ---
 
@@ -253,10 +253,10 @@ docker run --rm -v /var/lib/docker:/var/lib/docker:ro clamav/clamav:latest \
   clamscan --recursive /var/lib/docker/overlay2 2>/dev/null || true
 
 # Option 2: Falco image scan (if available)
-# security/container-scanning/scan-image.sh ${IMAGE}
+# ci-security/container-scanning/trivy-scan.yml
 
 echo ""
-echo "Check security/container-scanning/ for additional scanning tools"
+echo "Check ci-security/container-scanning/ for additional scanning tools"
 ```
 
 ### Step 7: Investigate CI/CD Pipeline

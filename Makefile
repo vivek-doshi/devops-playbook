@@ -22,18 +22,12 @@ CLUSTER_NAME ?= devops-playbook                  # must match local-dev/kind/kin
 PYTHON       ?= python3
 PIP          ?= $(PYTHON) -m pip
 
-# Script runner selection for cross-platform support.
-ifeq ($(OS),Windows_NT)
-ENV_CHECKER_CMD    := powershell -ExecutionPolicy Bypass -File scripts/env-checker.ps1
-K8S_ROLLOUT_CMD    := powershell -ExecutionPolicy Bypass -File scripts/k8s-rollout-check.ps1
-TAG_RELEASE_CMD    := powershell -ExecutionPolicy Bypass -File scripts/tag-release.ps1
-DOCKER_CLEANUP_CMD := powershell -ExecutionPolicy Bypass -File scripts/docker-cleanup.ps1
-else
+# Bash is the single supported scripting interface. Use WSL2 or Git Bash on
+# Windows so local and CI behavior remain identical.
 ENV_CHECKER_CMD    := bash scripts/env-checker.sh
 K8S_ROLLOUT_CMD    := bash scripts/k8s-rollout-check.sh
 TAG_RELEASE_CMD    := bash scripts/tag-release.sh
 DOCKER_CLEANUP_CMD := bash scripts/docker-cleanup.sh
-endif
 
 # ── Formatting helpers ────────────────────────────────────────────────────────
 BOLD   := \033[1m

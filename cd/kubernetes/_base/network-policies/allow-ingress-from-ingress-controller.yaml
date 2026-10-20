@@ -9,7 +9,8 @@
 #
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: default-deny.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: networking.k8s.io/v1
@@ -18,7 +19,6 @@ metadata:
   name: allow-ingress-from-ingress-controller
   namespace: default                          # <-- CHANGE THIS: target namespace
 spec:
-  # Note 1: Label-select only the pods that expose an HTTP port.
   # Adjust the selector to match your application's pod labels.
   podSelector:
     matchLabels:
@@ -29,7 +29,6 @@ spec:
 
   ingress:
     - from:
-        # Note 2: namespaceSelector + podSelector together act as a logical AND —
         # the source pod must be in the ingress-nginx namespace AND have the
         # ingress-controller label. This is more specific than allowing the
         # entire ingress namespace.

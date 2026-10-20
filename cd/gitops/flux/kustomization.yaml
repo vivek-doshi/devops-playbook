@@ -6,7 +6,8 @@
 # SECRETS NEEDED: Git credentials (configured in Flux)
 # WHAT TO CHANGE: sourceRef, path, interval, namespace
 # RELATED FILES: cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # Flux Kustomization — reconcile Kubernetes manifests from Git

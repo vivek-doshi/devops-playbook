@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None (uses Cloud Build service account)
 # WHAT TO CHANGE: Image name, cluster name, zone
 # RELATED FILES: cd/targets/gcp-gke/github-actions-deploy.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # Cloud Build — GKE deployment

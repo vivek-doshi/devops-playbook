@@ -6,7 +6,8 @@
 # SECRETS NEEDED: registry-token (for registry login if required)
 # WHAT TO CHANGE: Inputs when calling this workflow and identity regex defaults
 # RELATED FILES: ci/github-actions/_shared/reusable-docker-build.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Reusable Supply Chain Security

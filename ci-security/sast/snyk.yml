@@ -6,7 +6,8 @@
 # SECRETS NEEDED: SNYK_TOKEN
 # WHAT TO CHANGE: Snyk action variant (node/python/dotnet/etc.)
 # RELATED FILES: None
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Snyk Security Scan

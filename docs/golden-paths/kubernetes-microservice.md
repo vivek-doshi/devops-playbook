@@ -233,9 +233,9 @@ Key files to copy and adapt:
 | [`_base/deployment.yaml`](../../cd/kubernetes/_base/deployment.yaml) | Deployment with health checks, security context |
 | [`_base/hpa.yaml`](../../cd/kubernetes/_base/hpa.yaml) | Horizontal pod autoscaler |
 | [`_base/pdb.yaml`](../../cd/kubernetes/_base/pdb.yaml) | Pod disruption budget |
-| [`_base/networkpolicy.yaml`](../../cd/kubernetes/_base/networkpolicy.yaml) | Network isolation |
+| [`_base/network-policies/`](../../cd/kubernetes/_base/network-policies/) | Network isolation |
 | [`_base/vpa.yaml`](../../cd/kubernetes/_base/vpa.yaml) | Vertical pod autoscaler (Off mode) |
-| [`_base/rbac.yaml`](../../cd/kubernetes/_base/rbac.yaml) | ServiceAccounts and RBAC roles |
+| [`_base/rbac/`](../../cd/kubernetes/_base/rbac/) | ServiceAccounts and RBAC roles |
 | [`_patterns/canary.yaml`](../../cd/kubernetes/_patterns/canary.yaml) | Canary rollout |
 | [`_patterns/blue-green.yaml`](../../cd/kubernetes/_patterns/blue-green.yaml) | Blue/Green rollout |
 

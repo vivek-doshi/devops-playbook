@@ -15,7 +15,8 @@
 # RELATED FILES: observability/prometheus/slos/README.md
 #                observability/prometheus/slos/latency-slo.yaml
 #                observability/prometheus/alerts/slo-rules.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # (kube-prometheus-stack). It is automatically discovered by any Prometheus

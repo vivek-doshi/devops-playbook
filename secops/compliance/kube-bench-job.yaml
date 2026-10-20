@@ -221,7 +221,7 @@ spec:
       # Main container just signals completion
       containers:
         - name: scan-complete
-          image: bitnami/kubectl:latest
+          image: registry.k8s.io/kubectl:v1.31.2
           command:
             - /bin/sh
             - -c

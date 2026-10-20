@@ -4,7 +4,8 @@
 # Copy this file to observability/prometheus/slos/<your-service>-slo.yaml
 # Then run: make slo-generate SERVICE=<your-service>
 # This generates the recording rules and alert rules for your SLO.
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # WHEN TO USE: Any service that needs a reliability target and alerting
 # ============================================================
 # Common mistakes teams make:

@@ -22,7 +22,8 @@
 #
 # RELATED FILES: observability/prometheus/slos/README.md
 #                observability/prometheus/slos/availability-slo.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # Discovered automatically by Prometheus instances matching the label selector.

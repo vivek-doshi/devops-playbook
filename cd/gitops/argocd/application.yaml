@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None (ArgoCD uses its own repo credentials)
 # WHAT TO CHANGE: repoURL, path, destination namespace
 # RELATED FILES: cd/gitops/argocd/app-of-apps.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # ArgoCD Application — single app

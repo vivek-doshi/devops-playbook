@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None
 # WHAT TO CHANGE: Trigger branches and scan directories
 # RELATED FILES: ci-security/iac-scanning/tfsec.yml, ci-security/iac-scanning/README.md
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Checkov IaC Security Scan

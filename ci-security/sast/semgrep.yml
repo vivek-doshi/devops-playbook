@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None (optional: SEMGREP_APP_TOKEN for Semgrep Cloud)
 # WHAT TO CHANGE: Semgrep config if using custom rules
 # RELATED FILES: ci/gitlab-ci/_includes/.sast-scan.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Semgrep SAST

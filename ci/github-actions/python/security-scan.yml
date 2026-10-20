@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: security/dependency-audit/pip-audit.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Python Security Scan

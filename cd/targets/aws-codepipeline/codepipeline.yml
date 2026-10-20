@@ -6,7 +6,8 @@
 # SECRETS NEEDED: None (uses IAM roles)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: cd/targets/aws-ecs/, cd/targets/aws-eks/, terraform/aws-ecs/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 #
 # This CloudFormation template creates a full CodePipeline with:

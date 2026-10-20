@@ -14,9 +14,9 @@ make check-prereqs
 bash scripts/env-checker.sh
 ```
 
-```powershell
-# Windows PowerShell alternative for scripts in /scripts:
-powershell -ExecutionPolicy Bypass -File scripts/env-checker.ps1 VAR1 VAR2
+```bash
+# Use the same Bash command from WSL2 or Git Bash on Windows:
+bash scripts/env-checker.sh VAR1 VAR2
 ```
 
 You need:
@@ -24,15 +24,12 @@ You need:
 | Tool | Minimum version | Install |
 |------|----------------|---------|
 | Git | 2.40+ | [git-scm.com](https://git-scm.com) |
-└── ci-security/                      ← CI security scanning templates
-└── secops/                           ← runtime and compliance security assets
-└── policy/                           ← policy-as-code resources
 | kubectl | 1.29+ | `brew install kubectl` or [docs](https://kubernetes.io/docs/tasks/tools/) |
 | kind | 0.24+ | `brew install kind` |
 | Helm | 3.14+ | `brew install helm` |
 | pre-commit | 3.x | `pip install pre-commit` |
 
-> **Windows users:** Most local-dev automation still targets bash (`make`, `local-dev/kind/*.sh`). Use WSL2 (Ubuntu 22.04+) or Git Bash for the full workflow. For scripts under `scripts/`, native PowerShell equivalents are available: `env-checker.ps1`, `k8s-rollout-check.ps1`, `docker-cleanup.ps1`, and `tag-release.ps1`.
+> **Windows users:** Use WSL2 (Ubuntu 22.04+) or Git Bash. Bash is the supported scripting interface for local development and CI parity.
 
 ---
 
@@ -88,7 +85,7 @@ This is a reference library — you copy files from it rather than running code 
 |------------|-------|
 | Build a CI pipeline | [GETTING_STARTED.md](../../GETTING_STARTED.md) — "I need a CI pipeline" section |
 | Containerise an app | `docker/<tech>/` |
-| Deploy to Kubernetes | `cd/kubernetes/` + `cd/targets/<platform>/` |
+| Deploy to Kubernetes | `cd/kubernetes/` + `cd/gitops/` |
 | Set up Terraform | `terraform/<cloud>/` |
 | Understand environments | [docs/guides/environment-strategy.md](environment-strategy.md) |
 | Set up cloud auth (OIDC) | [docs/guides/github-actions-oidc.md](github-actions-oidc.md) |

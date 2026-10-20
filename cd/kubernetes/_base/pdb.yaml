@@ -12,19 +12,17 @@
 #   cd/kubernetes/_base/deployment.yaml
 #   cd/kubernetes/_base/hpa.yaml
 #   cd/kubernetes/_overlays/prod/kustomization.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
-# Note 1: PodDisruptionBudget is a policy/v1 resource (GA since k8s 1.21).
 # For clusters < 1.21, use policy/v1beta1 (deprecated and removed in 1.25).
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  # Note 2: By convention, name the PDB after the Deployment it protects.
   name: app-pdb             # <-- CHANGE THIS: e.g., my-service-pdb
   namespace: default        # <-- CHANGE THIS: must match your Deployment namespace
 spec:
-  # Note 3: Choose EITHER minAvailable OR maxUnavailable — not both.
   #
   # minAvailable: N  — at least N pods must remain running during disruption.
   #   Use this when you need a hard guarantee on running capacity.
@@ -42,7 +40,6 @@ spec:
   # with the replica count rather than becoming overly restrictive.
   minAvailable: 1           # <-- CHANGE THIS: see guidance above
 
-  # Note 4: The selector MUST match the pod template labels in your Deployment.
   # Mismatched labels = PDB silently does nothing. Verify with:
   #   kubectl get pdb app-pdb -o yaml
   #   kubectl describe pdb app-pdb    ← shows "Allowed disruptions" count

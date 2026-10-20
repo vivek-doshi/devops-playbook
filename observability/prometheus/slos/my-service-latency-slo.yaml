@@ -2,7 +2,8 @@
 # ============================================================
 # TEMPLATE: Service SLO Definition Example — Latency
 # WHEN TO USE: Copy and adapt for request-latency SLOs.
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 # Why histogram buckets (_bucket) and not summary percentiles (_p99):
 # - Histogram buckets are aggregatable across pods and instances.

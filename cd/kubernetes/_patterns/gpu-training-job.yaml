@@ -30,7 +30,8 @@
 #   docs/golden-paths/mlops-workflow.md
 #   terraform/aws-eks/variables.tf
 #   terraform/azure-aks/variables.tf
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 ---
