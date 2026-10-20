@@ -14,6 +14,8 @@ const required = [
   ["terraform/azure-aks/variables.tf", `default     = "${versions.kubernetes}"`],
   [".github/workflows/repo-quality.yml", `--kubernetes-version ${versions.kubernetes}.0`],
   [".github/workflows/repo-quality.yml", `KUBECONFORM_VERSION: ${versions.kubeconform ?? "0.6.7"}`],
+  ["cd/helm/webapp/Chart.yaml", `version: ${versions.webapp_chart}`],
+  ["cd/helm/webapp/Chart.yaml", `appVersion: "${versions.webapp_app}"`],
 ];
 
 const failures = required.filter(([file, expected]) => !readFileSync(file, "utf8").includes(expected));
