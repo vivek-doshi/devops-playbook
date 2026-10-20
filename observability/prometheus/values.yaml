@@ -90,7 +90,6 @@ alertmanager:
     replicas: 2
     retention: 120h
     additionalArgs:
-      - --config.expand-env
     # Source these credentials from Kubernetes Secrets or an external secret controller.
     # See docs/guides/secrets-management.md for the recommended secret-management patterns.
     containers:

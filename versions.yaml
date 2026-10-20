@@ -1,6 +1,9 @@
 # Canonical dependency baselines. Changes require compatibility testing and a
 # matching update to the consuming template.
 kubernetes: "1.31"
+kind_node: "1.31.0"
+terraform: "1.9.8"
+kubeconform: "0.6.7"
 kind: "0.24"
 cert_manager: "1.14"
 kyverno: "3.1.4"

@@ -1,0 +1,44 @@
+name: Golden Path Smoke Test
+
+on:
+  pull_request:
+    paths:
+      - "cd/**"
+      - "local-dev/kind/**"
+      - ".github/workflows/golden-path.yml"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kind-golden-path:
+    name: Kind Kubernetes golden path
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install kind
+        run: |
+          curl --fail --location --silent --show-error \
+            https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64 \
+            --output /usr/local/bin/kind
+          chmod +x /usr/local/bin/kind
+      - name: Create cluster
+        run: kind create cluster --name golden-path --config local-dev/kind/kind-config.yaml
+      - name: Deploy the Kustomize golden path
+        run: |
+          kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic app-secrets -n dev --from-literal=db-password=ci --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -k cd/kubernetes/_overlays/dev
+          kubectl set image deployment/app app=nginxinc/nginx-unprivileged:1.27.5-alpine -n dev
+          kubectl patch deployment app -n dev --type merge -p '{"spec":{"template":{"spec":{"containers":[{"name":"app","livenessProbe":{"httpGet":{"path":"/","port":8080}},"readinessProbe":{"httpGet":{"path":"/","port":8080}}}]}}}}'
+          kubectl rollout status deployment/app -n dev --timeout=180s
+      - name: Render the Helm golden path
+        run: |
+          helm lint cd/helm/webapp --strict
+          helm template webapp cd/helm/webapp -f cd/helm/webapp/values.dev.yaml > /tmp/webapp.yaml
+          test -s /tmp/webapp.yaml
+      - name: Collect diagnostics
+        if: failure()
+        run: kubectl get pods,events -A

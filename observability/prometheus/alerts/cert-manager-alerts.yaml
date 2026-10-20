@@ -51,7 +51,7 @@ spec:
           annotations:
             summary: >-
               Certificate {{ $labels.name }} in namespace {{ $labels.namespace }}
-              expires in less than 14 days.
+              expires in less than 14 days. Inspect the certificate status for the exact expiry time.
             description: >-
               Certificate {{ $labels.name }} (namespace: {{ $labels.namespace }},
               issuer: {{ $labels.issuer_name }}) will expire in
@@ -59,7 +59,7 @@ spec:
               Verify that cert-manager has successfully renewed the certificate
               and that the issuer ({{ $labels.issuer_kind }}/{{ $labels.issuer_name }})
               is reachable.
-            runbook_url: https://runbooks.example.com/certmanager/certificateexpiring # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
         # ── CertificateExpiringIn7Days ───────────────────────────────────────
         # Critical escalation: one week remaining is the last comfortable window
@@ -83,12 +83,12 @@ spec:
             description: >-
               Certificate {{ $labels.name }} (namespace: {{ $labels.namespace }},
               issuer: {{ $labels.issuer_kind }}/{{ $labels.issuer_name }}) will
-              expire in {{ printf "%.1f" (div (sub $value 0.0) 86400.0) }} days.
+              is approaching expiry. Inspect the certificate status for the exact expiry time.
               Automated renewal has not completed in time. Check cert-manager
               controller logs and issuer status immediately:
                 kubectl describe certificate {{ $labels.name }} -n {{ $labels.namespace }}
                 kubectl describe certificaterequest -n {{ $labels.namespace }}
-            runbook_url: https://runbooks.example.com/certmanager/certificateexpiring # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
         # ── CertificateExpired ───────────────────────────────────────────────
         # The certificate is already past its NotAfter timestamp.
@@ -109,12 +109,12 @@ spec:
             description: >-
               Certificate {{ $labels.name }} (namespace: {{ $labels.namespace }},
               issuer: {{ $labels.issuer_kind }}/{{ $labels.issuer_name }}) expired
-              {{ printf "%.0f" (div (sub 0.0 $value) 86400.0) }} day(s) ago.
+              and requires immediate renewal.
               Any service using this certificate's Secret will be serving an
               invalid TLS certificate. Rotate or force-renew immediately:
                 kubectl delete certificaterequest -n {{ $labels.namespace }} \
                   -l cert-manager.io/certificate-name={{ $labels.name }}
-            runbook_url: https://runbooks.example.com/certmanager/certificateexpired # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
         # ── CertificateRenewalFailed ─────────────────────────────────────────
         # Detect certificates whose Ready condition has been False for >30 minutes.
@@ -146,4 +146,4 @@ spec:
                 kubectl describe certificate {{ $labels.name }} -n {{ $labels.namespace }}
                 kubectl get certificaterequest -n {{ $labels.namespace }}
                 kubectl logs -n cert-manager deploy/cert-manager
-            runbook_url: https://runbooks.example.com/certmanager/certificaterenewalfailed # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS

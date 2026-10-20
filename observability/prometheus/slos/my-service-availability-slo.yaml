@@ -13,7 +13,7 @@ metadata:
   namespace: production # <-- CHANGE THIS: set workload namespace; valid values are your Kubernetes namespaces from overlays.
   team: platform # <-- CHANGE THIS: set owning team label; valid values are team labels used on Deployments.
   owner: platform-oncall@example.com # <-- CHANGE THIS: set on-call contact email or PagerDuty identifier; source from team roster.
-  runbook_url: https://github.com/your-org/repo/blob/main/docs/runbooks/slo-breach-response.md # <-- CHANGE THIS: set runbook URL for this service; source docs/runbooks/.
+  runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md # <-- CHANGE THIS: set runbook URL for this service; source docs/runbooks/.
 
 spec:
   type: availability

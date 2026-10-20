@@ -68,7 +68,7 @@ variable "aks_subnet_prefix" {
 variable "kubernetes_version" {
   description = "Kubernetes version for AKS — run `az aks get-versions -l <region>` to see available versions"
   type        = string
-  default     = "1.29" # <-- CHANGE THIS: use latest stable
+  default     = "1.31" # Keep aligned with versions.yaml.
 }
 
 variable "node_count" {

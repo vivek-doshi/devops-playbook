@@ -25,7 +25,6 @@
 # MATURITY: Stable
 # ============================================================
 
-# Note 1: PrometheusRule is a CRD provided by the Prometheus Operator.
 # Discovered automatically by Prometheus instances matching the label selector.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
@@ -43,7 +42,6 @@ spec:
   groups:
 
     # ── Recording Rules ────────────────────────────────────────────────────
-    # Note 2: Latency SLOs measure the fraction of requests BELOW a threshold,
     # using the histogram bucket for that threshold.
     #
     # Formula for the "good request" ratio:
@@ -56,7 +54,6 @@ spec:
     - name: latency-slo-recording
       interval: 30s
       rules:
-        # Note 3: `le="0.5"` selects the 500ms histogram bucket.
         # This bucket counts all requests that completed in ≤ 500ms.
         # Change `le` to match your latency threshold.       # <-- CHANGE THIS: le bucket
         - record: slo:sli_latency_error:ratio_rate5m
@@ -137,7 +134,6 @@ spec:
             service: my-service
 
     # ── Alerting Rules ─────────────────────────────────────────────────────
-    # Note 4: Burn-rate thresholds for a 99% SLO differ from a 99.9% SLO
     # because the error budget is larger (1% vs 0.1%).
     #
     # Thresholds: burn_rate × (1 - 0.99) = burn_rate × 0.01
@@ -149,7 +145,6 @@ spec:
       rules:
 
         # ── Critical: Fast Burn (page immediately) ─────────────────────
-        # Note 5: Two-window condition prevents false positives from brief spikes.
         # At 14× burn rate, 50h of error budget will be consumed — page immediately.
         - alert: SLOLatencyFastBurnCritical
           expr: |
@@ -170,7 +165,7 @@ spec:
               at 14× the acceptable rate. The threshold is 500ms.              # <-- CHANGE THIS: threshold in message
               At this pace the entire 30-day budget will be exhausted in approximately 50 hours.
               Current 5m latency error ratio: {{ $value | humanizePercentage }}.
-            runbook_url: "https://your-wiki.example.com/runbooks/slo-latency"  # <-- CHANGE THIS
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md"  # <-- CHANGE THIS
             dashboard_url: "https://grafana.example.com/d/slo-latency"         # <-- CHANGE THIS
 
         # ── Warning: Medium Burn (ticket, investigate today) ───────────
@@ -193,10 +188,9 @@ spec:
               at 6× the acceptable rate (threshold: 500ms).                   # <-- CHANGE THIS: threshold in message
               At this pace the entire 30-day budget will be exhausted in approximately 5 days.
               Current 30m latency error ratio: {{ $value | humanizePercentage }}.
-            runbook_url: "https://your-wiki.example.com/runbooks/slo-latency"  # <-- CHANGE THIS
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md"  # <-- CHANGE THIS
 
         # ── Warning: Slow Burn (ticket, investigate this week) ─────────
-        # Note 6: Slow burn for latency often indicates a gradual database or
         # downstream service degradation. The 6h+3d windows confirm it is
         # a sustained trend, not a temporary deployment artifact.
         - alert: SLOLatencySlowBurnWarning
@@ -218,4 +212,4 @@ spec:
               at 3× the acceptable error rate for over 6 hours. Sustained degradation detected.
               At this pace the 30-day error budget will be exhausted in approximately 10 days.
               Current 6h latency error ratio: {{ $value | humanizePercentage }}.
-            runbook_url: "https://your-wiki.example.com/runbooks/slo-latency"  # <-- CHANGE THIS
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md"  # <-- CHANGE THIS

@@ -20,7 +20,7 @@ spec:
           annotations:
             summary: Pod restart count is increasing fast enough to indicate a crash loop.
             description: Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} restarted more than five times in the last 15 minutes.
-            runbook_url: https://runbooks.example.com/podcrashloopbackoff # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
         - alert: PodOOMKilled
           # Detect containers whose most recent termination reason was OOMKilled.
@@ -34,7 +34,7 @@ spec:
           annotations:
             summary: A container has been terminated by the kernel because it exceeded its memory limit.
             description: Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} recorded an OOMKilled termination.
-            runbook_url: https://runbooks.example.com/podoomkilled # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
         - alert: PodNotReady
           # Alert when the pod Ready condition stays false across the full five-minute window.
@@ -48,7 +48,7 @@ spec:
           annotations:
             summary: A pod has remained not ready for longer than the expected rollout window.
             description: Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in a not-ready state for more than five minutes.
-            runbook_url: https://runbooks.example.com/podnotready # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
         - alert: ContainerHighCPU
           # Compare five-minute CPU usage rate to each container CPU limit and alert above 80 percent.
@@ -68,7 +68,7 @@ spec:
           annotations:
             summary: A container is sustaining CPU usage above 80 percent of its declared limit.
             description: Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has a container running above 80 percent of its CPU limit for 10 minutes.
-            runbook_url: https://runbooks.example.com/containerhighcpu # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
         - alert: ContainerHighMemory
           # Compare working-set memory to each container memory limit and alert above 85 percent.
@@ -88,4 +88,4 @@ spec:
           annotations:
             summary: A container is sustaining memory usage above 85 percent of its declared limit.
             description: Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has a container using more than 85 percent of its memory limit for five minutes.
-            runbook_url: https://runbooks.example.com/containerhighmemory # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS

@@ -68,7 +68,7 @@ variable "vpc_cidr" {
 variable "kubernetes_version" {
   description = "Kubernetes version for EKS — see https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html"
   type        = string
-  default     = "1.29" # <-- CHANGE THIS: use latest stable
+  default     = "1.31" # Keep aligned with versions.yaml.
 }
 
 variable "node_instance_type" {
