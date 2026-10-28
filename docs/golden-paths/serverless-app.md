@@ -52,7 +52,7 @@ Serverless functions run locally with the framework's local invoke:
 serverless invoke local --function my-function --data '{"key":"value"}'
 
 # GCP Cloud Run — run as a container locally
-docker build -f docker/python/Dockerfile -t my-function .
+docker build -f docker/python/Dockerfile.fastapi -t my-function .
 docker run -p 8080:8080 my-function
 ```
 
@@ -154,10 +154,10 @@ Secrets strategy: [docs/guides/secrets-management.md](../guides/secrets-manageme
 
 ```yaml
 # .github/workflows/deploy.yml
-uses: cd/targets/aws-lambda/serverless-deploy.yml
+uses: terraform/aws-lambda/
 ```
 
-Source: [`cd/targets/aws-lambda/serverless-deploy.yml`](../../cd/targets/aws-lambda/serverless-deploy.yml)
+Source: [`terraform/aws-lambda/`](../../terraform/aws-lambda/)
 
 The workflow:
 1. Packages the function code

@@ -5,7 +5,8 @@
 # SECRETS NEEDED: None (uses aws configure or IAM role)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: cd/targets/aws-eks/, cd/kubernetes/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # LAYOUT: versions.tf (providers), network.tf (VPC), ecr.tf (registry),
 #         iam.tf (roles), eks.tf (cluster/node groups), security-groups.tf,
 #         backup.tf (DR/backup), locals.tf (tags)
@@ -17,7 +18,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.66.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 6.61.0" # <-- CHANGE THIS: pin to latest stable
     }
   }
 

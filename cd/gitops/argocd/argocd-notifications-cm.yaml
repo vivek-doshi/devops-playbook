@@ -3,7 +3,8 @@
 # TEMPLATE: ArgoCD Notifications ConfigMap — Sync Failure Alerts
 # WHEN TO USE: Send Slack and PagerDuty notifications for failed sync/deploy events
 # PREREQUISITES: ArgoCD notifications controller installed and secrets configured
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 apiVersion: v1
 kind: ConfigMap

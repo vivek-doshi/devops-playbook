@@ -25,11 +25,10 @@ cd/kubernetes/                  @vivek-doshi
 # ── Terraform / Infrastructure ────────────────────────────────────────────────
 # Infrastructure ownership.
 terraform/                      @vivek-doshi
-cd/pulumi/                      @vivek-doshi
 
 # ── Security ─────────────────────────────────────────────────────────────────
 # Security ownership.
-security/                       @vivek-doshi
+ci-security/                    @vivek-doshi
 policy/                         @vivek-doshi
 docker/_base/security-hardened.Dockerfile @vivek-doshi
 

@@ -4,7 +4,7 @@
 # ============================================================
 
 output "efs_file_system_id" {
-  value       = try(aws_efs_file_system.main[0].id)
+  value       = try(aws_efs_file_system.main[0].id, null)
   description = "ID of the EFS file system"
 }
 

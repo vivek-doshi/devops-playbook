@@ -5,7 +5,8 @@
 # SECRETS NEEDED: None (uses aws configure or IAM role)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: cd/targets/aws-ecs/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # LAYOUT: versions.tf (providers), network.tf (VPC), ecr.tf (registry),
 #         ecs.tf (cluster/service), alb.tf (load balancer),
 #         security-groups.tf, autoscaling.tf, locals.tf (tags)
@@ -17,7 +18,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.61.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 6.70.0" # <-- CHANGE THIS: pin to latest stable
     }
   }
 

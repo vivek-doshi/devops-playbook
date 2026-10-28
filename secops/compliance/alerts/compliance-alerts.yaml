@@ -48,7 +48,7 @@ spec:
             description: The compliance-report-latest ConfigMap has not been refreshed within the expected weekly window (8 days).
             runbook_url: https://runbooks.example.com/complianceevidencestale # <-- CHANGE THIS
 
-        - alert: KyveryoPolicyViolationsHigh
+        - alert: KyvernoPolicyViolationsHigh
           expr: sum(kyverno_policy_report_result{result="fail"}) > 10
           for: 1h
           labels:

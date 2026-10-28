@@ -5,7 +5,8 @@
 # SECRETS NEEDED: None (uses az login or service principal via env vars)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: cd/targets/azure-aks/, cd/kubernetes/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # LAYOUT: versions.tf (providers), network.tf (VNet/subnet), acr.tf (registry),
 #         aks.tf (cluster/node pools), monitoring.tf (Log Analytics),
 #         backup.tf (DR/backup), locals.tf (tags)

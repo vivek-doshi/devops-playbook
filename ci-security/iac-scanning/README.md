@@ -13,6 +13,5 @@ Suppressions are inline and should be used sparingly with a justification commen
 | Helm charts | `cd/helm/` | Yes | No |
 | Docker Compose | `compose/` | Yes | No |
 | Dockerfiles | `docker/` | Yes | No |
-| Pulumi projects | `cd/pulumi/` | Not in this workflow by default | No |
 
 Use both workflows together when your repository mixes Terraform with other IaC formats. If your team only maintains Terraform, tfsec is the narrower default and Checkov becomes the broader second layer.

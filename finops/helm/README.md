@@ -4,7 +4,7 @@ This directory contains Helm chart values files and configurations for deploying
 
 ## Contents
 
-This directory will include:
+This directory contains:
 
 - **kubecost-values.yaml** - Helm values for Kubecost deployment with Prometheus integration and cloud provider settings
 - **opencost-values.yaml** - Helm values for OpenCost deployment with multi-cloud support

@@ -4,8 +4,9 @@
 #              (PostgreSQL) has automated backups, PITR, and a
 #              cross-region replica configured.
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: cd/kubernetes/_patterns/velero-backup.yaml
-# MATURITY: Stable
+# RELATED FILES: backup/velero/
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # ---------------------------------------------

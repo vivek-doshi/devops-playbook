@@ -18,7 +18,8 @@
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: cd/kubernetes/cert-manager/cluster-issuer-staging.yaml
 #                cd/kubernetes/cert-manager/README.md
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: cert-manager.io/v1
@@ -39,7 +40,6 @@ spec:
           ingress:
             class: nginx          # <-- CHANGE THIS: your IngressClass name
 
-      # Note 1: DNS-01 challenge is required for wildcard certificates
       # (e.g., *.example.com) or when your ingress is not publicly reachable.
       # Uncomment and configure one of the DNS provider blocks below.
       # You cannot use HTTP-01 for wildcard certificates.

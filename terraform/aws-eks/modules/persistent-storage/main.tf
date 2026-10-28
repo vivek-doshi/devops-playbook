@@ -5,7 +5,8 @@
 #              before an incident forces your hand.
 # WHAT to CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: docs/guides/eks-persistent-storage.md
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 locals {

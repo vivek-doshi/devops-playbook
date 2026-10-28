@@ -3,7 +3,8 @@
 # TEMPLATE: Flux GitRepository — Source of Truth
 # WHEN TO USE: Define the Git source consumed by Flux Kustomizations and HelmReleases
 # PREREQUISITES: Flux installed and repository credentials configured if private
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository

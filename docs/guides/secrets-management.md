@@ -59,5 +59,5 @@ Do not:
 ## Implementation Pointers
 
 - Secret infrastructure and patterns: `secrets/`
-- Terraform-driven rotation (optional): `ci-security/secret-rotation/`
+- Rotation configuration and runbooks: `secrets/rotation/`
 - Runtime security and compliance context: `secops/`, `policy/`

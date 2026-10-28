@@ -78,6 +78,23 @@ module "acr_rbac" {
   aks_kubelet_identity_object_id = try(module.aks[0].kubelet_identity_object_id, null)
 }
 
+module "persistent_storage" {
+  count  = var.enable_persistent_storage ? 1 : 0
+  source = "./modules/persistent-storage"
+
+  enable_persistent_storage        = var.enable_persistent_storage
+  storage_type                     = var.persistent_storage_type
+  project                          = var.project
+  environment                      = var.environment
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = azurerm_resource_group.main.location
+  common_tags                      = local.common_tags
+  file_share_name                  = var.azure_file_share_name
+  file_share_quota_gb              = var.azure_file_share_quota_gb
+  storage_account_replication_type = var.azure_file_replication_type
+  public_network_access_enabled    = var.azure_file_public_network_access_enabled
+}
+
 module "backup" {
   count  = var.enable_backup ? 1 : 0
   source = "./modules/backup"

@@ -4,7 +4,7 @@ This directory contains automation scripts for deploying, configuring, and opera
 
 ## Contents
 
-This directory will include:
+This directory contains:
 
 ### Deployment Scripts
 - **install-cost-monitoring.sh** - Deploy Kubecost or OpenCost to the cluster
@@ -30,7 +30,6 @@ This directory will include:
 
 ### Validation Scripts
 - **validate-cost-tags.py** - Scan for missing cost allocation labels
-- **export-metrics.py** - Export cost metrics in Prometheus format
 
 ## Requirements
 

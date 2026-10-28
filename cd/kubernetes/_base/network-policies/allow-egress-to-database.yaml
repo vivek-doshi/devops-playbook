@@ -8,7 +8,8 @@
 #
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: default-deny.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: networking.k8s.io/v1
@@ -19,14 +20,13 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: my-app             # <-- CHANGE THIS: label that identifies the app pods needing DB access
+      app: app                # Matches the canonical base Deployment.
 
   policyTypes:
     - Egress
 
   egress:
     - to:
-        # Note 1: namespaceSelector restricts this rule to pods inside the
         # database namespace. Using both namespaceSelector + podSelector
         # requires the traffic to originate from a pod matching BOTH selectors.
         - namespaceSelector:

@@ -4,7 +4,8 @@
 # Copy this file to observability/prometheus/slos/<your-service>-slo.yaml
 # Then run: make slo-generate SERVICE=<your-service>
 # This generates the recording rules and alert rules for your SLO.
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # WHEN TO USE: Any service that needs a reliability target and alerting
 # ============================================================
 # Common mistakes teams make:
@@ -23,7 +24,7 @@ metadata:
   namespace: production
   team: platform
   owner: platform-team@example.com # <-- CHANGE THIS: set to team email or PagerDuty service key; valid values are RFC5322 emails or PD integration identifiers; source from team on-call ownership docs.
-  runbook_url: https://github.com/your-org/repo/blob/main/docs/runbooks/my-service.md # <-- CHANGE THIS: set to the service runbook URL; valid value is a reachable markdown runbook URL; source from docs/runbooks/.
+  runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/template.md # <-- CHANGE THIS: set to the service runbook URL; valid value is a reachable markdown runbook URL; source from docs/runbooks/.
 
 spec:
   # SLO type: availability | latency | throughput | error-rate

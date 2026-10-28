@@ -48,7 +48,7 @@ Data pipeline jobs are packaged as Docker containers so the local run matches pr
 
 ```bash
 # Build
-docker build -f docker/python/Dockerfile -t my-pipeline .
+docker build -f docker/python/Dockerfile.fastapi -t my-pipeline .
 
 # Run with environment overrides
 docker run --rm \
@@ -61,7 +61,7 @@ To run with a local Postgres and Redis:
 
 ```bash
 docker compose -f compose/python-postgres-redis/docker-compose.yml up
-docker compose -f compose/python-postgres-redis/docker-compose.yml run pipeline
+docker compose -f compose/python-postgres-redis/docker-compose.yml run app
 ```
 
 ---
@@ -99,9 +99,9 @@ Source: [`ci/github-actions/_shared/reusable-security-scan.yml`](../../ci/github
 
 | Scan | File | Priority |
 |------|------|---------|
-| Secrets | [`ci-security/secret-detection/gitleaks.yml`](../../ci-security/secret-detection/gitleaks.yml) | Blocks merge |
-| Container scan | [`ci-security/container-scanning/trivy-scan.yml`](../../ci-security/container-scanning/trivy-scan.yml) | Blocks merge |
-| SAST | [`ci-security/sast/semgrep.yml`](../../ci-security/sast/semgrep.yml) | Blocks merge |
+| Secrets | [`ci-security/secret-detection/gitleaks.yml`](../../ci-security/secret-detection/gitleaks.yml) | Blocking |
+| Container scan | [`ci-security/container-scanning/trivy-scan.yml`](../../ci-security/container-scanning/trivy-scan.yml) | Blocking for HIGH/CRITICAL findings |
+| SAST | [`ci-security/sast/semgrep.yml`](../../ci-security/sast/semgrep.yml) | Advisory until its exit policy is hardened |
 | Dependency audit | [`ci-security/dependency-audit/`](../../ci-security/dependency-audit/) | Advisory |
 
 ---
@@ -112,7 +112,7 @@ Source: [`ci/github-actions/_shared/reusable-security-scan.yml`](../../ci/github
 uses: ./.github/workflows/reusable-docker-build.yml
 with:
   image-name: my-pipeline
-  dockerfile: docker/python/Dockerfile
+  dockerfile: docker/python/Dockerfile.fastapi
 ```
 
 Source: [`ci/github-actions/_shared/reusable-docker-build.yml`](../../ci/github-actions/_shared/reusable-docker-build.yml)
@@ -188,7 +188,7 @@ Key decisions encoded here:
 Deploy via GitHub Actions:
 
 ```yaml
-uses: cd/targets/aws-ecs/github-actions-deploy.yml
+uses: cd/targets/aws-ecs/github-actions-deploy.yml as a reference template; copy it into the consuming repository rather than using it as a GitHub Actions `uses:` target.
 ```
 
 Source: [`cd/targets/aws-ecs/github-actions-deploy.yml`](../../cd/targets/aws-ecs/github-actions-deploy.yml)
@@ -271,9 +271,9 @@ For pipelines that write to a database, configure automated backups:
 
 | Cloud | Terraform module |
 |-------|-----------------|
-| AWS RDS | [`backup/terraform/aws-rds-backup.tf`](../../backup/terraform/aws-rds-backup.tf) |
-| Azure PostgreSQL | [`backup/terraform/azure-postgres-backup.tf`](../../backup/terraform/azure-postgres-backup.tf) |
-| GCP Cloud SQL | [`backup/terraform/gcp-cloudsql-backup.tf`](../../backup/terraform/gcp-cloudsql-backup.tf) |
+| AWS RDS | [`terraform/aws-eks/modules/backup/`](../../terraform/aws-eks/modules/backup/) |
+| Azure PostgreSQL | [`terraform/azure-aks/modules/backup/`](../../terraform/azure-aks/modules/backup/) |
+| GCP Cloud SQL | [`terraform/gcp-gke/modules/backup/`](../../terraform/gcp-gke/modules/backup/) |
 
 For namespace-level backup of Kubernetes workloads (including CronJob state):
 

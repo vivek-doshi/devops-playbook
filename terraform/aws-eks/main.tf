@@ -111,6 +111,8 @@ module "persistent_storage" {
   private_subnet_ids = try(module.network[0].private_subnet_ids, [])
   common_tags        = local.common_tags
 
+  enable_persistent_storage = var.enable_persistent_storage
+
   storage_type             = var.storage_type
   storage_class_name       = var.storage_class_name
   storage_size             = var.storage_size

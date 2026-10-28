@@ -5,7 +5,8 @@
 # SECRETS NEEDED: None (uses az login or service principal via env vars)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: cd/targets/azure-app-service/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # LAYOUT: versions.tf (providers), app-service.tf (plan/app/slot),
 #         monitoring.tf (App Insights), locals.tf (tags)
 # ============================================================
@@ -16,7 +17,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 5.2.0" # <-- CHANGE THIS: pin to latest stable
+      version = "~> 5.10.0" # <-- CHANGE THIS: pin to latest stable
     }
   }
 

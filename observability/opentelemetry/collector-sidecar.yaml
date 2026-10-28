@@ -32,7 +32,7 @@ spec:
           # plugins including the Kubernetes attributes and Prometheus remote-write exporters.
           # Check https://github.com/open-telemetry/opentelemetry-collector-releases for updates.
           # Review and bump this version quarterly to pick up security patches and new features.
-          image: otel/opentelemetry-collector-contrib:0.91.0
+          image: otel/opentelemetry-collector-contrib:0.106.1
           args:
             - "--config=/etc/otel/config.yaml"
           ports:

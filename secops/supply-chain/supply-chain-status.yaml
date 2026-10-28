@@ -66,7 +66,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: reporter
-              image: bitnami/kubectl:1.31.2 # <-- CHANGE THIS: pin an approved kubectl image from your internal registry for provenance and patch cadence.
+              image: registry.k8s.io/kubectl:v1.31.2
               command:
                 - /bin/sh
                 - -ec

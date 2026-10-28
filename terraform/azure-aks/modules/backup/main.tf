@@ -4,8 +4,9 @@
 #              Azure Database for PostgreSQL Flexible Server (or MySQL)
 #              has automated backups, geo-redundancy, and PITR configured.
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: cd/kubernetes/_patterns/velero-backup.yaml
-# MATURITY: Stable
+# RELATED FILES: backup/velero/
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 locals {

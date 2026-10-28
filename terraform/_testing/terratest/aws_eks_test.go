@@ -70,7 +70,6 @@ func TestEKSPlanOnly(t *testing.T) {
 
 	plan := terraform.InitAndPlanAndShowWithStruct(t, opts)
 
-	// Note 1: ResourcePlannedValuesMap keys are the Terraform resource addresses
 	// from the plan JSON. If a test fails with "nil", run:
 	//   terraform show -json tfplan | jq '.planned_values.root_module.resources[].address'
 	vpc, ok := plan.ResourcePlannedValuesMap["aws_vpc.main"]
@@ -86,7 +85,6 @@ func TestEKSPlanOnly(t *testing.T) {
 func TestEKSCluster(t *testing.T) {
 	t.Parallel()
 
-	// Note 2: UniqueId generates a 6-char random suffix so parallel runs
 	// don't collide on resource names (e.g., IAM roles, VPC names).
 	uid     := random.UniqueId()
 	project := fmt.Sprintf("tt-%s", uid) // <-- CHANGE THIS prefix if desired
@@ -104,7 +102,6 @@ func TestEKSCluster(t *testing.T) {
 		TimeBetweenRetries: 5 * time.Second,
 	})
 
-	// Note 3: Always defer Destroy so resources are cleaned up even on test failure.
 	// Without this, a failed test leaves orphaned AWS resources incurring cost.
 	defer terraform.Destroy(t, opts)
 
@@ -120,12 +117,10 @@ func TestEKSCluster(t *testing.T) {
 		"EKS cluster must reach ACTIVE status after apply")
 
 	// ── Verify kubectl connectivity ───────────────────────────────────────
-	// Note 4: Your module should output a kubeconfig file path.
 	// Adjust the output name to match what your module exposes.
 	kubeconfig := terraform.Output(t, opts, "kubeconfig_path") // <-- CHANGE THIS
 	k8sOpts    := k8s.NewKubectlOptions("", kubeconfig, "kube-system")
 
-	// Note 5: kube-system pods starting confirms control plane + CNI health.
 	// Retries up to 30 times with 10s between attempts (~5 min total).
 	k8s.WaitUntilAllPodsAvailable(t, k8sOpts, map[string]string{}, 30, 10*time.Second)
 }
@@ -154,7 +149,6 @@ func TestEKSNodeGroupScaling(t *testing.T) {
 	ng, ok := plan.ResourcePlannedValuesMap["aws_eks_node_group.main"] // <-- CHANGE THIS: match your resource address
 	require.True(t, ok, "aws_eks_node_group.main must appear in the plan")
 
-	// Note 6: scaling_config is a list with one element in the plan JSON.
 	scalingConfig := ng.AttributeValues["scaling_config"].([]interface{})[0].(map[string]interface{})
 	assert.Equal(t, float64(1), scalingConfig["min_size"])
 	assert.Equal(t, float64(5), scalingConfig["max_size"])
