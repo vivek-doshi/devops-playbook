@@ -37,7 +37,7 @@ jobs:
           kubectl create secret generic app-secrets -n dev --from-literal=db-password=ci --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -k cd/kubernetes/_overlays/dev
           kubectl set image deployment/app app=nginxinc/nginx-unprivileged:1.27.5-alpine -n dev
-          kubectl patch deployment app -n dev --type merge -p '{"spec":{"template":{"spec":{"containers":[{"name":"app","livenessProbe":{"httpGet":{"path":"/","port":8080}},"readinessProbe":{"httpGet":{"path":"/","port":8080}}}]}}}}'
+          kubectl patch deployment app -n dev --type strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"app","livenessProbe":{"httpGet":{"path":"/","port":8080}},"readinessProbe":{"httpGet":{"path":"/","port":8080}}}]}}}}'
           kubectl rollout status deployment/app -n dev --timeout=180s
       - name: Render the Helm golden path
         run: |
