@@ -114,6 +114,7 @@ spec:
             description: |
               Namespace {{ $labels.namespace }} (cost center: {{ $labels.cost_center }}) is projected to cost
               ${{ printf "%.2f" $value }} this month based on current hourly spend.
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
             dashboard_url: "{{ $externalURL }}/d/finops-cost-overview?var-namespace={{ $labels.namespace }}"
 
         # ── Cost monitoring data stale ───────────────────────────────────────
