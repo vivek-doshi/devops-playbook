@@ -25,7 +25,7 @@ resource "aws_lambda_function" "main" {
   environment {
     variables = {
       ENVIRONMENT = var.environment
-      LOG_LEVEL   = var.environment == "prod" ? "INFO" : "DEBUG"
+      LOG_LEVEL   = var.environment == "production" ? "INFO" : "DEBUG"
       # <-- CHANGE THIS: add your application environment variables
     }
   }

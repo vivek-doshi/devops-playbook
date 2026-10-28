@@ -84,6 +84,8 @@ module "persistent_storage" {
   network_id     = try(module.network[0].network_id, null)
   common_labels  = local.common_labels
 
+  enable_persistent_storage = var.enable_persistent_storage
+
   storage_type               = var.storage_type
   storage_class_name         = var.storage_class_name
   storage_size               = var.storage_size

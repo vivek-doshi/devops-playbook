@@ -1,145 +1,60 @@
-# ============================================================
-# TEMPLATE: Terraform Variables — Azure AKS Persistent Storage
-# WHAT to CHANGE: Update default values or create a terraform.tfvars
-# ============================================================
-
 variable "enable_persistent_storage" {
-  description = "Enable persistent storage for AKS workloads"
+  description = "Whether to provision the selected persistent-storage prerequisite."
   type        = bool
-  default     = false # <-- CHANGE THIS: set to true to enable
-
-  validation {
-    condition     = can(var.enable_persistent_storage ? true : false)
-    error_message = "enable_persistent_storage must be a boolean."
-  }
 }
 
 variable "storage_type" {
-  description = "Type of persistent storage to provision"
+  description = "managed_disk uses the AKS CSI driver; azure_file creates an Azure Files account and share."
   type        = string
-  default     = "disk" # <-- CHANGE THIS: disk, file-share, or blob-storage
+  default     = "managed_disk"
 
   validation {
-    condition     = contains(["disk", "file-share", "blob-storage"], var.storage_type)
-    error_message = "storage_type must be one of: disk, file-share, or blob-storage."
+    condition     = contains(["managed_disk", "azure_file"], var.storage_type)
+    error_message = "storage_type must be managed_disk or azure_file."
   }
 }
 
-variable "storage_class_name" {
-  description = "Name of the storage class (for Disk and File Share)"
+variable "project" { type = string }
+variable "environment" { type = string }
+variable "resource_group_name" { type = string }
+variable "location" { type = string }
+variable "common_tags" { type = map(string) }
+
+variable "file_share_name" {
+  description = "Azure Files share name when storage_type is azure_file."
   type        = string
-  default     = "standard" # <-- CHANGE THIS: standard, premium, or ultra
+  default     = "shared-data"
 
   validation {
-    condition     = can(regex("^[a-z0-9]+$", var.storage_class_name))
-    error_message = "storage_class_name must contain only lowercase letters and numbers."
+    condition     = can(regex("^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$", var.file_share_name))
+    error_message = "file_share_name must be 3-63 lowercase alphanumeric or hyphen characters."
   }
 }
 
-variable "storage_size" {
-  description = "Size of the Disk in GB (if using Disk)"
+variable "file_share_quota_gb" {
   type        = number
-  default     = 100 # <-- CHANGE THIS: size to your workload
+  default     = 100
+  description = "Azure Files share quota in GiB."
 
   validation {
-    condition     = var.storage_size > 0
-    error_message = "storage_size must be greater than 0."
+    condition     = var.file_share_quota_gb >= 1 && var.file_share_quota_gb <= 102400
+    error_message = "file_share_quota_gb must be between 1 and 102400."
   }
 }
 
-variable "storage_sku" {
-  description = "SKU for Azure Disk (if using Disk)"
+variable "storage_account_replication_type" {
   type        = string
-  default     = "Standard_LRSs" # <-- CHANGE THIS: Standard_LRSs, Standard_GRSs, Standard_RRSs
+  default     = "LRS"
+  description = "Replication for the Azure Files storage account."
 
   validation {
-    condition     = contains(["Standard_LRSs", "Standard_GRSs", "Standard_RRSs"], var.storage_sku)
-    error_message = "storage_sku must be one of: Standard_LRSs, Standard_GRSs, or Standard_RRSs."
+    condition     = contains(["LRS", "ZRS", "GRS", "GZRS", "RAGRS", "RAGZRS"], var.storage_account_replication_type)
+    error_message = "storage_account_replication_type must be a supported Azure Storage replication type."
   }
 }
 
-variable "storage_zone" {
-  description = "Availability zone for the Disk (if using Disk)"
-  type        = string
-  default     = "1" # <-- CHANGE THIS: match your region
-
-  validation {
-    condition     = can(regex("^[0-9]+$", var.storage_zone))
-    error_message = "storage_zone must contain only numbers."
-  }
-}
-
-variable "storage_resource_group_name" {
-  description = "Resource group name for storage resources (if using Disk or File Share)"
-  type        = string
-  default     = "default" # <-- CHANGE THIS: match your resource group
-
-  validation {
-    condition     = can(regex("^[a-z0-9]+$", var.storage_resource_group_name))
-    error_message = "storage_resource_group_name must contain only lowercase letters and numbers."
-  }
-}
-
-variable "storage_location" {
-  description = "Location for storage resources (if using Disk or File Share)"
-  type        = string
-  default     = "eastus" # <-- CHANGE THIS: match your region
-
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.storage_location))
-    error_message = "storage_location must contain only lowercase letters, numbers, and hyphens."
-  }
-}
-
-variable "storage_access_tier" {
-  description = "Access tier for File Share (if using File Share)"
-  type        = string
-  default     = "TransactionOptimized" # <-- CHANGE THIS: TransactionOptimized, Hot, Cool
-
-  validation {
-    condition     = contains(["TransactionOptimized", "Hot", "Cool"], var.storage_access_tier)
-    error_message = "storage_access_tier must be one of: TransactionOptimized, Hot, or Cool."
-  }
-}
-
-variable "storage_enable_https" {
-  description = "Enable HTTPS for File Share (if using File Share)"
+variable "public_network_access_enabled" {
   type        = bool
-  default     = true # <-- CHANGE THIS: set to false to disable
-
-  validation {
-    condition     = can(var.storage_enable_https ? true : false)
-    error_message = "storage_enable_https must be a boolean."
-  }
-}
-
-variable "storage_network_acl" {
-  description = "Enable network ACL for File Share (if using File Share)"
-  type        = bool
-  default     = true # <-- CHANGE THIS: set to false to disable
-
-  validation {
-    condition     = can(var.storage_network_acl ? true : false)
-    error_message = "storage_network_acl must be a boolean."
-  }
-}
-
-variable "storage_force_destroy" {
-  description = "Force destroy Blob Storage container on deletion (if using Blob Storage)"
-  type        = bool
-  default     = false # <-- CHANGE THIS: set to true to force destroy
-
-  validation {
-    condition     = can(var.storage_force_destroy ? true : false)
-    error_message = "storage_force_destroy must be a boolean."
-  }
-}
-
-variable "storage_labels" {
-  description = "Additional labels to apply to storage resources"
-  type        = map(string)
-  default = {
-    workload    = "aks"
-    environment = "dev" # <-- CHANGE THIS: match your environment
-  }
+  default     = false
+  description = "Enable only when the storage account has an approved public-network exception."
 }

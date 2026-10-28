@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-apps
+  namespace: argocd
+spec:
+  description: Application workloads reconciled from the approved GitOps repositories.
+  sourceRepos:
+    - https://github.com/my-org/my-app.git
+    - https://github.com/my-org/gitops-repo.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: production
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

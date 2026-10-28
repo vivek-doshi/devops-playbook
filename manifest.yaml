@@ -1,0 +1,35 @@
+# Copy this file to the root of the devops-playbook repository as manifest.yaml.
+# The MLOps compatibility workflow consumes the platform repository's copy.
+platform:
+  name: devops-playbook
+  version: "1.2.0"
+  components:
+    gpu-cluster:
+      version: "1.2.0"
+      required: true
+    base-kubernetes:
+      version: "1.28.0"
+      required: true
+    secrets-management:
+      version: "1.0.0"
+      required: true
+    oidc-federation:
+      version: "1.1.0"
+      required: true
+    policy-controls:
+      version: "1.0.0"
+      required: true
+    observability-baseline:
+      version: "1.0.0"
+      required: true
+
+compatibility:
+  min-platform-version: "1.2.0"
+  max-platform-version: "1.3.0"
+  required-features:
+    - gpu-provisioning
+    - k8s-primitives
+    - secrets-handling
+    - oidc-auth
+    - policy-enforcement
+    - observability-baseline

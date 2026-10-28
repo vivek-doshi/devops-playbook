@@ -313,22 +313,6 @@ Where in this repo:
 - [terraform/_bootstrap/](../../terraform/_bootstrap/)
 - [terraform/_testing/](../../terraform/_testing/)
 
-### Pulumi
-What it is: IaC using general-purpose languages instead of only HCL.
-
-Why it matters: Useful when teams prefer language-native abstractions.
-
-Beginner view:
-- Start with simple stacks and explicit config.
-
-Intermediate view:
-- Use stack references, policy packs, and environment promotion flows.
-
-Where in this repo:
-- [cd/pulumi/](../../cd/pulumi/)
-
----
-
 ## 8) Deployment Concepts
 
 ### Continuous Delivery (CD)
@@ -408,7 +392,6 @@ Intermediate view:
 Where in this repo:
 - [cd/helm/](../../cd/helm/)
 - [cd/helm/webapp/](../../cd/helm/webapp/)
-- [cd/helm/microservice/](../../cd/helm/microservice/)
 
 ### Helm vs Kustomize
 What it is: Two valid but different approaches to manifest management.
@@ -696,7 +679,7 @@ Intermediate view:
 
 Where in this repo:
 - [observability/opentelemetry/](../../observability/opentelemetry/)
-- [observability/otel/](../../observability/otel/)
+- [observability/opentelemetry/](../../observability/opentelemetry/)
 
 ### Alerting and notifications
 What it is: Routing actionable events to response channels.
@@ -935,7 +918,9 @@ Intermediate view:
 - Validate PITR and failover procedures in regular game days.
 
 Where in this repo:
-- [backup/terraform/](../../backup/terraform/)
+- [terraform/aws-eks/modules/backup/](../../terraform/aws-eks/modules/backup/)
+- [terraform/azure-aks/modules/backup/](../../terraform/azure-aks/modules/backup/)
+- [terraform/gcp-gke/modules/backup/](../../terraform/gcp-gke/modules/backup/)
 
 ---
 
@@ -985,7 +970,6 @@ Follow this order if you are learning the platform end to end:
 | CI templates | [ci/](../../ci/) |
 | CD targets | [cd/targets/](../../cd/targets/) |
 | Terraform IaC | [terraform/](../../terraform/) |
-| Pulumi IaC | [cd/pulumi/](../../cd/pulumi/) |
 | Kubernetes manifests and overlays | [cd/kubernetes/](../../cd/kubernetes/) |
 | Helm charts | [cd/helm/](../../cd/helm/) |
 | GitOps controllers | [cd/gitops/](../../cd/gitops/) |

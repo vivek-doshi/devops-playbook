@@ -4,7 +4,7 @@ This directory contains comprehensive documentation for deploying, configuring, 
 
 ## Contents
 
-This directory will include:
+This directory contains:
 
 ### Getting Started
 - **installation.md** - Step-by-step installation instructions for all FinOps components

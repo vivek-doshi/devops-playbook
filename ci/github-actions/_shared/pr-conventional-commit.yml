@@ -13,7 +13,8 @@
 #   - ci/github-actions/_strategies/release-please.yml
 #   - ci/github-actions/_strategies/semantic-release.yml
 #   - docs/guides/conventional-commits.md
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: PR Quality Gate
@@ -23,7 +24,6 @@ on:
     types: [opened, synchronize, reopened, edited]
     branches: [main, develop]      # <-- CHANGE THIS: branches you merge into
 
-# Note 1: Only read access is needed — this workflow never writes back to the repo.
 permissions:
   contents: read
   pull-requests: read
@@ -38,7 +38,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Note 2: fetch-depth 0 gives access to all commits in the PR branch
           # so commitlint can inspect every commit, not just the latest.
           fetch-depth: 0
 
@@ -53,7 +52,6 @@ jobs:
             @commitlint/cli \
             @commitlint/config-conventional
 
-      # Note 3: We lint from the base branch to HEAD so every commit
       # in the PR is checked, not just the last one.
       - name: Lint commits in this PR
         run: |
@@ -102,7 +100,6 @@ jobs:
           echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
           echo "PR changes $TOTAL lines (additions + deletions, excluding generated files)"
 
-      # Note 4: Size thresholds — adjust to your team's norms.
       #   XS  <  50 lines  — config tweak, doc update
       #   S   < 200 lines  — typical bug fix
       #   M   < 500 lines  — feature
@@ -135,7 +132,6 @@ jobs:
 
           echo "✅ PR size is acceptable ($TOTAL lines)"
 
-      # Note 5: Override gate — if the PR has the 'large-pr-approved' label,
       # skip the size check. Useful for migrations and large refactors.
       - name: Check for large-pr-approved label override
         if: failure()

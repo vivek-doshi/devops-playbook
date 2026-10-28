@@ -71,7 +71,7 @@ data:
                 is emitting {{ printf "%.1f" $value }} error log lines per second
                 (threshold: 10/s). Investigate recent deployments, upstream
                 dependencies, or configuration changes.
-              runbook_url: https://runbooks.example.com/loki/higherrorlograte # <-- CHANGE THIS
+              runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
           # ── ErrorLogSpike ────────────────────────────────────────────────────
           # Fires when the 5-minute error rate is more than 5× the 1-hour baseline.
@@ -109,7 +109,7 @@ data:
                 1-hour baseline. A spike this large usually indicates a failed
                 deployment, a broken upstream dependency, or an active incident.
                 Check recent deploys and downstream service health.
-              runbook_url: https://runbooks.example.com/loki/errorlogspike # <-- CHANGE THIS
+              runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
           # ── OOMKilledDetected ────────────────────────────────────────────────
           # Fires immediately (for: 0m) when any log line in the production namespace
@@ -141,7 +141,7 @@ data:
                 the kernel OOM killer. Review memory limits and recent heap growth:
                   kubectl top pod {{ $labels.pod }} -n {{ $labels.namespace }}
                   kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
-              runbook_url: https://runbooks.example.com/loki/oomkilleddetected # <-- CHANGE THIS
+              runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS
 
           # ── PanicDetected ────────────────────────────────────────────────────
           # Fires immediately (for: 0m) when any production log line indicates a
@@ -174,4 +174,4 @@ data:
                 {{ $labels.namespace }}). The process has crashed or is in an
                 unrecoverable state. Collect a stack trace immediately:
                   kubectl logs {{ $labels.pod }} -n {{ $labels.namespace }} --previous
-              runbook_url: https://runbooks.example.com/loki/panicdetected # <-- CHANGE THIS
+              runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/alert-triage.md # <-- CHANGE THIS

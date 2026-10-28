@@ -5,7 +5,8 @@
 # SECRETS NEEDED: None (uses aws configure or IAM role)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: terraform/aws-eks/main.tf, terraform/aws-ecs/main.tf, terraform/aws-lambda/main.tf
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 # =====================================================================
@@ -15,47 +16,36 @@
 # 3. Never run `terraform destroy` against this module in production, or every dependent state file becomes unavailable.
 # =====================================================================
 
-# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 terraform {
   required_version = ">= 1.5.0"
 
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   required_providers {
     aws = {
-      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/aws"
       version = "~> 5.31.0" # <-- CHANGE THIS: pin to latest stable
-      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
-  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "aws" {
-  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   region = local.aws_region
 
   default_tags {
-    # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     tags = local.common_tags
   }
-  # Note 8: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
 # Remote State Bucket
 # ---------------------------------------------
-# Note 9: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "aws_s3_bucket" "terraform_state" {
   bucket = local.state_bucket_name # <-- CHANGE THIS: use a globally unique bucket name for your organisation
 
-  # Note 10: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
   tags = merge(local.common_tags, {
     Name = local.state_bucket_name
   })
 }
 
-# Note 11: Versioning keeps previous state generations available for recovery after accidental writes or bad applies.
 resource "aws_s3_bucket_versioning" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -64,7 +54,6 @@ resource "aws_s3_bucket_versioning" "terraform_state" {
   }
 }
 
-# Note 12: AES256 server-side encryption protects state at rest without requiring an additional KMS bootstrap dependency.
 resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -75,7 +64,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
   }
 }
 
-# Note 13: Blocking all public access settings prevents accidental exposure of state files through bucket policy drift.
 resource "aws_s3_bucket_public_access_block" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -85,7 +73,6 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
   restrict_public_buckets = true
 }
 
-# Note 14: Noncurrent version expiry controls storage growth while preserving a 90-day rollback window for state history.
 resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -105,7 +92,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
 # ---------------------------------------------
 # DynamoDB Lock Table
 # ---------------------------------------------
-# Note 15: DynamoDB state locking prevents concurrent applies from corrupting shared Terraform state.
 resource "aws_dynamodb_table" "terraform_locks" {
   name         = local.lock_table_name
   billing_mode = "PAY_PER_REQUEST"
@@ -128,7 +114,6 @@ resource "aws_dynamodb_table" "terraform_locks" {
 # ---------------------------------------------
 # IAM Policy Document for CI
 # ---------------------------------------------
-# Note 16: Outputting the policy document keeps the bootstrap module auditable without attaching permissions to a guessed CI role.
 data "aws_iam_policy_document" "terraform_backend_access" {
   statement {
     sid    = "ListStateBucket"

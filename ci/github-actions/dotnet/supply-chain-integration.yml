@@ -6,7 +6,8 @@
 # SECRETS NEEDED: GITHUB_TOKEN (for GHCR) or registry-token equivalent
 # WHAT TO CHANGE: image-name, dockerfile, and image-tag strategy
 # RELATED FILES: ci/github-actions/_shared/reusable-supply-chain.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: .NET Supply Chain Integration

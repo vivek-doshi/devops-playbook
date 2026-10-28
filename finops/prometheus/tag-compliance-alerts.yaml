@@ -44,7 +44,8 @@ spec:
               Action: Run tag validation: kubectl exec -n finops deploy/finops-tools -- \
                 python validate-cost-tags.py --all-namespaces
 
-              See tagging schema: https://github.com/your-org/cicd-reference/blob/main/finops/docs/cost-tagging-schema.md
+              See tagging schema: https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/cost-tagging-schema.md
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/optimization-runbook.md"
             dashboard_url: "{{ $externalURL }}/d/finops-tag-compliance"
 
         # ── Missing environment label ─────────────────────────────────────────
@@ -67,6 +68,7 @@ spec:
             description: |
               {{ printf "%.1f" $value }}% of pods are missing the 'finops.org/environment' label.
               Valid values: dev, staging, production.
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/optimization-runbook.md"
             dashboard_url: "{{ $externalURL }}/d/finops-tag-compliance"
 
         # ── Per-namespace compliance warning ──────────────────────────────────
@@ -90,3 +92,4 @@ spec:
               Namespace {{ $labels.namespace }}: {{ printf "%.1f" $value }}% of pods are
               missing finops.org/costcenter labels. This namespace will appear as 'untagged'
               in cost reports.
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/optimization-runbook.md"

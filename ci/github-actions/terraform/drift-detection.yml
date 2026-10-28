@@ -13,17 +13,16 @@
 # RELATED FILES:
 #   ci/github-actions/terraform/plan-apply.yml
 #   terraform/aws-eks/main.tf  (or whichever module to monitor)
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Terraform Drift Detection
 
 on:
-  # Note 1: Schedule runs at 06:00 UTC daily — adjust to match your team's
   # working hours so the issue appears when someone is online to triage it.
   schedule:
     - cron: "0 6 * * 1-5"   # <-- CHANGE THIS: Mon-Fri 06:00 UTC (skip weekends)
-  # Note 2: workflow_dispatch lets you trigger a manual drift check without
   # waiting for the schedule — useful after an incident or bulk change.
   workflow_dispatch:
     inputs:
@@ -48,7 +47,6 @@ permissions:
   issues:   write   # Note 3: Required to open a drift issue automatically
   id-token: write   # Note 4: Required for OIDC cloud authentication
 
-# Note 5: Concurrency prevents two drift checks running simultaneously
 # (e.g., manual trigger during scheduled run). The cancel-in-progress=false
 # ensures the scheduled run finishes rather than being killed by a manual one.
 concurrency:
@@ -62,7 +60,6 @@ jobs:
   detect-drift:
     name: Detect Terraform Drift
     runs-on: ubuntu-latest
-    # Note 6: output the drift status so the notify job can check it
     outputs:
       drift-detected: ${{ steps.plan.outputs.drift }}
       plan-output:    ${{ steps.plan.outputs.plan_text }}
@@ -94,7 +91,6 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
-          # Note 7: wrapper=false gives us the raw exit code from terraform plan.
           # With wrapper=true, Terraform exit code 2 (drift) would be swallowed.
           terraform_wrapper: false
 
@@ -105,7 +101,6 @@ jobs:
       - name: Terraform Plan (drift check)
         id: plan
         working-directory: ${{ env.TF_WORKING_DIR }}
-        # Note 8: Exit codes from `terraform plan -detailed-exitcode`:
         #   0 = no changes (no drift)
         #   1 = error
         #   2 = changes present (DRIFT DETECTED)
@@ -181,7 +176,6 @@ jobs:
               "```",
             ].join("\n");
 
-            // Note 10: Check for an existing open drift issue so we don't spam.
             // If one already exists, add a comment instead of opening a duplicate.
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,

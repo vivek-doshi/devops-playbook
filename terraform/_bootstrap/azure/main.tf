@@ -5,34 +5,28 @@
 # SECRETS NEEDED: None (uses az login or service principal via env vars)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: terraform/azure-aks/main.tf, terraform/azure-app-service/main.tf
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
-# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 terraform {
   required_version = ">= 1.5.0"
 
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   required_providers {
     azurerm = {
-      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/azurerm"
       version = "~> 3.85.0" # <-- CHANGE THIS: pin to latest stable
-      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
-  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "azurerm" {
-  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   features {}
 }
 
 # ---------------------------------------------
 # Resource Group
 # ---------------------------------------------
-# Note 7: Terraform blocks declare desired state, allowing repeatable provisioning and easier drift detection.
 resource "azurerm_resource_group" "terraform_state" {
   name     = local.resource_group_name
   location = local.location
@@ -43,7 +37,6 @@ resource "azurerm_resource_group" "terraform_state" {
 # ---------------------------------------------
 # Storage Account
 # ---------------------------------------------
-# Note 8: The storage account hosts Terraform state in Blob Storage with Azure AD access and recovery controls enabled.
 resource "azurerm_storage_account" "terraform_state" {
   name                            = local.storage_account_name # <-- CHANGE THIS: storage account names must be globally unique and lowercase
   resource_group_name             = azurerm_resource_group.terraform_state.name
@@ -55,7 +48,6 @@ resource "azurerm_storage_account" "terraform_state" {
   shared_access_key_enabled       = false
   allow_nested_items_to_be_public = false
 
-  # Note 9: Blob versioning and soft delete make state rollback possible after bad writes or accidental deletion.
   blob_properties {
     versioning_enabled = true
 
@@ -74,7 +66,6 @@ resource "azurerm_storage_account" "terraform_state" {
 # ---------------------------------------------
 # Blob Container
 # ---------------------------------------------
-# Note 10: A dedicated tfstate container keeps backend configuration consistent with the repository's commented backend examples.
 resource "azurerm_storage_container" "terraform_state" {
   name                  = "tfstate"
   storage_account_name  = azurerm_storage_account.terraform_state.name

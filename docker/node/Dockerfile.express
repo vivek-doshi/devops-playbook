@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ============================================================
 # TEMPLATE: Dockerfile — Express.js API
 # WHEN TO USE: Any Express.js / Node.js API service
@@ -10,27 +10,18 @@
 # ============================================================
 
 # ── Stage 1: Install production dependencies only ─────────────────────────
-# Note 1: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS build
-# Note 2: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
-# Note 3: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY package*.json ./
-# Note 4: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN npm ci --omit=dev --ignore-scripts
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
-# Note 5: Imports make dependencies explicit, which keeps module boundaries clear and simplifies maintenance.
 FROM node:22-alpine AS runtime
-# Note 6: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 WORKDIR /app
 
-# Note 7: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Note 8: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --from=build /app/node_modules ./node_modules
-# Note 9: Docker instructions are layer-based; ordering these commands intentionally can improve cache reuse and build speed.
 COPY --chown=appuser:appgroup . .
 
 USER appuser

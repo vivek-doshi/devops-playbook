@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Service catalog entry",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "catalog/v1"},
+    "kind": {"const": "Service"},
+    "metadata": {"type": "object", "required": ["name", "owner", "lifecycle"], "properties": {"name": {"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"}, "lifecycle": {"enum": ["alpha", "beta", "stable", "deprecated"]}}},
+    "spec": {"type": "object", "required": ["contact", "image", "cost_center", "environment"], "properties": {"environment": {"enum": ["dev", "staging", "production"]}}}
+  }
+}

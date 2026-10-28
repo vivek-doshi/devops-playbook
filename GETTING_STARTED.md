@@ -23,7 +23,7 @@ Reference: [.devcontainer/README.md](.devcontainer/README.md)
 ### Option B: Local Host + Kind
 
 1. Install required tools (Docker, kubectl, Helm, Kind).
-2. Validate your setup with `scripts/env-checker.sh` or `scripts/env-checker.ps1`.
+2. Validate your setup with `scripts/env-checker.sh` (use WSL2 or Git Bash on Windows).
 3. Create a local cluster:
 
 ```bash

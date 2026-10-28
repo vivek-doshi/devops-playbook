@@ -13,7 +13,6 @@ Use `cd/` to convert build artifacts into deployed runtime workloads with enviro
 - `gitops/`: ArgoCD and Flux GitOps examples.
 - `targets/`: Cloud-specific deployment pipelines.
 - `fleet-overlays/`: Multi-cluster deployment overlays.
-- `pulumi/`: Pulumi-based deployment/provisioning examples.
 
 ## Use This Component Alone
 
@@ -33,4 +32,8 @@ Use `cd/` to convert build artifacts into deployed runtime workloads with enviro
 - Kustomize-first: start in `kubernetes/`
 - Chart-first: start in `helm/`
 - Pull-based delivery: start in `gitops/`
-- Cloud pipeline deploy jobs: start in `targets/`
+- Cloud pipeline deploy jobs: start in `targets/` for non-Kubernetes targets only.
+
+Kubernetes delivery is GitOps-first: CI validates and promotes a manifest
+change, while Argo CD or Flux reconciles it. Do not use `targets/` to apply
+Kubernetes manifests directly. See `docs/decisions/ADR-003-gitops-strategy.md`.

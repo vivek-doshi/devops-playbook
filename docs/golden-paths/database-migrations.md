@@ -269,9 +269,9 @@ For database-level backups, use the cloud-specific Terraform configuration:
 
 | Cloud | Terraform file |
 |-------|---------------|
-| AWS RDS | [`backup/terraform/aws-rds-backup.tf`](../../backup/terraform/aws-rds-backup.tf) |
-| Azure PostgreSQL | [`backup/terraform/azure-postgres-backup.tf`](../../backup/terraform/azure-postgres-backup.tf) |
-| GCP Cloud SQL | [`backup/terraform/gcp-cloudsql-backup.tf`](../../backup/terraform/gcp-cloudsql-backup.tf) |
+| AWS RDS | [`terraform/aws-eks/modules/backup/`](../../terraform/aws-eks/modules/backup/) |
+| Azure PostgreSQL | [`terraform/azure-aks/modules/backup/`](../../terraform/azure-aks/modules/backup/) |
+| GCP Cloud SQL | [`terraform/gcp-gke/modules/backup/`](../../terraform/gcp-gke/modules/backup/) |
 
 Reference: [`backup/velero/namespace-backup.yaml`](../../backup/velero/namespace-backup.yaml)
 

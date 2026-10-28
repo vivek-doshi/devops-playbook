@@ -45,7 +45,7 @@ route:
     # New namespace with high spend
     - matchers:
         - name: alertname
-          value: NewNamespaceHighCost
+          value: CostAnomalyNewNamespace
       receiver: "slack-anomaly-new-namespace"
 
     # Tag compliance degradation
@@ -78,7 +78,7 @@ receivers:
           {{ end }}
         details:
           namespace: "{{ .GroupLabels.namespace }}"
-          runbook: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+          runbook: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
 
   - name: "slack-anomaly-critical"
     slack_configs:

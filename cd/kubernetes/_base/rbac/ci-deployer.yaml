@@ -13,7 +13,8 @@
 #
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: cd/kubernetes/_base/rbac/readonly-developer.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: v1
@@ -33,7 +34,6 @@ metadata:
   name: ci-deployer
   namespace: production                      # <-- CHANGE THIS
 rules:
-  # Note 1: The pipeline needs to update existing Deployments and create new
   # ones during first-time deploys. It does NOT need delete — use separate
   # runbooks for decommissioning workloads.
   - apiGroups: ["apps"]
@@ -49,7 +49,6 @@ rules:
       - configmaps
     verbs: ["get", "list", "create", "update", "patch"]
 
-  # Note 2: The pipeline needs to read pods to check rollout status
   # (e.g., `kubectl rollout status`) but not exec into them.
   - apiGroups: [""]
     resources:
@@ -68,7 +67,6 @@ rules:
       - ingresses
     verbs: ["get", "list", "create", "update", "patch"]
 
-  # Note 3: HPA management — needed if your pipeline scales workloads
   # as part of a canary or load-test deploy.
   - apiGroups: ["autoscaling"]
     resources:

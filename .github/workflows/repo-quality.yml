@@ -81,7 +81,7 @@ jobs:
           fi
           kubeconform \
             --strict \
-            --kubernetes-version 1.29.0 \
+            --kubernetes-version 1.31.0 \
             --ignore-missing-schemas \
             --summary \
             --output pretty \
@@ -132,7 +132,7 @@ jobs:
             echo "Templating ${chart_name} and validating with kubeconform"
             helm template "${chart_name}" "${chart}" | kubeconform \
               --strict \
-              --kubernetes-version 1.29.0 \
+              --kubernetes-version 1.31.0 \
               --ignore-missing-schemas \
               --summary \
               --output pretty \
@@ -219,6 +219,17 @@ jobs:
           pip install --disable-pip-version-check --no-cache-dir pyyaml --quiet
           python catalog/scripts/validate-catalog.py --strict --skip-url-check
 
+  contracts:
+    name: Repository contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Validate version baseline
+        run: node scripts/validate-versions.mjs
+      - name: Validate alert runbook links
+        run: node scripts/validate-alert-runbooks.mjs
+
   quality-gate:
     name: "✅ Repo Quality Gate"
     needs:
@@ -229,6 +240,7 @@ jobs:
       - terraform
       - conftest
       - catalog-validate
+      - contracts
     runs-on: ubuntu-latest
     if: always()
     steps:

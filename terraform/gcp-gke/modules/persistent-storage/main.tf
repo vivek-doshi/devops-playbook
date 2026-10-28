@@ -5,7 +5,8 @@
 #              configured before an incident forces your hand.
 # WHAT to CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: docs/guides/gke-persistent-storage.md
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 locals {

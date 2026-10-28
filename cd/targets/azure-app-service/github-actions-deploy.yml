@@ -6,14 +6,13 @@
 # SECRETS NEEDED: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
 # WHAT TO CHANGE: ACR name, App Service name, Dockerfile path
 # RELATED FILES: docker/dotnet/Dockerfile.api
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
-# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: Deploy to Azure App Service
 
 on:
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   push:
     branches: [main]
 
@@ -25,10 +24,8 @@ env:
   APP_RESOURCE_GROUP: my-resource-group                  # <-- CHANGE THIS
   APP_HEALTHCHECK_URL: https://app.example.com/health   # <-- CHANGE THIS
 
-# Note 3: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
 jobs:
   deploy:
-    # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -38,11 +35,9 @@ jobs:
       previous-image: ${{ steps.capture-current-image.outputs.image }}
 
     steps:
-      # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       - uses: actions/checkout@v4
 
       - name: Azure Login
-        # Note 6: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -61,13 +56,10 @@ jobs:
           echo "image=$current_image" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
-        # Note 8: Pipeline structure separates concerns, helping teams test, deploy, and recover with smaller blast radius.
         run: |
           az acr build \
-            # Note 9: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             --registry ${{ vars.ACR_NAME }} \
             --image my-app:${{ github.sha }} \
-            # Note 10: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
             --file docker/dotnet/Dockerfile.api \
             .
 

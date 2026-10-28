@@ -26,7 +26,8 @@
 #                cd/kubernetes/_patterns/db-migration-init-container.yaml
 #                cd/helm/webapp/templates/deployment.yaml
 #                docs/guides/database-migrations.md
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: batch/v1
@@ -39,36 +40,30 @@ metadata:
     component: db-migrate
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
   annotations:
-    # Note 1: `pre-upgrade,pre-install` runs this Job before both first installs
     # and all subsequent upgrades. This covers the "brand-new cluster" case
     # where there is no schema at all.
     "helm.sh/hook": pre-upgrade,pre-install
 
-    # Note 2: Hook weight controls ordering when multiple pre-upgrade hooks exist.
     # Lower (more negative) weights run first. Use -10 for infra setup, -5 for migrations,
     # 0 for seed data. Migrations should always run after schema bootstrapping but before
     # any seed-data hooks.
     "helm.sh/hook-weight": "-5"
 
-    # Note 3: `before-hook-creation` deletes any previous Job object with the same
     # name before creating a new one. Without this, Helm fails if the previous Job
     # still exists (e.g., a failed migration that was never cleaned up).
     # Do NOT use `hook-succeeded` here — keep failed Job objects so you can inspect logs.
     "helm.sh/hook-delete-policy": before-hook-creation
 spec:
-  # Note 4: backoffLimit: 0 means the Job will NOT retry a failed pod.
   # Retrying a partially-applied migration is dangerous unless your migration
   # tool is strictly idempotent. If you are certain your tool handles retries
   # (Flyway, Liquibase, EF Core, Alembic all do), increase this to 2 or 3.
   backoffLimit: 0                     # <-- CHANGE THIS: 0 for non-idempotent tools, 2-3 for idempotent tools
 
-  # Note 5: The Helm upgrade will wait for this Job to finish. If the Job does
   # not finish (success or failure) within activeDeadlineSeconds, Kubernetes
   # marks it Failed, which causes Helm to mark the release FAILED and roll back.
   # Set this to (expected_migration_seconds × 3) to allow for transient DB slowness.
   activeDeadlineSeconds: 1800         # <-- CHANGE THIS: 30-minute default; adjust for your slowest migration
 
-  # Note 6: Completed Job objects are cleaned up automatically after 1 hour.
   # Failed Jobs are NOT covered by ttlSecondsAfterFinished — you need to clean them
   # manually (or inspect them for debugging). This is intentional: failed migrations
   # should be visible for post-mortem, not silently garbage-collected.
@@ -91,7 +86,6 @@ spec:
       serviceAccountName: "{{ .Values.serviceAccount.name | default \"default\" }}"  # <-- CHANGE THIS
 
       initContainers:
-        # Note 8: Even in the hook Job, we wait for the DB to be reachable.
         # During a cluster node drain or DB failover, the migration may be
         # triggered while the DB is temporarily unavailable.
         - name: wait-for-db
@@ -130,7 +124,6 @@ spec:
 
       containers:
         - name: db-migrate
-          # Note 9: Use the same image as the main application container to guarantee
           # that the migration scripts embedded in the image match the code that will
           # be deployed. The tag comes from .Values.image.tag — the same value used
           # by the Deployment template — so they always advance together.
@@ -142,7 +135,6 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true   # <-- Set false if migration tool writes temp files
 
-          # Note 10: Pick ONE command block. Delete the others.
           # All listed tools are idempotent — running twice is safe.
 
           # EF Core (.NET)

@@ -15,13 +15,11 @@
 # CREDENTIALS:   None — mock_provider replaces the real AWS API
 # ============================================================
 
-# Note 1: mock_provider "aws" replaces the real AWS provider with an in-memory stub.
 # No AWS credentials are needed. All resource creation calls return synthetic responses
 # sufficient for plan-level assertions.
 mock_provider "aws" {}
 
 # ── Test 1: EKS cluster naming convention ────────────────────────────────────
-# Note 2: The cluster name is referenced in kubeconfig entries, RBAC policies,
 # and monitoring dashboards. A consistent naming convention prevents environment
 # confusion and aligns with the IAM role naming in ci/github-actions/terraform/.
 run "eks_cluster_name_follows_convention" {
@@ -56,7 +54,6 @@ run "vpc_name_follows_convention" {
 }
 
 # ── Test 3: Node instance type is not too small for Kubernetes ───────────────
-# Note 3: t2.micro and t3.micro have 1 GiB RAM. Kubernetes system components
 # (kubelet, kube-proxy, CoreDNS) alone consume ~500 MiB, leaving almost nothing
 # for application workloads. The smallest practical size for a k8s worker is
 # t3.medium (2 vCPU / 4 GiB). This test prevents common sizing mistakes.
@@ -87,7 +84,6 @@ run "node_instance_type_not_undersized" {
 }
 
 # ── Test 4: Minimum node count >= 2 for high availability ────────────────────
-# Note 4: A single-node EKS cluster has no redundancy. Enforce a minimum of 2
 # nodes so that node replacement (spot interruption, instance upgrade) does not
 # cause a complete outage. The Cluster Autoscaler respects node_min_count, so
 # this also prevents it from scaling down to a non-HA configuration.
@@ -108,7 +104,6 @@ run "node_min_count_is_ha" {
 }
 
 # ── Test 5: node_max_count > node_min_count ────────────────────────────────
-# Note 5: If max equals min, the Cluster Autoscaler cannot scale the node group
 # out to handle bursts. This catches configuration mistakes where someone sets both
 # to the same value thinking it "pins" the cluster size.
 run "node_max_greater_than_min" {
@@ -130,7 +125,6 @@ run "node_max_greater_than_min" {
 }
 
 # ── Test 6: Kubernetes version is not EOL ─────────────────────────────────────
-# Note 6: EKS supports Kubernetes versions for ~14 months after release.
 # Update the floor below when a new minor version reaches EKS GA and the previous
 # one approaches EOL.
 # Check EKS version support at: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
@@ -151,7 +145,6 @@ run "kubernetes_version_not_eol" {
 }
 
 # ── Test 7: At least 2 availability zones configured ─────────────────────────
-# Note 7: Fewer than 2 AZs means EKS node groups are single-AZ. An AZ outage
 # would take down the entire cluster. Most production deployments should use 3 AZs.
 run "minimum_two_availability_zones" {
   command = plan

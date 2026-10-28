@@ -131,7 +131,7 @@ Report findings ordered by severity with concrete file-level remediation.
 ### Secrets
 
 - Never generate content that could expose secret values, even in examples. Use `<SECRET-VALUE>` placeholders.
-- The canonical secrets location is `secrets/`. `ci-security/secret-rotation/` is for Terraform-managed rotation only.
+- The canonical secrets location is `secrets/`, including cloud-native rotation workflows and External Secrets Operator integration.
 - Always reference `secrets/guides/secret-lifecycle.md` when discussing post-rotation rollout in pods.
 - `ExternalSecret` refreshInterval: 1h default, 15m high-rotation, 24h stable infrastructure. Add a comment on each explaining the tradeoff.
 - Secret naming convention: `/service-name/environment/secret-name`. Enforce in all examples.

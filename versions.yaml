@@ -1,0 +1,28 @@
+# Canonical dependency baselines. Changes require compatibility testing and a
+# matching update to the consuming template. Renovate updates annotated values.
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+kubernetes: "1.31"
+# renovate: datasource=github-releases depName=kubernetes-sigs/kind
+kind_node: "1.31.0"
+# renovate: datasource=github-releases depName=hashicorp/terraform
+terraform: "1.9.8"
+kubeconform: "0.6.7"
+webapp_chart: "0.1.0"
+webapp_app: "1.0.0"
+kind: "0.24"
+cert_manager: "1.14"
+kyverno: "3.1.4"
+external_secrets: "0.9"
+velero: "1.13"
+kube_prometheus_stack: "62.7"
+opentelemetry_collector: "0.106.1"
+trivy_action: "0.28"
+argocd_cli: "2.12.3"
+semgrep: "1.142.0"
+snyk_action: "1.0.0"
+environments:
+  - dev
+  - staging
+  - production
+image_tags: "sha-or-semver"
+coverage_threshold: 80

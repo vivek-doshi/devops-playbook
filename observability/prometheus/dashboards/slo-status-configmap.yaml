@@ -139,7 +139,7 @@ data:
           "targets": [
             { "refId": "A", "expr": "slo:api_gateway:good_requests_rate:5m", "legendFormat": "good" },
             { "refId": "B", "expr": "slo:api_gateway:total_requests_rate:5m", "legendFormat": "total" }
-          }
+          ]
         },
         {
           "id": 6,

@@ -13,13 +13,11 @@
 # CREDENTIALS:   None — mock_provider replaces the real Azure API
 # ============================================================
 
-# Note 1: mock_provider replaces the real azurerm provider with an in-memory stub.
 # No Azure credentials are needed. The mock intercepts all resource creation calls
 # and returns synthetic responses that are sufficient for plan-level assertions.
 mock_provider "azurerm" {}
 
 # ── Test 1: Resource Group naming convention ─────────────────────────────────
-# Note 2: Resource names are central to operational consistency.
 # A naming convention violation in Terraform variables would cause the resource
 # to be created under the wrong name, breaking RBAC policies and cost tags.
 run "resource_group_name_follows_convention" {
@@ -54,7 +52,6 @@ run "aks_cluster_name_follows_convention" {
 }
 
 # ── Test 3: Node VM size is not undersized ────────────────────────────────────
-# Note 3: Standard_B1s and Standard_B2s are burstable VMs designed for dev/test.
 # Using them in production causes CPU throttling under sustained load.
 # This test prevents accidentally deploying a production cluster with dev-tier VMs.
 run "node_vm_size_not_burstable_b1s" {
@@ -79,7 +76,6 @@ run "node_vm_size_not_burstable_b1s" {
 }
 
 # ── Test 4: Minimum node count >= 2 for high availability ────────────────────
-# Note 4: A single-node pool has no redundancy. If the node is drained for
 # upgrade or the VM is preempted, all workloads go down. Enforce >= 2 so there
 # is always at least one node available during node replacement.
 run "autoscaling_minimum_is_ha" {
@@ -100,7 +96,6 @@ run "autoscaling_minimum_is_ha" {
 }
 
 # ── Test 5: Kubernetes version is not EOL ─────────────────────────────────────
-# Note 5: This test enforces a floor on the Kubernetes version. Update the
 # floor version whenever a new minor version reaches AKS GA and the previous
 # one approaches EOL (typically 12 months after release).
 # Check EOL dates at: https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions
