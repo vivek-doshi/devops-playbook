@@ -4,8 +4,9 @@
 #              automated backups, PITR, and cross-region replicas configured
 #              before an incident forces your hand.
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: cd/kubernetes/_patterns/velero-backup.yaml
-# MATURITY: Stable
+# RELATED FILES: backup/velero/
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 locals {

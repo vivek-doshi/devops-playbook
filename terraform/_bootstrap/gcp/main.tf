@@ -5,36 +5,29 @@
 # SECRETS NEEDED: None (uses gcloud auth or service account key)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: terraform/gcp-gke/main.tf
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
-# Note 1: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 terraform {
   required_version = ">= 1.5.0"
 
-  # Note 2: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   required_providers {
     google = {
-      # Note 3: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
       source  = "hashicorp/google"
       version = "~> 5.10.0" # <-- CHANGE THIS: pin to latest stable
-      # Note 4: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
     }
   }
-  # Note 5: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 provider "google" {
-  # Note 6: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
   project = local.gcp_project_id
   region  = local.gcp_region
-  # Note 7: This line contributes to the system's declarative intent, helping future readers reason about behavior and change impact.
 }
 
 # ---------------------------------------------
 # Enable Required API
 # ---------------------------------------------
-# Note 8: The Storage API must exist before Terraform can create the shared backend bucket in the target project.
 resource "google_project_service" "storage" {
   project = local.gcp_project_id
   service = "storage.googleapis.com"
@@ -45,7 +38,6 @@ resource "google_project_service" "storage" {
 # ---------------------------------------------
 # Remote State Bucket
 # ---------------------------------------------
-# Note 9: A versioned GCS bucket provides durable remote state without requiring extra bootstrap modules or cross-project wiring.
 resource "google_storage_bucket" "terraform_state" {
   name          = local.bucket_name # <-- CHANGE THIS: bucket names must be globally unique across GCP
   location      = local.bucket_location
@@ -57,7 +49,6 @@ resource "google_storage_bucket" "terraform_state" {
     enabled = true
   }
 
-  # Note 10: Lifecycle expiration removes noncurrent object generations after 90 days to control long-term storage costs.
   lifecycle_rule {
     action {
       type = "Delete"

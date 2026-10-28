@@ -1,70 +1,39 @@
 # ============================================================
-# TEMPLATE: Terraform — Azure AKS Persistent Storage
-# WHEN to USE: Add alongside terraform/azure-aks/ to ensure AKS workloads have
-#              persistent storage (Azure Disk, Azure File, or Azure Blob)
-#              configured before an incident forces your hand.
-# WHAT to CHANGE: Lines marked  # <-- CHANGE THIS
-# RELATED FILES: docs/guides/aks-persistent-storage.md
-# MATURITY: Stable
+# AKS persistent storage prerequisites
+# Azure Disk is dynamically provisioned by the AKS Azure Disk CSI driver and
+# therefore does not need a pre-created azurerm_disk resource. This module
+# provisions Azure Files infrastructure for a shared, static file share.
+# Kubernetes StorageClasses and PVCs remain application configuration.
 # ============================================================
 
 locals {
-  name_prefix  = "${var.project}-${var.environment}"
+  name_prefix  = "${var.project}${var.environment}"
+  storage_name = lower(replace("st${local.name_prefix}", "-", ""))
   storage_tags = merge(var.common_tags, { Component = "persistent-storage" })
 }
 
-# ---------------------------------------------
-# Azure Disk (if using Azure Disk)
-# ---------------------------------------------
-resource "azurerm_disk" "main" {
-  count               = var.enable_persistent_storage && var.storage_type == "disk" ? 1 : 0
-  name                = "disk-${local.name_prefix}-${var.storage_class_name}"
-  resource_group_name = var.storage_resource_group_name
-  location            = var.storage_location
-  size                = var.storage_size
-  sku                 = var.storage_sku
-  zone                = var.storage_zone
+resource "azurerm_storage_account" "files" {
+  count = var.enable_persistent_storage && var.storage_type == "azure_file" ? 1 : 0
 
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = local.storage_tags
+  name                            = substr(local.storage_name, 0, 24)
+  resource_group_name             = var.resource_group_name
+  location                        = var.location
+  account_tier                    = "Standard"
+  account_replication_type        = var.storage_account_replication_type
+  account_kind                    = "StorageV2"
+  https_traffic_only_enabled      = true
+  min_tls_version                 = "TLS1_2"
+  public_network_access_enabled   = var.public_network_access_enabled
+  shared_access_key_enabled       = false
+  allow_nested_items_to_be_public = false
+  tags                            = local.storage_tags
 }
 
-# ---------------------------------------------
-# Azure File Share (if using Azure File Share)
-# ---------------------------------------------
-resource "azurerm_file_share" "main" {
-  count               = var.enable_persistent_storage && var.storage_type == "file-share" ? 1 : 0
-  name                = "fileshare-${local.name_prefix}-${var.storage_class_name}"
-  resource_group_name = var.storage_resource_group_name
-  location            = var.storage_location
-  access_tier         = var.storage_access_tier
-  enable_https        = var.storage_enable_https
-  network_acl         = var.storage_network_acl
+resource "azurerm_storage_share" "main" {
+  count = var.enable_persistent_storage && var.storage_type == "azure_file" ? 1 : 0
 
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = local.storage_tags
+  name               = var.file_share_name
+  storage_account_id = azurerm_storage_account.files[0].id
+  quota              = var.file_share_quota_gb
+  enabled_protocol    = "SMB"
 }
-
-# ---------------------------------------------
-# Azure Blob Storage (if using Azure Blob Storage)
-# ---------------------------------------------
-resource "azurerm_storage_container" "main" {
-  count               = var.enable_persistent_storage && var.storage_type == "blob-storage" ? 1 : 0
-  name                = "blob-${local.name_prefix}-${var.storage_class_name}"
-  resource_group_name = var.storage_resource_group_name
-  location            = var.storage_location
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = local.storage_tags
-}
-
-# Outputs are defined in outputs.tf

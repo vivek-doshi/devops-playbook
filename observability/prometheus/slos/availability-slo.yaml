@@ -15,10 +15,10 @@
 # RELATED FILES: observability/prometheus/slos/README.md
 #                observability/prometheus/slos/latency-slo.yaml
 #                observability/prometheus/alerts/slo-rules.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
-# Note 1: PrometheusRule is a CRD provided by the Prometheus Operator
 # (kube-prometheus-stack). It is automatically discovered by any Prometheus
 # instance with the matching label selector.
 apiVersion: monitoring.coreos.com/v1
@@ -27,13 +27,11 @@ metadata:
   name: availability-slo                        # <-- CHANGE THIS: use your service name, e.g. payments-availability-slo
   namespace: monitoring                          # <-- CHANGE THIS: namespace where Prometheus Operator runs
   labels:
-    # Note 2: The Prometheus Operator watches for PrometheusRule resources that
     # match the ruleSelector on the Prometheus CR. kube-prometheus-stack sets
     # this to `release: kube-prometheus-stack` by default.
     release: kube-prometheus-stack               # <-- CHANGE THIS: match your Prometheus Operator release name
     app: kube-prometheus-stack
   annotations:
-    # Note 3: Document the SLO metadata in annotations for human reference.
     # These are not used by Prometheus but appear in alert notifications.
     SLO_TARGET: "0.999"                          # <-- CHANGE THIS: e.g. "0.995" for 99.5%
     SLO_WINDOW: "30d"
@@ -42,7 +40,6 @@ spec:
   groups:
 
     # ── Recording Rules ────────────────────────────────────────────────────
-    # Note 4: Recording rules pre-compute the error ratio over multiple time windows.
     # This makes alert evaluation fast (single metric lookup instead of two-range joins)
     # and makes the values available in Grafana dashboards.
     #
@@ -54,7 +51,6 @@ spec:
     - name: availability-slo-recording
       interval: 30s                              # <-- CHANGE THIS: how often rules are evaluated
       rules:
-        # Note 5: Each recording rule covers one of the burn-rate windows.
         # Having all windows pre-computed means alert rules do just a simple comparison,
         # keeping alert evaluation latency under 1 second.
         - record: slo:sli_error:ratio_rate5m
@@ -121,7 +117,6 @@ spec:
             service: my-service
 
     # ── Alerting Rules ─────────────────────────────────────────────────────
-    # Note 6: The three alert tiers implement the multi-window burn rate strategy
     # from the Google SRE Workbook. See observability/prometheus/slos/README.md
     # for the full explanation.
     #
@@ -135,7 +130,6 @@ spec:
       rules:
 
         # ── Critical: Fast Burn (page immediately) ─────────────────────
-        # Note 7: Two-window condition: BOTH windows must exceed the threshold.
         # The short window (5m) catches the onset of the incident quickly.
         # The long window (1h) prevents alerting on a brief spike that will
         # self-resolve without exhausting significant budget.
@@ -158,11 +152,10 @@ spec:
               at 14× the acceptable rate. At this pace the entire 30-day budget will be
               exhausted in approximately 50 hours.
               Current 5m error ratio: {{ $value | humanizePercentage }}.
-            runbook_url: "https://your-wiki.example.com/runbooks/slo-availability"  # <-- CHANGE THIS
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md"  # <-- CHANGE THIS
             dashboard_url: "https://grafana.example.com/d/slo-availability"         # <-- CHANGE THIS
 
         # ── Warning: Medium Burn (ticket, investigate today) ───────────
-        # Note 8: This tier catches burns that are fast enough to exhaust the budget
         # within 5 days but not fast enough to warrant an immediate page.
         # Use 6h + 3d windows to smooth out noise from normal traffic variance.
         - alert: SLOAvailabilityFastBurnWarning
@@ -184,10 +177,9 @@ spec:
               at 6× the acceptable rate. At this pace the entire 30-day budget will be
               exhausted in approximately 5 days.
               Current 30m error ratio: {{ $value | humanizePercentage }}.
-            runbook_url: "https://your-wiki.example.com/runbooks/slo-availability"  # <-- CHANGE THIS
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md"  # <-- CHANGE THIS
 
         # ── Warning: Slow Burn (ticket, investigate this week) ─────────
-        # Note 9: This tier catches a sustained low-level error rate that would
         # silently exhaust the error budget over 10+ days without any alert.
         # The very long windows (6h AND 3d) mean this alert only fires for
         # genuinely persistent issues, not transient deployments or restarts.
@@ -210,4 +202,4 @@ spec:
               budget at 3× the acceptable rate for over 6 hours. This is a sustained degradation.
               At this pace the 30-day error budget will be exhausted in approximately 10 days.
               Current 6h error ratio: {{ $value | humanizePercentage }}.
-            runbook_url: "https://your-wiki.example.com/runbooks/slo-availability"  # <-- CHANGE THIS
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md"  # <-- CHANGE THIS

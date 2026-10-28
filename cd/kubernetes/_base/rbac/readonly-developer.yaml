@@ -13,7 +13,8 @@
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: cd/kubernetes/_base/rbac/ci-deployer.yaml
 #                cd/kubernetes/_base/rbac/namespace-admin.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: rbac.authorization.k8s.io/v1
@@ -23,7 +24,6 @@ metadata:
   labels:
     rbac.example.com/aggregate-to-view: "true"  # <-- CHANGE THIS: optional aggregation label
 rules:
-  # Note 1: The built-in ClusterRole "view" covers most read resources but
   # explicitly excludes Secrets. We start from scratch to be explicit about
   # what is permitted rather than inheriting from "view" and adding exceptions.
   - apiGroups: [""]
@@ -73,7 +73,6 @@ rules:
       - poddisruptionbudgets
     verbs: ["get", "list", "watch"]
 
-  # Note 2: Secrets — only listing allowed (not reading data values).
   # A user can see secret NAMES but cannot execute `kubectl get secret <name> -o yaml`.
   # Remove this rule if listing secret names is too broad.
   - apiGroups: [""]
@@ -87,7 +86,6 @@ kind: ClusterRoleBinding
 metadata:
   name: readonly-developer-binding
 subjects:
-  # Note 3: Add individual users or a group (e.g., GitHub team mapped via OIDC).
   # Prefer groups over individual users for easier onboarding/offboarding.
   - kind: Group
     name: developers                 # <-- CHANGE THIS: your OIDC group name (e.g., GitHub team)

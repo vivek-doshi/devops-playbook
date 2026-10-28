@@ -54,7 +54,8 @@ the protection rules are enforced server-side by GitHub.
 # PREREQUISITES: Environments configured in Settings → Environments
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: ci/github-actions/_strategies/matrix-build.yml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 name: Deploy
@@ -125,7 +126,6 @@ jobs:
     needs: deploy-staging
     runs-on: ubuntu-latest
 
-    # Note 1: The 'environment' key is what connects this job to the protection rules
     # configured in Settings → Environments. GitHub will pause the job here and
     # notify required reviewers before releasing the job to run.
     environment:
@@ -143,7 +143,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Note 2: Secrets scoped to the 'production' environment are ONLY available
       # inside a job that references environment: production. They are not accessible
       # to any other job, including deploy-staging.
       - name: Authenticate to cloud

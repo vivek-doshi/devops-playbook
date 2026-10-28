@@ -45,6 +45,12 @@ spec:
       kind: ClusterRoleBinding
     - group: kyverno.io
       kind: ClusterPolicy
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
 
   namespaceResourceWhitelist:
     - group: "*"

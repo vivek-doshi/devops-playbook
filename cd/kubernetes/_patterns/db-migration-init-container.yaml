@@ -29,7 +29,8 @@
 # RELATED FILES: cd/kubernetes/_patterns/db-migration-job.yaml (long-running migrations)
 #                cd/kubernetes/_patterns/db-migration-hook.yaml  (Helm pre-upgrade hook)
 #                cd/kubernetes/_base/deployment.yaml             (base deployment pattern)
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: apps/v1
@@ -44,7 +45,6 @@ spec:
   selector:
     matchLabels:
       app: my-app                     # <-- CHANGE THIS
-  # Note 1: RollingUpdate ensures pods with the new schema are brought up one at
   # a time. Because migrations ran in the init container, the new pod already has
   # the schema the new app version expects — no partial upgrade window.
   strategy:
@@ -66,14 +66,12 @@ spec:
       initContainers:
 
         # ── Init 1: wait-for-db ─────────────────────────────────────────
-        # Note 2: This init container spins until the database TCP port is
         # reachable. Without it, the migration container may fail immediately
         # if the DB pod restarts (node drain, upgrade, failover) while this
         # Deployment is being rolled out.
         # It uses busybox `nc` (netcat) — no extra tools or credentials needed.
         - name: wait-for-db
           image: busybox:1.36
-          # Note 3: Run as non-root even for a minimal init container — defence in depth.
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534         # nobody
@@ -107,7 +105,6 @@ spec:
               memory: "32Mi"
 
         # ── Init 2: db-migrate ──────────────────────────────────────────
-        # Note 4: This init container uses the same image as the main application.
         # That ensures the migration scripts bundled inside the image exactly match
         # the code that will run — no version skew between migration files and app code.
         #
@@ -123,7 +120,6 @@ spec:
             runAsUser: 1000
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true      # <-- Set false if your migration tool writes to /tmp
-          # Note 5: Pick ONE command block that matches your migration tool.
           # All of these tools are idempotent: running them twice leaves the schema unchanged.
 
           # EF Core (.NET) — requires `dotnet ef` in the image
@@ -170,7 +166,6 @@ spec:
                 secretKeyRef:
                   name: app-db-credentials
                   key: DB_PASSWORD
-            # Note 6: Connection string assembled from individual keys avoids
             # storing a composed string in Secrets (which must be rotated atomically).
             # Adjust the format for your driver:
             #   EF Core / Npgsql:  Host=..;Database=..;Username=..;Password=..
@@ -186,7 +181,6 @@ spec:
               cpu: "500m"
               memory: "512Mi"          # <-- CHANGE THIS: Liquibase needs 512Mi-1Gi; Alembic needs ~128Mi
 
-      # Note 7: activeDeadlineSeconds is the wall-clock limit for ALL init containers
       # combined. If init containers are still running after this many seconds,
       # Kubernetes kills the pod and marks it Failed.
       # Set this to (expected_migration_duration_seconds × 2) as a safety margin.

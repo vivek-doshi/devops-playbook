@@ -6,39 +6,33 @@
 # SECRETS NEEDED: None
 # WHAT TO CHANGE: Pull request branch filters, TruffleHog CLI version, and summary detail level
 # RELATED FILES: security/secret-detection/gitleaks.yml, security/README.md
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
-# Note 1: Resource identity and metadata drive automation, selectors, and operational traceability.
 name: TruffleHog Verified Secret Detection
 
 on:
-  # Note 2: PR-only is intentional here because deep history and verification are more expensive than fast push-time pattern scans.
   pull_request:
     branches: [main]  # <-- CHANGE THIS: match your protected review branch
 
-# Note 3: Comment updates need issue or PR write access; checkout only needs contents read.
 permissions:
   contents: read
   issues: write
   pull-requests: write
 
 jobs:
-  # Note 4: Keep TruffleHog separate from Gitleaks so teams can tune expensive verified scanning independently.
   trufflehog:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        # Note 5: Base and head SHAs may sit outside a shallow clone, so full history avoids false negatives on PR diffs.
         with:
           fetch-depth: 0
 
       - name: Run TruffleHog enforcement scan
-        # Note 6: Pinning a security action to a full SHA prevents an upstream branch move from silently changing scanner behaviour.
         uses: trufflesecurity/trufflehog@5474feb15b332595dd00d83b71f4689ab1860a1d
         with:
           path: ./
-          # Note 7: The action maps base/head to --since-commit and --branch so only the PR diff is scanned instead of full history.
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
           version: v3.95.2  # <-- CHANGE THIS: pin the TruffleHog CLI version instead of relying on latest
@@ -46,7 +40,6 @@ jobs:
           extra_args: --only-verified  # Pair with Gitleaks for broader pattern coverage across unverifiable secret types.
 
       - name: Build job summary
-        # Note 8: Re-running the same bounded diff in JSON mode gives reviewers a concise summary without re-scanning full repository history.
         if: always()
         id: summary
         shell: bash
@@ -99,7 +92,6 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Comment on pull request
-        # Note 9: Reusing the same markdown in the PR comment and job summary keeps reviewer context consistent.
         if: always() && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         env:

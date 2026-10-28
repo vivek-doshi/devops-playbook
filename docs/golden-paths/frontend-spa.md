@@ -141,10 +141,10 @@ The Nginx config handles:
 
 ```yaml
 # trivy blocks on HIGH/CRITICAL vulnerabilities
-source: security/container-scanning/trivy-scan.yml
+source: ci-security/container-scanning/trivy-scan.yml
 ```
 
-File: [`security/container-scanning/trivy-scan.yml`](../../security/container-scanning/trivy-scan.yml)
+File: [`ci-security/container-scanning/trivy-scan.yml`](../../ci-security/container-scanning/trivy-scan.yml)
 
 ---
 
@@ -169,7 +169,7 @@ Files: [`terraform/azure-app-service/main.tf`](../../terraform/azure-app-service
 
 ```yaml
 # .github/workflows/deploy.yml
-uses: cd/targets/azure-app-service/github-actions-deploy.yml
+Copy `cd/targets/azure-app-service/github-actions-deploy.yml` into the consuming repository and configure its variables; it is not a reusable workflow.
 ```
 
 Source: [`cd/targets/azure-app-service/github-actions-deploy.yml`](../../cd/targets/azure-app-service/github-actions-deploy.yml)

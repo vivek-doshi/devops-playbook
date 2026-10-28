@@ -68,7 +68,7 @@ variable "aks_subnet_prefix" {
 variable "kubernetes_version" {
   description = "Kubernetes version for AKS — run `az aks get-versions -l <region>` to see available versions"
   type        = string
-  default     = "1.29" # <-- CHANGE THIS: use latest stable
+  default     = "1.31" # Keep aligned with versions.yaml.
 }
 
 variable "node_count" {
@@ -206,6 +206,47 @@ variable "enable_aks" {
 
 variable "enable_backup" {
   description = "Provision the PostgreSQL Flexible Server backup/DR stack (modules/backup)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_persistent_storage" {
+  description = "Provision AKS persistent-storage prerequisites. Azure Disk uses the AKS CSI driver; Azure Files creates a storage account and share."
+  type        = bool
+  default     = false
+}
+
+variable "persistent_storage_type" {
+  description = "Persistent-storage integration: managed_disk or azure_file."
+  type        = string
+  default     = "managed_disk"
+
+  validation {
+    condition     = contains(["managed_disk", "azure_file"], var.persistent_storage_type)
+    error_message = "persistent_storage_type must be managed_disk or azure_file."
+  }
+}
+
+variable "azure_file_share_name" {
+  description = "Azure Files share name when persistent_storage_type is azure_file."
+  type        = string
+  default     = "shared-data"
+}
+
+variable "azure_file_share_quota_gb" {
+  description = "Azure Files quota in GiB when persistent_storage_type is azure_file."
+  type        = number
+  default     = 100
+}
+
+variable "azure_file_replication_type" {
+  description = "Azure Storage replication type for Azure Files."
+  type        = string
+  default     = "ZRS"
+}
+
+variable "azure_file_public_network_access_enabled" {
+  description = "Whether Azure Files may accept public-network traffic; leave false for private AKS deployments."
   type        = bool
   default     = false
 }

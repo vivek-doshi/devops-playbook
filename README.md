@@ -43,14 +43,14 @@ It provides:
 
 - **Golden paths**: End-to-end, copy-pasteable workflows for microservices, serverless, frontend SPAs, data pipelines, MLOps, FinOps optimization, SLO-driven development, and service catalog governance
 - **Ready-to-use CI/CD templates**: GitHub Actions, Azure Pipelines, GitLab CI, Jenkins
-- **Infrastructure as Code**: Terraform, Pulumi, Helm, Kustomize
+- **Infrastructure as Code**: Terraform, Helm, Kustomize
 - **Security & compliance**: Built-in scanning, policies, and secret management
 - **Observability**: Prometheus, Grafana, Loki, OpenTelemetry, alerting integrations
 - **FinOps & cost governance**: Cost monitoring, budget alerting, rightsizing, chargeback, and CI/CD cost-gating with Infracost
 - **Runbooks & guides**: For onboarding, incident response, disaster recovery, and more
 
 
-> **Start here:** Pick your [golden path](docs/golden-paths/) and follow it step-by-step. Each path links directly to the files you need to copy or edit.
+> **Start here:** Pick your [golden path](docs/golden-paths/) and follow it step-by-step. Each path links directly to the files you need to copy or edit. This is a reference-template library; see [the support boundary](docs/SUPPORT.md) before deploying an example unchanged.
 >
 > For local GPU experimentation and fine-tuning, use the dedicated CUDA devcontainer at [.devcontainer/gpu/devcontainer.json](.devcontainer/gpu/devcontainer.json).
 
@@ -101,14 +101,11 @@ It provides:
 **"I need a CI pipeline for my Rails app"**
 → Go to [ci/github-actions/ruby/build-test.yml](ci/github-actions/ruby/build-test.yml)
 
-**"I need to deploy infrastructure with Pulumi instead of Terraform"**
-→ Go to [cd/pulumi/](cd/pulumi/)
-
 **"I need to understand the cost impact of my Terraform PR"**
 → Copy [finops/infracost/.infracost.yml](finops/infracost/.infracost.yml) into your repo and use the CI template for your platform
 
 **"I need to enforce cost labels and resource limits across my cluster"**
-→ Deploy the Kyverno policies from [finops/policies/](finops/policies/)
+→ Deploy the Kyverno policies from [policy/kyverno/](policy/kyverno/)
 
 **"I need Grafana dashboards for cloud cost visibility"**
 → Run [finops/scripts/deploy-dashboards.sh](finops/scripts/deploy-dashboards.sh)
@@ -241,7 +238,7 @@ This repository includes a **production-grade FinOps system** that brings cost v
 |-----------|---------|----------|
 | **Kubecost / OpenCost** | Real-time cost monitoring per workload | [`finops/helm/`](finops/helm/) |
 | **VPA** | Rightsizing recommendations (recommender-only) | [`finops/helm/vpa-values.yaml`](finops/helm/vpa-values.yaml) |
-| **Kyverno Policies** | Admission-time cost governance (4 policies) | [`finops/policies/`](finops/policies/) |
+| **Kyverno Policies** | Admission-time cost governance | [`policy/kyverno/`](policy/kyverno/) |
 | **Infracost CI/CD** | PR-level Terraform cost estimation (3 platforms) | [`finops/cicd/`](finops/cicd/) |
 | **Budget Alerts** | Prometheus rules at 80 / 100 / 120% spend | [`finops/prometheus/budget-alerts.yaml`](finops/prometheus/budget-alerts.yaml) |
 | **Anomaly Detection** | Cost spike vs 7-day baseline + new namespace | [`finops/prometheus/anomaly-alerts.yaml`](finops/prometheus/anomaly-alerts.yaml) |

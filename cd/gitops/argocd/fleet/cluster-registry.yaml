@@ -14,7 +14,9 @@
 # 2. Commit this file and run the fleet onboarding workflow documented in docs/golden-paths/multi-cluster-fleet.md.
 #
 # How ArgoCD reads this ConfigMap:
-# fleet ApplicationSets use a list generator where elementsYaml is sourced from this ConfigMap's data.clusters key.
+# Register clusters in Argo CD with `fleet.argocd.io/enabled=true` and a
+# `fleet.argocd.io/environment` label. The ApplicationSets use Argo CD's
+# clusters generator; this file remains human-readable inventory only.
 #
 # tier and Kyverno behavior:
 # critical clusters should use kyverno-enforcement: enforce; standard/dev clusters can start in audit.

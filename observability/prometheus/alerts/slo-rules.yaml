@@ -99,7 +99,6 @@ spec:
       interval: 30s
       rules:
 
-        # Note 1: The 5m and 30m windows are the "short" confirmation windows.
         # They are evaluated frequently (every 30s) to detect the start of a burn quickly.
         - record: slo:service_errors_total:ratio_rate5m
           expr: >-
@@ -117,7 +116,6 @@ spec:
           labels:
             service: my-service   # <-- CHANGE THIS
 
-        # Note 2: The 1h and 6h windows are the primary "long" windows for fast burn detection.
         # 1h × 14.4× burn = 100% error budget consumed in 2 hours (page immediately).
         # 6h × 6× burn = budget consumed in 5 hours (page before half-day milestone).
         - record: slo:service_errors_total:ratio_rate1h
@@ -136,7 +134,6 @@ spec:
           labels:
             service: my-service   # <-- CHANGE THIS
 
-        # Note 3: 2h and 1d windows drive the "warning" slow-burn alerts.
         # 1d × 3× burn = budget consumed in 10 days (ticket + investigate).
         - record: slo:service_errors_total:ratio_rate2h
           expr: >-
@@ -154,7 +151,6 @@ spec:
           labels:
             service: my-service   # <-- CHANGE THIS
 
-        # Note 4: The 3d window is the lowest-sensitivity check.
         # 3d × 1× burn = the service is right on the 30-day SLO boundary — ticket before it tips.
         - record: slo:service_errors_total:ratio_rate3d
           expr: >-
@@ -169,7 +165,6 @@ spec:
       rules:
 
         # ── CRITICAL: fast burn (14.4× over 1h, confirmed by 5m) ──────────
-        # Note 5: This alert fires when the 1-hour error rate exceeds 14.4× the error budget.
         # For a 99.9% SLO: error_budget = 0.001; threshold = 14.4 × 0.001 = 0.0144.
         # It self-resets (no for: clause) because a 14.4× burn that stops is resolved.
         # The `and` operator requires BOTH windows to be over threshold — the 5m window
@@ -197,10 +192,9 @@ spec:
               will be consumed in approximately 2 hours.
             slo_target: "0.999"                                                       # <-- CHANGE THIS
             burn_rate: "14.4"
-            runbook_url: https://runbooks.example.com/slofastburn                     # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md                     # <-- CHANGE THIS
 
         # ── CRITICAL: fast burn (6× over 6h, confirmed by 30m) ───────────
-        # Note 6: This pair catches burns that started several hours ago but weren't caught
         # by the 14.4× threshold (e.g. a 7× burn that oscillates below 14.4×).
         # For a 99.9% SLO: threshold = 6 × 0.001 = 0.006.
         - alert: SloFastBurn
@@ -226,10 +220,9 @@ spec:
               in approximately 5 hours.
             slo_target: "0.999"
             burn_rate: "6"
-            runbook_url: https://runbooks.example.com/slofastburn   # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md   # <-- CHANGE THIS
 
         # ── WARNING: slow burn (3× over 1d, confirmed by 2h) ─────────────
-        # Note 7: 3× burn does not warrant an immediate page but should generate a ticket.
         # At 3×, the budget is consumed in 10 days — enough time to schedule a fix,
         # but not enough to ignore until the next sprint cycle.
         - alert: SloSlowBurn
@@ -255,10 +248,9 @@ spec:
               fully consumed in approximately 10 days.
             slo_target: "0.999"
             burn_rate: "3"
-            runbook_url: https://runbooks.example.com/sloslowburn   # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md   # <-- CHANGE THIS
 
         # ── WARNING: slow burn (1× over 3d, confirmed by 6h) ─────────────
-        # Note 8: 1× burn means the service is exactly on the boundary of meeting its SLO.
         # Three days of sustained 1× burn consumes 10% of the monthly budget — still recoverable
         # but a signal that something in the environment needs attention.
         - alert: SloSlowBurn
@@ -284,7 +276,7 @@ spec:
               SLO will be exactly missed.
             slo_target: "0.999"
             burn_rate: "1"
-            runbook_url: https://runbooks.example.com/sloslowburn   # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md   # <-- CHANGE THIS
 
 ---
 # =============================================================================
@@ -315,7 +307,6 @@ spec:
       interval: 30s
       rules:
 
-        # Note 9: For latency SLOs the "error" is a request that missed the target.
         # We compute: (requests exceeding the threshold) / (total requests).
         # With a classic histogram: requests that DID meet the target are in the ≤ bucket;
         # requests that missed are total minus that bucket.
@@ -390,7 +381,6 @@ spec:
       rules:
 
         - alert: SloLatencyFastBurn
-          # Note 10: Same multi-window logic as availability but targeting the latency ratio.
           # For a 99% SLO: error_budget = 0.01; 14.4× threshold = 0.144.
           expr: >-
             (
@@ -414,7 +404,7 @@ spec:
               consumed in approximately 2 hours.
             slo_target: "0.99"     # <-- CHANGE THIS
             burn_rate: "14.4"
-            runbook_url: https://runbooks.example.com/slolatencyfastburn   # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md   # <-- CHANGE THIS
 
         - alert: SloLatencyFastBurn
           expr: >-
@@ -438,7 +428,7 @@ spec:
               exceeding 6× the allowed latency budget.
             slo_target: "0.99"     # <-- CHANGE THIS
             burn_rate: "6"
-            runbook_url: https://runbooks.example.com/slolatencyfastburn   # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md   # <-- CHANGE THIS
 
         - alert: SloLatencySlowBurn
           expr: >-
@@ -462,4 +452,4 @@ spec:
               If this rate persists the monthly latency budget will be consumed in approximately 10 days.
             slo_target: "0.99"     # <-- CHANGE THIS
             burn_rate: "3"
-            runbook_url: https://runbooks.example.com/slolatencyslowburn   # <-- CHANGE THIS
+            runbook_url: https://github.com/vivek-doshi/cicd-reference/blob/main/docs/runbooks/slo-breach-response.md

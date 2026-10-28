@@ -46,7 +46,7 @@ spec:
               Cost center {{ $labels.cost_center }} is at {{ printf "%.1f" (mulf $value 100) }}% of its monthly budget.
               Current spend: ${{ printf "%.2f" (query "sum by (cost_center) (finops_budget_current_spend{cost_center=\"" $labels.cost_center "\"})" | first | value) }}
               Monthly threshold: ${{ printf "%.2f" (query "sum by (cost_center) (finops_budget_threshold{cost_center=\"" $labels.cost_center "\"})" | first | value) }}
-            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
             dashboard_url: "{{ $externalURL }}/d/finops-budget-tracking?var-cost_center={{ $labels.cost_center }}"
 
         # ── Critical: 100% of monthly budget ────────────────────────────────
@@ -74,7 +74,7 @@ spec:
               Cost center {{ $labels.cost_center }} has EXCEEDED its monthly budget.
               Utilization: {{ printf "%.1f" (mulf $value 100) }}%
               Immediate review required.
-            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
             dashboard_url: "{{ $externalURL }}/d/finops-budget-tracking?var-cost_center={{ $labels.cost_center }}"
 
         # ── Emergency: 120% of monthly budget ───────────────────────────────
@@ -96,7 +96,7 @@ spec:
             description: |
               EMERGENCY: Cost center {{ $labels.cost_center }} is at {{ printf "%.1f" (mulf $value 100) }}% of budget.
               This indicates a runaway cost scenario. Immediate action required.
-            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"
             dashboard_url: "{{ $externalURL }}/d/finops-budget-tracking?var-cost_center={{ $labels.cost_center }}"
 
         # ── Namespace approaching limit ──────────────────────────────────────
@@ -131,4 +131,4 @@ spec:
               Kubecost/OpenCost has not received fresh data in over 6 hours.
               Cost reports and alerts may be inaccurate.
               Check Kubecost/OpenCost connectivity to cloud provider billing APIs.
-            runbook_url: "https://github.com/your-org/cicd-reference/blob/main/finops/docs/troubleshooting.md#cost-monitoring-data-stale"
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/troubleshooting.md#cost-monitoring-data-stale"

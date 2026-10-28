@@ -9,7 +9,8 @@
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: default-deny.yaml
 #                observability/prometheus/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 apiVersion: networking.k8s.io/v1
@@ -18,11 +19,10 @@ metadata:
   name: allow-prometheus-scrape
   namespace: default          # <-- CHANGE THIS: namespace where app pods expose /metrics
 spec:
-  # Note 1: Only allow scraping for pods that expose a metrics port.
   # Restrict by label to avoid accidentally opening all pods in the namespace.
   podSelector:
     matchLabels:
-      monitoring: "enabled"   # <-- CHANGE THIS: label to identify pods that expose /metrics
+      monitoring: "enabled"
 
   policyTypes:
     - Ingress

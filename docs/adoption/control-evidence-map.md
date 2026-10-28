@@ -14,7 +14,7 @@ Purpose: Map control intent to implementation assets and evidence artifacts that
 | Control ID | Control Name | Implementation asset | Evidence artifact | Automated? | Collection script | Gap / Note |
 |---|---|---|---|---|---|---|
 | CC6.1 | Logical access controls | `cd/kubernetes/_base/rbac/`, `policy/kyverno/require-non-root.yaml` | RBAC manifests, Kyverno PolicyReport output | Partial | `secops/compliance/scripts/collect-evidence.sh` | Add recurring RBAC review attestation workflow |
-| CC6.6 | Logical access reviewed | `catalog/teams/`, `catalog/scripts/generate-codeowners.py` | CODEOWNERS diffs, PR review logs | Partial | `secops/compliance/scripts/collect-evidence.sh` | Formal quarterly access review checklist should be added |
+| CC6.6 | Logical and physical access is restricted and protected | `catalog/teams/`, `catalog/scripts/generate-codeowners.py` | CODEOWNERS diffs, PR review logs | Partial | `secops/compliance/scripts/collect-evidence.sh` | Formal quarterly access review checklist should be added |
 | CC6.7 | Transmission encryption | `cd/kubernetes/cert-manager/`, `docs/ARCHITECTURE_DECISION_GUIDE.md` | Certificate and issuer resources, ingress TLS config | Partial | `secops/compliance/scripts/collect-evidence.sh` | Add explicit TLS minimum version policy evidence |
 | CC6.8 | Prevention of unauthorized software | `secops/supply-chain/cosign-verify-policy.yaml`, `secops/supply-chain/sbom-policy.yaml`, `secops/supply-chain/slsa-verify.yaml` | `cosign verify` logs, admission PolicyReports | Yes | `secops/compliance/scripts/collect-evidence.sh` | Enforce mode must be confirmed per production namespace |
 | CC7.2 | System monitoring | `observability/prometheus/`, `observability/prometheus/recording-rules/` | Alert history, burn-rate recordings | Yes | `secops/compliance/scripts/collect-evidence.sh` | Ensure all services have SLO definitions |
@@ -60,7 +60,7 @@ Purpose: Map control intent to implementation assets and evidence artifacts that
 | 5.3.x | Network policies | `cd/kubernetes/_base/network-policies/` | NetworkPolicy manifests and namespace coverage report | Partial | `secops/compliance/scripts/collect-evidence.sh` | Add deny-all coverage validation per namespace |
 | 5.5.1 | Images are signed and verified | `secops/supply-chain/cosign-verify-policy.yaml` | Admission reports and signature verification logs | Yes | `secops/compliance/scripts/collect-evidence.sh` | Enforce mode verification needed for production namespaces |
 | 5.7.x | Namespace and tenancy boundaries | `cd/kubernetes/_base/rbac/`, `docs/golden-paths/platform-onboarding.md` | Namespace RBAC manifests and onboarding records | Partial | `secops/compliance/scripts/collect-evidence.sh` | Add tenant boundary conformance report |
-| 4.2.x | API server and controller manager hardening | `docs/guides/kubernetes-security-checklist.md`, `secops/compliance/kube-bench-cronjob.yaml` | kube-bench scan output | Yes | `secops/compliance/scripts/collect-evidence.sh` | Managed control-plane specifics vary by cloud provider |
+| 4.2.x | Kubelet hardening | `secops/compliance/kube-bench-cronjob.yaml` | kube-bench scan output | Yes | `secops/compliance/scripts/collect-evidence.sh` | Managed control-plane specifics vary by cloud provider |
 | 1.x/2.x | Control plane and etcd baseline controls | `secops/compliance/kube-bench-cronjob.yaml` | kube-bench findings and trend reports | Yes | `secops/compliance/scripts/collect-evidence.sh` | Some controls depend on cloud-managed defaults and require documented compensating controls |
 
 ### CIS Kubernetes Gaps

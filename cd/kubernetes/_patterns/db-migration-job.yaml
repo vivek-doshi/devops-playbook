@@ -23,7 +23,8 @@
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: cd/kubernetes/_patterns/init-containers.yaml (lighter pattern)
 #                cd/kubernetes/_base/deployment.yaml
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
 ---

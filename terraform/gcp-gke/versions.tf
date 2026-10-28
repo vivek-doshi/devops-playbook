@@ -5,7 +5,8 @@
 # SECRETS NEEDED: None (uses gcloud auth or service account key)
 # WHAT TO CHANGE: Lines marked with # <-- CHANGE THIS
 # RELATED FILES: cd/targets/gcp-gke/, cd/kubernetes/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # LAYOUT: versions.tf (providers/APIs), network.tf (VPC/NAT),
 #         artifact-registry.tf, gke.tf (cluster/node pool), iam.tf,
 #         backup.tf (DR/backup), locals.tf (labels)

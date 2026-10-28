@@ -31,4 +31,4 @@ kubectl apply -f backup/velero/schedule.yaml
 kubectl apply -f backup/velero/namespace-backup.yaml
 ```
 
-For managed databases, copy the relevant file from `backup/terraform/` into your existing Terraform module and adapt variables to your environment.
+For managed databases, use the provider backup module in `terraform/aws-eks/modules/backup/`, `terraform/azure-aks/modules/backup/`, or `terraform/gcp-gke/modules/backup/` and adapt variables to your environment.

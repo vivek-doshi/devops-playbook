@@ -12,10 +12,10 @@
 # WHAT TO CHANGE: Lines marked  # <-- CHANGE THIS
 # RELATED FILES: cd/kubernetes/cert-manager/cluster-issuer-staging.yaml
 #                local-dev/kind/
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 # ============================================================
 
-# Note 1: The selfsigned issuer simply signs certificate requests with
 # the key that cert-manager generates for the Certificate resource itself.
 # There is no external ACME server or CA involved.
 apiVersion: cert-manager.io/v1
@@ -26,7 +26,6 @@ spec:
   selfSigned: {}
 
 ---
-# Note 2: A common pattern for local dev is to create a self-signed CA cert
 # first (using the selfsigned issuer above), then create a separate CA issuer
 # that references that cert. All app certificates are then signed by this local
 # CA, and you only need to trust one root cert in your browser/OS.

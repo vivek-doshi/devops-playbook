@@ -1,13 +1,14 @@
 ﻿# ============================================================
 # TEMPLATE: Python Project Configuration (pyproject.toml)
-# WHEN TO USE: Python projects — covers ruff, black, mypy, pytest, coverage
+# WHEN TO USE: Python projects — covers Ruff, mypy, pytest, coverage
 # WHAT TO CHANGE: Adjust paths, versions, and rules for your project
-# RELATED FILES: quality/python/.flake8
+# Ruff is the sole linter and formatter; it replaces Black, Flake8, and a
+# separate Bandit invocation (the S rules provide the relevant checks).
 # MATURITY: Stable
 # ============================================================
 
 # Python project configuration
-# ruff, black, mypy, pytest all configured here
+# Ruff, mypy, and pytest are configured here.
 
 [tool.ruff]
 target-version = "py312"
@@ -29,9 +30,9 @@ ignore = ["S101"]  # Allow assert in tests
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S", "B"]
 
-[tool.black]
-line-length = 100
-target-version = ["py311", "py312"]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"

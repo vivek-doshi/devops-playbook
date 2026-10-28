@@ -40,7 +40,7 @@ velero backup describe daily-production-backup --details
 
 ## Database Backup Quick Start
 
-Apply the Terraform snippets in `backup/terraform/` inside your existing Terraform module to enable point-in-time recovery (PITR) and cross-region replication for managed databases.
+Use the provider backup module under `terraform/<platform>/modules/backup/` to enable point-in-time recovery (PITR) and cross-region replication for managed databases.
 
 ## RTO / RPO Targets
 

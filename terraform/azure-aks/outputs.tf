@@ -37,3 +37,12 @@ output "log_analytics_workspace_id" {
   description = "Log Analytics Workspace ID for Container Insights"
   value       = try(module.monitoring[0].workspace_id, null)
 }
+
+output "persistent_storage" {
+  description = "Selected persistent-storage resources. The AKS Azure Disk CSI driver dynamically provisions disks."
+  value = var.enable_persistent_storage ? {
+    type               = module.persistent_storage[0].storage_type
+    storage_account_id = module.persistent_storage[0].storage_account_id
+    file_share_id      = module.persistent_storage[0].file_share_id
+  } : null
+}

@@ -2,7 +2,8 @@
 # TEMPLATE: Helm Template — Webapp Service
 # WHEN TO USE: Exposes webapp pods internally through a Kubernetes Service.
 # PREREQUISITES: deployment selector labels and service.* values configured.
-# MATURITY: Stable
+# SUPPORT: template
+# MATURITY: Template
 apiVersion: v1
 kind: Service
 metadata:
