@@ -124,3 +124,4 @@ spec:
               Total cluster costs are {{ printf "%.1f" (mulf $value 100) }}% higher than
               the 7-day rolling average. This may indicate cluster-wide resource sprawl.
               Review: {{ $externalURL }}/d/finops-cost-overview
+            runbook_url: "https://github.com/vivek-doshi/cicd-reference/blob/main/finops/docs/runbooks/investigate-cost-spike.md"

@@ -35,5 +35,5 @@ resource "azurerm_storage_share" "main" {
   name               = var.file_share_name
   storage_account_id = azurerm_storage_account.files[0].id
   quota              = var.file_share_quota_gb
-  enabled_protocol    = "SMB"
+  enabled_protocol   = "SMB"
 }

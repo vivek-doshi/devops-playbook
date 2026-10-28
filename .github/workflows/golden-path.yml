@@ -22,8 +22,8 @@ jobs:
         run: |
           curl --fail --location --silent --show-error \
             https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64 \
-            --output /usr/local/bin/kind
-          chmod +x /usr/local/bin/kind
+            --output "$RUNNER_TEMP/kind"
+          sudo install -m 0755 "$RUNNER_TEMP/kind" /usr/local/bin/kind
       - name: Create cluster
         run: kind create cluster --name golden-path --config local-dev/kind/kind-config.yaml
       - name: Deploy the Kustomize golden path
@@ -41,4 +41,9 @@ jobs:
           test -s /tmp/webapp.yaml
       - name: Collect diagnostics
         if: failure()
-        run: kubectl get pods,events -A
+        run: |
+          if kubectl cluster-info >/dev/null 2>&1; then
+            kubectl get pods,events -A
+          else
+            echo "Kind cluster is unavailable; skipping Kubernetes diagnostics."
+          fi
