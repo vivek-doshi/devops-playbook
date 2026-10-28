@@ -26,6 +26,11 @@ jobs:
           sudo install -m 0755 "$RUNNER_TEMP/kind" /usr/local/bin/kind
       - name: Create cluster
         run: kind create cluster --name golden-path --config local-dev/kind/kind-config.yaml
+      - name: Install VPA CRDs
+        # The dev overlay includes a VerticalPodAutoscaler; only the CRDs are needed, not the controller.
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/vertical-pod-autoscaler-1.2.1/vertical-pod-autoscaler/deploy/vpa-v1-crd-gen.yaml # <-- UPDATE QUARTERLY
+          kubectl wait --for condition=established --timeout=60s crd/verticalpodautoscalers.autoscaling.k8s.io
       - name: Deploy the Kustomize golden path
         run: |
           kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
