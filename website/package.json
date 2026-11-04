@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@types/prismjs": "^1.26.6",
-    "lucide-react": "^1.61.0",
+    "lucide-react": "^1.66.0",
     "prismjs": "^1.30.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
